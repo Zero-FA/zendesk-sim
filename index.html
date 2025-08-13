@@ -213,57 +213,54 @@ Sign-off"></textarea>
 
   <input type="file" id="fileInput" accept="application/json" class="hidden"/>
 
-  <!-- Your tickets are embedded below in DEFAULT -->
-  <script>
-// ID generator
+<!-- Your tickets are embedded below in DEFAULT -->
+<script>
+// ID generator (must be defined before DEFAULT uses it)
 function uid() {
   return Math.random().toString(36).substring(2, 9);
 }
 
 const STORE = "sop_sim_state_v5";
-const PASS = "sop_sim_pass_v1";
-const now = Date.now();
-// WRONG CONTRACT TICKET
+const PASS  = "sop_sim_pass_v1";
+const now   = Date.now();
+
 const DEFAULT = {
   weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
   tickets: [
+    // WRONG CONTRACT TICKET
     {
-      id: uid(), // leave uid() here now that it's defined
+      id: uid(),
       subject: "Can't Trade",
       requester: "JasonMraz@mid.com",
-      channel: "Email", // "Email" | "Web" | "Chat"
-      createdAt: now - 4 * 3600e3, // 4 hours ago
-      status: "New", // initial status shown
-      assignee: "Unassigned", // initial assignee
-      assigneeOptions: ["Myself", "Support Tier 2", "Support Tier 3", "Fraud General", "Payout"],
+      channel: "Email",
+      createdAt: now - 4 * 3600e3,
+      status: "Open",                    // use a supported status
+      assignee: "Unassigned",
+      assigneeOptions: ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"],
       message: `Hi. I am trying to trade CLE and I keep getting an error. Why does this keep happening? Any help would be great. Thanks.`,
       messages: [
-        { id: uid(), author: "JasonMraz@mid.com", ts: now - 4 * 3600e3, body: "I am trying to trade CLE, but i keep getting rejected. What is going on??" }
+        { id: uid(), author: "JasonMraz@mid.com", ts: now - 4 * 3600e3, body: "I am trying to trade CLE, but I keep getting rejected. What is going on??" }
       ],
       expected: {
-        requiredStatus: "Solved",    // what the trainee must choose in "Submit As"
-        requiredAssignee: "Myself",  // what the trainee must choose in "Assignee"
-        keywords: [],                // if you don’t use keywords, keep it empty
-        sections: ["Greeting", "Open", "Resolution", "Closer", "Sign-off"] 
+        requiredStatus: "Solved",
+        requiredAssignee: "Myself",
+        keywords: [],                                        // ok to leave empty if not grading keywords
+        sections: ["Greeting","Open","Resolution","Closer","Sign-off"]
       },
       attempts: [],
       grade: null
-    }
-  ]
-};
-// RESET FAQ
-const DEFAULT = {
-  weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
-  tickets: [
+    },
+
+    // RESET FAQ
     {
       id: uid(),
-      subject: "What do i do now?",
+      subject: "What do I do now?",
       requester: "Moonlanding@gmail.com",
       channel: "Email",
       createdAt: now - 4 * 3600e3,
-      status: "New",
+      status: "Open",                    // use a supported status
       assignee: "Unassigned",
-      assigneeOptions: ["Myself", "Support Tier 2", "Support Tier 3", "Fraud General", "Payout"],
+      assigneeOptions: ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"],
       message: `Hi Alex,
 Thank you reaching out to Apex Trader Funding Support. We hope you're having a great day!
 
@@ -281,11 +278,13 @@ Name`,
         requiredStatus: "Solved",
         requiredAssignee: "Myself",
         keywords: [],
-        sections: ["Greeting", "Open", "Resolution", "Closer", "Sign-off"]
+        sections: ["Greeting","Open","Resolution","Closer","Sign-off"]
       },
       attempts: [],
       grade: null
     },
+
+    // Example: duplicate charge ticket (kept from before)
     {
       id: uid(),
       subject: "Refund for duplicate charge",
@@ -294,7 +293,7 @@ Name`,
       createdAt: now - 8 * 3600e3,
       status: "Open",
       assignee: "Unassigned",
-      assigneeOptions: ["Myself", "Billing Team", "Tech Team"],
+      assigneeOptions: ["Myself","Billing Team","Tech Team"],
       message: `Hi Support, I was double-charged this month. Can you refund the duplicate? Thanks!`,
       messages: [
         { id: uid(), author: "customer@example.com", ts: now - 8 * 3600e3, body: "Billed twice; need refund." }
@@ -303,16 +302,15 @@ Name`,
         requiredStatus: "Pending",
         requiredAssignee: "Billing Team",
         keywords: [],
-        sections: ["Greeting", "Resolution", "Next steps", "Sign-off"]
+        sections: ["Greeting","Resolution","Next steps","Sign-off"]
       },
       attempts: [],
       grade: null
     }
   ]
 };
-  </script>
-
-
+</script>
+  
   <!-- Main app script -->
   <script>
   (()=>{
