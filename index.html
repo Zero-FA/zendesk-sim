@@ -227,37 +227,38 @@ const now   = Date.now();
 const DEFAULT = {
   weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
   tickets: [
-{
-  id: uid(),
-  subject: "[Subject that shows in list]",
-  requester: "[customer@company.com]",     // who opened the ticket
-  channel: "Email",                        // "Email" | "Web" | "Chat"
-  createdAt: now - 4 * 3600e3,             // timestamp
-  status: "Open",                          // Open | Pending | On-hold | Solved
-  assignee: "Unassigned",
-  assigneeOptions: ["Unassigned","Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"],
+    {
+      id: uid(),
+      subject: "[Subject that shows in list]",
+      requester: "[customer@company.com]",     // who opened the ticket
+      channel: "Email",                        // "Email" | "Web" | "Chat"
+      createdAt: now - 4 * 3600e3,             // timestamp
+      status: "Open",                          // Open | Pending | On-hold | Solved
+      assignee: "Unassigned",
+      assigneeOptions: ["Unassigned","Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"],
 
-  // This is the latest customer message the trainee must respond to
-  message: `[Put the customer’s message here.
+      // This is the latest customer message the trainee must respond to
+      message: `[Put the customer’s message here.
 If you want multiple lines, you can use a template string like this.]`,
 
-  // Optional prior conversation/history (shown above the editor)
-  messages: [
-    { id: uid(), author: "[customer@company.com]", ts: now - 6 * 3600e3, body: "[Earlier message from customer]" }
-    // You can add more history lines here if you want
-  ],
+      // Optional prior conversation/history (shown above the editor)
+      messages: [
+        { id: uid(), author: "[customer@company.com]", ts: now - 6 * 3600e3, body: "[Earlier message from customer]" }
+      ],
 
-  // Grading rules for what “correct” looks like
-  expected: {
-    requiredStatus: "[Open|Pending|On-hold|Solved]",
-    requiredAssignee: "[Myself|Support Tier 2|Support Tier 3|Fraud General|Payout]",
-    keywords: [],                           // keep [] if you’re not using keyword checks
-    sections: ["Greeting","Open","Resolution","Closer","Sign-off"] // order-checked
-  },
+      // Grading rules for what “correct” looks like
+      expected: {
+        requiredStatus: "[Open|Pending|On-hold|Solved]",
+        requiredAssignee: "[Myself|Support Tier 2|Support Tier 3|Fraud General|Payout]",
+        keywords: [],                           // keep [] if you’re not using keyword checks
+        sections: ["Greeting","Open","Resolution","Closer","Sign-off"] // order-checked
+      },
 
-  attempts: [],
-  grade: null
-}
+      attempts: [],
+      grade: null
+    }
+  ]
+};
 </script>
   
   <!-- Main app script -->
