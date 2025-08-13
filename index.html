@@ -227,88 +227,28 @@ const now   = Date.now();
 const DEFAULT = {
   weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
   tickets: [
-    // WRONG CONTRACT TICKET
-    {
+{
       id: uid(),
-      subject: "Can't Trade",
-      requester: "JasonMraz@mid.com",
+      subject: "[REPLACE]",             // User's Email
+      requester: "[REPLACE]",            // User's Email
       channel: "Email",
       createdAt: now - 4 * 3600e3,
-      status: "Open",                    // use a supported status
+      status: "New",                    // use a supported status
       assignee: "Unassigned",
       assigneeOptions: ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"],
-      message: `Hi. I am trying to trade CLE and I keep getting an error. Why does this keep happening? Any help would be great. Thanks.`,
+      message: `[REPLACE]`,             // Trainee's Response
       messages: [
-        { id: uid(), author: "JasonMraz@mid.com", ts: now - 4 * 3600e3, body: "I am trying to trade CLE, but I keep getting rejected. What is going on??" }
+        { id: uid(), author: "[User Email]", ts: now - 4 * 3600e3, body: "[Trainee Response]" }
       ],
       expected: {
-        requiredStatus: "Solved",
-        requiredAssignee: "Myself",
+        requiredStatus: "[REPLACE]",         // Solved, Pending, or Open
+        requiredAssignee: "[REPLACE]",       // Myself, Support Tier 2, Support Tier 3, Fraud General, and Payout
         keywords: [],                                        // ok to leave empty if not grading keywords
         sections: ["Greeting","Open","Resolution","Closer","Sign-off"]
       },
       attempts: [],
       grade: null
     },
-
-    // RESET FAQ
-    {
-      id: uid(),
-      subject: "What do I do now?",
-      requester: "Moonlanding@gmail.com",
-      channel: "Email",
-      createdAt: now - 4 * 3600e3,
-      status: "Open",                    // use a supported status
-      assignee: "Unassigned",
-      assigneeOptions: ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"],
-      message: `Hi Alex,
-Thank you reaching out to Apex Trader Funding Support. We hope you're having a great day!
-
-Unfortunately, we do not offer CLE as an instrument. It would be best to check our current instruments in our FAQs here: [Instrument FAQ]
-
-If you have any other question, please do not hesitate to reach out.
-
-Best regards,
-
-Name`,
-      messages: [
-        { id: uid(), author: "JasonMraz@mid.com", ts: now - 4 * 3600e3, body: "NA" }
-      ],
-      expected: {
-        requiredStatus: "Solved",
-        requiredAssignee: "Myself",
-        keywords: [],
-        sections: ["Greeting","Open","Resolution","Closer","Sign-off"]
-      },
-      attempts: [],
-      grade: null
-    },
-
-    // Example: duplicate charge ticket (kept from before)
-    {
-      id: uid(),
-      subject: "Refund for duplicate charge",
-      requester: "customer@example.com",
-      channel: "Email",
-      createdAt: now - 8 * 3600e3,
-      status: "Open",
-      assignee: "Unassigned",
-      assigneeOptions: ["Myself","Billing Team","Tech Team"],
-      message: `Hi Support, I was double-charged this month. Can you refund the duplicate? Thanks!`,
-      messages: [
-        { id: uid(), author: "customer@example.com", ts: now - 8 * 3600e3, body: "Billed twice; need refund." }
-      ],
-      expected: {
-        requiredStatus: "Pending",
-        requiredAssignee: "Billing Team",
-        keywords: [],
-        sections: ["Greeting","Resolution","Next steps","Sign-off"]
-      },
-      attempts: [],
-      grade: null
-    }
-  ]
-};
 </script>
   
   <!-- Main app script -->
