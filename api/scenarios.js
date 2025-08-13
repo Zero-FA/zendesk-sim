@@ -1,7 +1,11 @@
-// api/scenarios.js
-import scenarios from '../data/scenarios.json' assert { type: 'json' };
-
-export default function handler(req, res) {
-  // You can filter fields here to hide trainer-only data from trainees if needed.
-  res.status(200).json(scenarios);
-}
+const fs = require('fs');
+const path = require('path');
+module.exports = (req, res) => {
+  try {
+    const fp = path.join(process.cwd(), 'data', 'scenarios.json');
+    const data = JSON.parse(fs.readFileSync(fp, 'utf8'));
+    res.status(200).json(data);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load scenarios', detail: String(e) });
+  }
+};
