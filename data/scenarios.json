@@ -1,0 +1,25 @@
+{
+  "weights": { "keywords": 40, "sections": 20, "status": 25, "assignee": 15, "pass": 80 },
+  "tickets": [
+    {
+      "id": "t1",
+      "subject": "Refund for duplicate charge",
+      "requester": "customer@example.com",
+      "channel": "Email",
+      "createdAt": 1728796800000,
+      "status": "Open",
+      "assignee": "Unassigned",
+      "assigneeOptions": ["Myself", "Billing Team", "Tech Team"],
+      "message": "Hi Support,\nI was double-charged this month. Can you refund the duplicate?\nThanks!",
+      "expected": {
+        "requiredStatus": "Pending",
+        "requiredAssignee": "Billing Team",
+        "keywords": ["apologize", "refund", "duplicate", "confirm", "timeline"],
+        "sections": ["Greeting", "Resolution", "Next steps", "Sign-off"]
+      },
+      "messages": [
+        { "id": "m1", "author": "customer@example.com", "ts": 1728796800000, "body": "Billed twice; need refund." }
+      ]
+    }
+  ]
+}
