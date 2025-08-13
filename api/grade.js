@@ -1,8 +1,9 @@
 // api/grade.js
-export default function handler(req, res) {
+module.exports = (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
   try {
     const { reply = "", status = "", assignee = "", expected, weights } = req.body || {};
     if (!expected || !weights) {
@@ -39,7 +40,7 @@ export default function handler(req, res) {
       sectionPct = present / sections.length * (orderOk ? 1 : 0.8);
     }
 
-    // 3) Submit As
+    // 3) Submit As (status)
     const statusOk = String(status) === String(expected.requiredStatus);
 
     // 4) Assignee
@@ -67,4 +68,4 @@ export default function handler(req, res) {
   } catch (err) {
     return res.status(500).json({ error: 'Grading failed', detail: String(err) });
   }
-}
+};
