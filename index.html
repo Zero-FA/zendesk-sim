@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Zendesk-Style Trainer — SOP Simulator (Trainer-Gated Sliders)</title>
+<title>Zendesk-Style Trainer — SOP Simulator</title>
 <style>
   :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
@@ -76,7 +76,7 @@
     <main class="card">
       <div class="filters">
         <strong id="countLbl">0 tickets</strong>
-        <label class="small muted">Status
+        <label class="small muted">Submit As
           <select class="select" id="fStatus">
             <option>All</option><option>Open</option><option>Pending</option><option>On-hold</option><option>Solved</option>
           </select>
@@ -95,7 +95,7 @@
           <button class="btn" id="backBtn">← Back</button>
           <div id="dSubject" style="font-weight:600"></div>
           <div style="margin-left:auto"></div>
-          <label class="small muted">Status
+          <label class="small muted">Submit As
             <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>On-hold</option><option>Solved</option></select>
           </label>
           <label class="small muted">Assignee
@@ -171,7 +171,7 @@
       <label class="small" style="display:block;margin-top:8px">Customer Message<textarea id="tMsg" class="input" style="width:100%;min-height:120px"></textarea></label>
       <div class="nav-label">Expected rubric</div>
       <div class="grid2">
-        <label class="small">Required Status
+        <label class="small">Required Submit As
           <select id="tReqStatus" class="select"><option>Open</option><option>Pending</option><option>On-hold</option><option>Solved</option></select>
         </label>
         <label class="small">Required Assignee
@@ -200,7 +200,7 @@ Sign-off"></textarea>
       <div class="small muted" style="margin-bottom:8px">Adjust the weights and passing threshold. Trainees can't see or change these.</div>
       <div class="slider-row"><label class="small">Keywords weight</label><input type="range" min="0" max="100" step="5" id="wKeywords"><span id="wKeywordsVal" class="small"></span></div>
       <div class="slider-row"><label class="small">Sections weight</label><input type="range" min="0" max="100" step="5" id="wSections"><span id="wSectionsVal" class="small"></span></div>
-      <div class="slider-row"><label class="small">Status weight</label><input type="range" min="0" max="100" step="5" id="wStatus"><span id="wStatusVal" class="small"></span></div>
+      <div class="slider-row"><label class="small">Submit As weight</label><input type="range" min="0" max="100" step="5" id="wStatus"><span id="wStatusVal" class="small"></span></div>
       <div class="slider-row"><label class="small">Assignee weight</label><input type="range" min="0" max="100" step="5" id="wAssignee"><span id="wAssigneeVal" class="small"></span></div>
       <hr style="margin:10px 0;border:none;border-top:1px solid var(--line)"/>
       <div class="slider-row"><label class="small">Pass threshold</label><input type="range" min="0" max="100" step="1" id="wPass"><span id="wPassVal" class="small"></span></div>
@@ -215,8 +215,8 @@ Sign-off"></textarea>
 
 <script>
 (()=>{
-  // -------- Persistence & password (client-side) --------
-  const STORE = "sop_sim_state_v2";
+  // -------- Persistence & password --------
+  const STORE = "sop_sim_state_v3";
   const PASS = "sop_sim_pass_v1"; // {salt, hashB64}
   function load(){ try{ return JSON.parse(localStorage.getItem(STORE) || "null"); }catch{return null;} }
   function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
@@ -237,33 +237,32 @@ Sign-off"></textarea>
     const salt=randSalt(); const hashB64=await sha256B64(salt+p1); setPass({salt,hashB64}); alert("Trainer password set."); trainer=true; refreshRole(); return true;
   }
 
-  // -------- Default data --------
+  // -------- Default data (add your SOP tickets here) --------
   const now=Date.now();
   const DEFAULT = {
-    weights: { keywords: 40, sections: 40, status: 10, assignee: 10, pass: 80 }, // trainer-sliders (% and pass/100)
+    // trainer-set weights (%). pass is threshold out of 100.
+    weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
     tickets: [
       {
-        id: uid(), subject:"Charged twice for same plan", requester:"alex@example.com",
+        id: uid(), subject:"Refund for duplicate charge", requester:"customer@example.com",
         channel:"Email", createdAt: now-8*3600e3, status:"Open", assignee:"Unassigned",
-        message:`Hi support,
-I think I was billed twice for the Professional plan this month.
-Can you check and refund the duplicate?
-
-Thanks,
-Alex`,
+        assigneeOptions:["Myself","Billing Team","Tech Team"],
+        message:`Hi Support,
+I was double-charged this month. Can you refund the duplicate?
+Thanks!`,
         expected: {
-          requiredStatus:"Pending",
-          requiredAssignee:"Billing Team",
-          keywords:["apologize","refund","duplicate","confirm","timeline"],
-          sections:["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
+          requiredStatus:"Pending",         // Submit As
+          requiredAssignee:"Billing Team",  // Assignee
+          keywords:["apologize","refund","duplicate","confirm","timeline"], // Ticket response
+          sections:["Greeting","Resolution","Next steps","Sign-off"]        // set [] to disable structure
         },
-        messages: [{id:uid(),author:"alex@example.com",ts: now-8*3600e3, body:"Billed twice this month; need refund."}],
-        attempts:[],
-        grade:null
+        messages: [{id:uid(),author:"customer@example.com",ts: now-8*3600e3, body:"Billed twice; need refund."}],
+        attempts:[], grade:null
       },
       {
         id: uid(), subject:"Can't log in after password reset", requester:"sara@brand.co",
         channel:"Web", createdAt: now-26*3600e3, status:"Open", assignee:"Unassigned",
+        assigneeOptions:["Myself","Tech Team"],
         message:`Hi,
 I reset my password but still can't log in. The reset email worked.
 Browser: Chrome on Windows.
@@ -276,8 +275,7 @@ Browser: Chrome on Windows.
           sections:["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
         },
         messages: [{id:uid(),author:"sara@brand.co",ts: now-26*3600e3, body:"Reset worked but still cannot log in."}],
-        attempts:[],
-        grade:null
+        attempts:[], grade:null
       }
     ]
   };
@@ -386,7 +384,9 @@ Browser: Chrome on Windows.
     if(!trainer){ alert("Trainer only"); return; }
     const id=uid();
     editing = { id, subject:"New scenario", requester:"user@example.com", channel:"Email", createdAt:Date.now(), status:"Open", assignee:"Unassigned",
-      message:"Customer message here...", expected:{ requiredStatus:"Open", requiredAssignee:"Myself", keywords:[], sections:["Greeting","Diagnosis","Resolution","Next steps","Sign-off"] },
+      assigneeOptions:["Myself","Billing Team","Tech Team"],
+      message:"Customer message here...",
+      expected:{ requiredStatus:"Open", requiredAssignee:"Myself", keywords:[], sections:[] },
       messages:[], attempts:[], grade:null
     };
     openTicketEditor(editing, true);
@@ -472,7 +472,7 @@ Browser: Chrome on Windows.
         </div>
         <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
       </div>
-    ").join("");
+    `).join("");
     [...list.querySelectorAll(".row")].forEach(el=>el.onclick=()=>openDetail(el.dataset.id));
     if(items.length===0){
       list.innerHTML = `<div style="padding:48px;text-align:center;color:var(--muted)">
@@ -508,7 +508,7 @@ Browser: Chrome on Windows.
 
   function renderAssigneeOptions(t){
     const defaults = ["Unassigned","Myself","Billing Team","Tech Team"];
-    const custom = (t.assigneeOptions && t.assigneeOptions.length) ? t.assigneeOptions : [];
+    const custom = Array.isArray(t.assigneeOptions)? t.assigneeOptions : [];
     const opts = Array.from(new Set([...defaults, ...custom]));
     dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
   }
@@ -525,13 +525,13 @@ Browser: Chrome on Windows.
     const result = { checks:[], score:0, pass:false };
     const reply = (attempt.reply||"").toLowerCase();
 
-    // 1) Keywords
+    // Response keywords
     const need = (ticket.expected.keywords||[]).map(k=>k.toLowerCase());
     const found = need.filter(k=> reply.includes(k));
     const kwPct = need.length? (found.length/need.length):1;
-    result.checks.push({label:`Keywords (${found.length}/${need.length})`, ok: kwPct===1, detail: need.map(k=>`${reply.includes(k)?"✅":"❌"} ${k}`).join(", ")});
+    result.checks.push({label:`Ticket response keywords (${found.length}/${need.length})`, ok: kwPct===1, detail: need.map(k=>`${reply.includes(k)?"✅":"❌"} ${k}`).join(", ")});
 
-    // 2) Sections order & presence
+    // Structure sections (optional)
     const sections = (ticket.expected.sections||[]);
     let orderOk = true, lastIdx=-1, missing=[];
     for(const sec of sections){
@@ -543,23 +543,23 @@ Browser: Chrome on Windows.
     let sectionPct = 1;
     if(sections.length){
       const present = sections.length - missing.length;
-      sectionPct = present/sections.length * (orderOk?1:0.8); // small penalty if order wrong
+      sectionPct = present/sections.length * (orderOk?1:0.8); // small penalty for order issues
     }
-    result.checks.push({label:`Sections`, ok: sectionPct===1, detail: missing.length?`Missing: ${missing.join(", ")}`:(orderOk?"OK":"Out of order")});
+    result.checks.push({label:`Response structure (sections)`, ok: sectionPct===1, detail: sections.length? (missing.length?`Missing: ${missing.join(", ")}`:(orderOk?"OK":"Out of order")) : "Not required"});
 
-    // 3) Status choice
+    // Submit As (status)
     const statusOk = (attempt.status===ticket.expected.requiredStatus);
-    result.checks.push({label:`Status is "${ticket.expected.requiredStatus}"`, ok: statusOk, detail:`Selected: ${attempt.status}`});
+    result.checks.push({label:`Submit As is "${ticket.expected.requiredStatus}"`, ok: statusOk, detail:`Selected: ${attempt.status}`});
 
-    // 4) Assignee choice
+    // Assignee
     const assigneeOk = (attempt.assignee===ticket.expected.requiredAssignee);
     result.checks.push({label:`Assignee is "${ticket.expected.requiredAssignee}"`, ok: assigneeOk, detail:`Selected: ${attempt.assignee}`});
 
-    // Weighted score (normalize weights to sum=1)
+    // Weighted score (normalize)
     const sum = Math.max(1, (w.keywords||0)+(w.sections||0)+(w.status||0)+(w.assignee||0));
     const sKeywords = kwPct * 100 * (w.keywords||0)/sum;
     const sSections = sectionPct * 100 * (w.sections||0)/sum;
-    const sStatus = (statusOk?100:0) * (w.status||0)/sum;
+    const sStatus   = (statusOk?100:0) * (w.status||0)/sum;
     const sAssignee = (assigneeOk?100:0) * (w.assignee||0)/sum;
     result.score = sKeywords + sSections + sStatus + sAssignee;
     result.pass = result.score >= (w.pass||0);
@@ -583,10 +583,10 @@ Browser: Chrome on Windows.
   function expectedPreview(t){
     const k = (t.expected.keywords||[]).join(", ");
     const s = (t.expected.sections||[]).join(" > ");
-    return `Required status: ${t.expected.requiredStatus}
-Required assignee: ${t.expected.requiredAssignee}
-Keywords: ${k}
-Sections: ${s}`;
+    return `Required Submit As: ${t.expected.requiredStatus}
+Required Assignee: ${t.expected.requiredAssignee}
+Keywords: ${k || "—"}
+Sections: ${s || "—"}`;
   }
 
   // -------- Ticket editor --------
