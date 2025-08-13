@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Zendesk-Style Trainer — SOP Simulator</title>
+<title>Zendesk-Style Trainer — SOP Simulator (Standalone)</title>
 <style>
   :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
@@ -213,483 +213,383 @@ Sign-off"></textarea>
 
   <input type="file" id="fileInput" accept="application/json" class="hidden"/>
 
-<script>
-(()=>{
-  // -------- Client auth & local persistence --------
-  const STORE = "sop_sim_state_v4";
-  const PASS = "sop_sim_pass_v1"; // {salt, hashB64}
-  function load(){ try{ return JSON.parse(localStorage.getItem(STORE) || "null"); }catch{return null;} }
-  function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
-  async function sha256B64(s){ const enc=new TextEncoder().encode(s); const buf=await crypto.subtle.digest("SHA-256",enc); return btoa(String.fromCharCode(...new Uint8Array(buf))); }
-  function randSalt(n=16){ const a=new Uint8Array(n); crypto.getRandomValues(a); return btoa(String.fromCharCode(...a)); }
-  function getPass(){ try{ return JSON.parse(localStorage.getItem(PASS)||"null"); }catch{return null; } }
-  function setPass(rec){ localStorage.setItem(PASS, JSON.stringify(rec)); }
-  async function requireTrainer(){
-    const rec=getPass();
-    if(!rec){ if(!confirm("No trainer password set. Set now?")) return false; return await setTrainerPassword(); }
-    const input=prompt("Enter trainer password:"); if(input===null) return false;
-    const ok = (await sha256B64(rec.salt+input))===rec.hashB64; if(!ok) alert("Incorrect password.");
-    return ok;
-  }
-  async function setTrainerPassword(){
-    const p1=prompt("Set trainer password:"); if(!p1) return false;
-    const p2=prompt("Confirm password:"); if(p1!==p2){ alert("Passwords do not match."); return false; }
-    const salt=randSalt(); const hashB64=await sha256B64(salt+p1); setPass({salt,hashB64}); alert("Trainer password set."); trainer=true; refreshRole(); return true;
-  }
-
-  // Default (fallback) scenarios if /api/scenarios not available
+  <!-- Your tickets are embedded below in DEFAULT -->
+  <script>
+  const STORE = "sop_sim_state_v5";
+  const PASS = "sop_sim_pass_v1";
   const now=Date.now();
   const DEFAULT = {
     weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
-    tickets: [{
-      id: uid(), subject:"Fallback — Refund duplicate", requester:"customer@example.com",
-      channel:"Email", createdAt: now-8*3600e3, status:"Open", assignee:"Unassigned",
-      assigneeOptions:["Myself","Billing Team","Tech Team"],
-      message:`Hi Support,\nI was double-charged this month. Can you refund the duplicate?\nThanks!`,
-      expected:{ requiredStatus:"Pending", requiredAssignee:"Billing Team", keywords:["apologize","refund","duplicate","confirm","timeline"], sections:["Greeting","Resolution","Next steps","Sign-off"]},
-      messages:[{id:uid(),author:"customer@example.com",ts:now-8*3600e3,body:"Billed twice; need refund."}], attempts:[], grade:null
-    }]
-  };
+    tickets: [
+      {
+        id: uid(), subject:"Refund for duplicate charge", requester:"customer@example.com",
+        channel:"Email", createdAt: now-8*3600e3, status:"Open", assignee:"Unassigned",
+        assigneeOptions:["Myself","Billing Team","Tech Team"],
+        message:`Hi Support,
+I was double-charged this month. Can you refund the duplicate?
+Thanks!`,
+        expected: {
+          requiredStatus:"Pending",
+          requiredAssignee:"Billing Team",
+          keywords:["apologize","refund","duplicate","confirm","timeline"],
+          sections:["Greeting","Resolution","Next steps","Sign-off"]
+        },
+        messages:[{id:uid(),author:"customer@example.com",ts:now-8*3600e3,body:"Billed twice; need refund."}],
+        attempts:[], grade:null
+      },
+      {
+        id: uid(), subject:"Can't log in after password reset", requester:"sara@brand.co",
+        channel:"Web", createdAt: now-26*3600e3, status:"Open", assignee:"Unassigned",
+        assigneeOptions:["Myself","Tech Team"],
+        message:`Hi,
+I reset my password but still can't log in. The reset email worked.
+Browser: Chrome on Windows.
 
-  // State
-  let state = load() || null;
-  let trainer = false;
-  let currentId = null;
-  let apiAvailable = true;
-
-  // Elements
-  const roleLbl = document.getElementById("roleLbl");
-  const unlockBtn = document.getElementById("unlockBtn");
-  const exportBtn = document.getElementById("exportBtn");
-  const importBtn = document.getElementById("importBtn");
-  const resetBtn = document.getElementById("resetBtn");
-  const newTicketBtn = document.getElementById("newTicketBtn");
-  const editRubricBtn = document.getElementById("editRubricBtn");
-  const fileInput = document.getElementById("fileInput");
-
-  const list = document.getElementById("list");
-  const detail = document.getElementById("detail");
-  const countLbl = document.getElementById("countLbl");
-  const fStatus = document.getElementById("fStatus");
-  const fChannel = document.getElementById("fChannel");
-  const searchBox = document.getElementById("searchBox");
-
-  const backBtn = document.getElementById("backBtn");
-  const editTicketBtn = document.getElementById("editTicketBtn");
-  const deleteBtn = document.getElementById("deleteBtn");
-  const dSubject = document.getElementById("dSubject");
-  const dRequester = document.getElementById("dRequester");
-  const dCreated = document.getElementById("dCreated");
-  const dExpected = document.getElementById("dExpected");
-  const trainerHint = document.getElementById("trainerHint");
-  const dStatus = document.getElementById("dStatus");
-  const dAssignee = document.getElementById("dAssignee");
-  const thread = document.getElementById("thread");
-  const replyBox = document.getElementById("replyBox");
-  const macroBtn = document.getElementById("macroBtn");
-  const sendBtn = document.getElementById("sendBtn");
-  const solveBtn = document.getElementById("solveBtn");
-  const gradeBtn = document.getElementById("gradeBtn");
-  const gradeTable = document.querySelector("#gradeTable tbody");
-  const scoreLbl = document.getElementById("scoreLbl");
-  const passLbl  = document.getElementById("passLbl");
-
-  const kSolved = document.getElementById("kSolved");
-  const kOpen = document.getElementById("kOpen");
-  const kAvg = document.getElementById("kAvg");
-
-  // Dialogs
-  const ticketDlg = document.getElementById("ticketDlg");
-  const tSub = document.getElementById("tSub");
-  const tReq = document.getElementById("tReq");
-  const tChan = document.getElementById("tChan");
-  const tAssignees = document.getElementById("tAssignees");
-  const tMsg = document.getElementById("tMsg");
-  const tReqStatus = document.getElementById("tReqStatus");
-  const tReqAssignee = document.getElementById("tReqAssignee");
-  const tKeywords = document.getElementById("tKeywords");
-  const tSections = document.getElementById("tSections");
-  const saveTicketBtn = document.getElementById("saveTicketBtn");
-
-  const rubricDlg = document.getElementById("rubricDlg");
-  const wKeywords = document.getElementById("wKeywords");
-  const wSections = document.getElementById("wSections");
-  const wStatus   = document.getElementById("wStatus");
-  const wAssignee = document.getElementById("wAssignee");
-  const wPass     = document.getElementById("wPass");
-  const wKeywordsVal = document.getElementById("wKeywordsVal");
-  const wSectionsVal = document.getElementById("wSectionsVal");
-  const wStatusVal   = document.getElementById("wStatusVal");
-  const wAssigneeVal = document.getElementById("wAssigneeVal");
-  const wPassVal     = document.getElementById("wPassVal");
-
-  // ---------- Boot: load scenarios from API or fallback ----------
-  async function boot(){
-    if (!state) {
-      try {
-        const r = await fetch('/api/scenarios', { cache: 'no-store' });
-        if (!r.ok) throw new Error('No scenarios API');
-        state = await r.json();
-      } catch {
-        apiAvailable = false;
-        state = DEFAULT;
+— Sara`,
+        expected: {
+          requiredStatus:"Open",
+          requiredAssignee:"Myself",
+          keywords:["apologize","reset","session","cache","incognito","confirm"],
+          sections:["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
+        },
+        messages:[{id:uid(),author:"sara@brand.co",ts:now-26*3600e3,body:"Reset worked but still cannot log in."}],
+        attempts:[], grade:null
       }
+    ]
+  };
+  </script>
+
+  <!-- Main app script -->
+  <script>
+  (()=>{
+    function load(){ try{ return JSON.parse(localStorage.getItem(STORE) || "null"); }catch{return null;} }
+    function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+    async function sha256B64(s){ const enc=new TextEncoder().encode(s); const buf=await crypto.subtle.digest("SHA-256",enc); return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+    function randSalt(n=16){ const a=new Uint8Array(n); crypto.getRandomValues(a); return btoa(String.fromCharCode(...a)); }
+    function getPass(){ try{ return JSON.parse(localStorage.getItem(PASS)||"null"); }catch{return null; } }
+    function setPass(rec){ localStorage.setItem(PASS, JSON.stringify(rec)); }
+    async function requireTrainer(){
+      const rec=getPass();
+      if(!rec){ if(!confirm("No trainer password set. Set now?")) return false; return await setTrainerPassword(); }
+      const input=prompt("Enter trainer password:"); if(input===null) return false;
+      const ok = (await sha256B64(rec.salt+input))===rec.hashB64; if(!ok) alert("Incorrect password.");
+      return ok;
     }
-    renderAll(); showList();
-  }
+    async function setTrainerPassword(){
+      const p1=prompt("Set trainer password:"); if(!p1) return false;
+      const p2=prompt("Confirm password:"); if(p1!==p2){ alert("Passwords do not match."); return false; }
+      const salt=randSalt(); const hashB64=await sha256B64(salt+p1); setPass({salt,hashB64}); alert("Trainer password set."); trainer=true; refreshRole(); return true;
+    }
 
-  // ---------- Events ----------
-  unlockBtn.onclick = async ()=>{
-    const rec=getPass();
-    if(!rec){ const ok=await setTrainerPassword(); if(!ok) return; }
-    else { const ok=await requireTrainer(); if(!ok) return; trainer=true; refreshRole(); }
-  };
+    let state = load() || DEFAULT;
+    let trainer = false;
+    let currentId = null;
 
-  exportBtn.onclick = ()=>{
-    const blob = new Blob([JSON.stringify(state, null, 2)],{type:"application/json"});
-    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sop_scenarios.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  };
+    // elements
+    const roleLbl = document.getElementById("roleLbl");
+    const unlockBtn = document.getElementById("unlockBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const importBtn = document.getElementById("importBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const newTicketBtn = document.getElementById("newTicketBtn");
+    const editRubricBtn = document.getElementById("editRubricBtn");
+    const fileInput = document.getElementById("fileInput");
 
-  importBtn.onclick = async ()=>{
-    if(!(trainer && await requireTrainer())) return;
-    fileInput.click();
-  };
-  fileInput.onchange = (e)=>{
-    const f=e.target.files[0]; if(!f) return;
-    const r=new FileReader();
-    r.onload=()=>{ try{ const data=JSON.parse(r.result);
-      if(!Array.isArray(data.tickets)||!data.weights) throw new Error("bad");
-      state=data; save(); renderAll(); showList(); alert("Imported ✅");
-    }catch{ alert("Invalid JSON"); } finally { e.target.value=""; } };
-    r.readAsText(f);
-  };
+    const list = document.getElementById("list");
+    const detail = document.getElementById("detail");
+    const countLbl = document.getElementById("countLbl");
+    const fStatus = document.getElementById("fStatus");
+    const fChannel = document.getElementById("fChannel");
+    const searchBox = document.getElementById("searchBox");
 
-  resetBtn.onclick = async ()=>{
-    if(!(trainer && await requireTrainer())) return;
-    if(!confirm("Reset scenarios to defaults (local view only)?")) return;
-    localStorage.removeItem(STORE);
-    state=null; await boot();
-  };
+    const backBtn = document.getElementById("backBtn");
+    const editTicketBtn = document.getElementById("editTicketBtn");
+    const deleteBtn = document.getElementById("deleteBtn");
+    const dSubject = document.getElementById("dSubject");
+    const dRequester = document.getElementById("dRequester");
+    const dCreated = document.getElementById("dCreated");
+    const dExpected = document.getElementById("dExpected");
+    const trainerHint = document.getElementById("trainerHint");
+    const dStatus = document.getElementById("dStatus");
+    const dAssignee = document.getElementById("dAssignee");
+    const thread = document.getElementById("thread");
+    const replyBox = document.getElementById("replyBox");
+    const macroBtn = document.getElementById("macroBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const solveBtn = document.getElementById("solveBtn");
+    const gradeBtn = document.getElementById("gradeBtn");
+    const gradeTable = document.querySelector("#gradeTable tbody");
+    const scoreLbl = document.getElementById("scoreLbl");
+    const passLbl  = document.getElementById("passLbl");
 
-  newTicketBtn.onclick = async ()=>{
-    if(!trainer){ alert("Trainer only"); return; }
-    const id=uid();
-    editing = { id, subject:"New scenario", requester:"user@example.com", channel:"Email", createdAt:Date.now(), status:"Open", assignee:"Unassigned",
-      assigneeOptions:["Myself","Billing Team","Tech Team"],
-      message:"Customer message here...",
-      expected:{ requiredStatus:"Open", requiredAssignee:"Myself", keywords:[], sections:[] },
-      messages:[], attempts:[], grade:null
+    const kSolved = document.getElementById("kSolved");
+    const kOpen = document.getElementById("kOpen");
+    const kAvg = document.getElementById("kAvg");
+
+    const ticketDlg = document.getElementById("ticketDlg");
+    const tSub = document.getElementById("tSub");
+    const tReq = document.getElementById("tReq");
+    const tChan = document.getElementById("tChan");
+    const tAssignees = document.getElementById("tAssignees");
+    const tMsg = document.getElementById("tMsg");
+    const tReqStatus = document.getElementById("tReqStatus");
+    const tReqAssignee = document.getElementById("tReqAssignee");
+    const tKeywords = document.getElementById("tKeywords");
+    const tSections = document.getElementById("tSections");
+    const saveTicketBtn = document.getElementById("saveTicketBtn");
+
+    const rubricDlg = document.getElementById("rubricDlg");
+    const wKeywords = document.getElementById("wKeywords");
+    const wSections = document.getElementById("wSections");
+    const wStatus   = document.getElementById("wStatus");
+    const wAssignee = document.getElementById("wAssignee");
+    const wPass     = document.getElementById("wPass");
+    const wKeywordsVal = document.getElementById("wKeywordsVal");
+    const wSectionsVal = document.getElementById("wSectionsVal");
+    const wStatusVal   = document.getElementById("wStatusVal");
+    const wAssigneeVal = document.getElementById("wAssigneeVal");
+    const wPassVal     = document.getElementById("wPassVal");
+
+    // events
+    unlockBtn.onclick = async ()=>{
+      const rec=getPass();
+      if(!rec){ const ok=await setTrainerPassword(); if(!ok) return; }
+      else { const ok=await requireTrainer(); if(!ok) return; trainer=true; refreshRole(); }
     };
-    openTicketEditor(editing, true);
-  };
+    exportBtn.onclick = ()=>{
+      const blob = new Blob([JSON.stringify(state, null, 2)],{type:"application/json"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sop_scenarios.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    };
+    importBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      fileInput.click();
+    };
+    fileInput.onchange = (e)=>{
+      const f=e.target.files[0]; if(!f) return;
+      const r=new FileReader();
+      r.onload=()=>{ try{ const data=JSON.parse(r.result);
+        if(!Array.isArray(data.tickets)||!data.weights) throw new Error("bad");
+        state=data; save(); renderAll(); showList(); alert("Imported ✅");
+      }catch{ alert("Invalid JSON"); } finally { e.target.value=""; } };
+      r.readAsText(f);
+    };
+    resetBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      if(!confirm("Reset scenarios to factory defaults?")) return;
+      localStorage.removeItem(STORE); state = DEFAULT; renderAll(); showList();
+    };
+    newTicketBtn.onclick = async ()=>{
+      if(!trainer){ alert("Trainer only"); return; }
+      const id=uid();
+      editing = { id, subject:"New scenario", requester:"user@example.com", channel:"Email", createdAt:Date.now(), status:"Open", assignee:"Unassigned",
+        assigneeOptions:["Myself","Billing Team","Tech Team"],
+        message:"Customer message here...",
+        expected:{ requiredStatus:"Open", requiredAssignee:"Myself", keywords:[], sections:[] },
+        messages:[], attempts:[], grade:null
+      };
+      openTicketEditor(editing, true);
+    };
+    editRubricBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      openRubricEditor();
+    };
 
-  editRubricBtn.onclick = async ()=>{
-    if(!(trainer && await requireTrainer())) return;
-    openRubricEditor();
-  };
+    fStatus.onchange = renderList; fChannel.onchange = renderList; searchBox.oninput = renderList;
+    backBtn.onclick = showList;
+    editTicketBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      const t = getCurrent(); openTicketEditor(t, false);
+    };
+    deleteBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      const t=getCurrent(); if(!t) return;
+      if(!confirm("Delete this ticket?")) return;
+      state.tickets = state.tickets.filter(x=>x.id!==t.id);
+      save(); showList(); renderAll();
+    };
+    macroBtn.onclick = ()=>{
+      const add = "Thanks for reaching out! Could you share a screenshot and confirm your account email?";
+      replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
+    };
+    sendBtn.onclick = ()=>{
+      const t=getCurrent(); if(!t) return;
+      const text=replyBox.value.trim(); if(!text) return;
+      const msg = {id:uid(), author:"Trainee", ts:Date.now(), body:text};
+      t.messages.push(msg); t.attempts.push({ts:msg.ts, reply:text, status:t.status, assignee:t.assignee||"Unassigned"});
+      if(!t.firstAgentReplyAt) t.firstAgentReplyAt = msg.ts;
+      replyBox.value=""; save(); openDetail(t.id);
+    };
+    solveBtn.onclick = ()=>{
+      const t=getCurrent(); if(!t) return;
+      t.status="Solved"; save(); openDetail(t.id);
+    };
+    dStatus.onchange = ()=>{ const t=getCurrent(); if(!t) return; t.status=dStatus.value; save(); renderList(); };
+    dAssignee.onchange = ()=>{ const t=getCurrent(); if(!t) return; t.assignee=dAssignee.value; save(); };
+    gradeBtn.onclick = ()=>{
+      const t=getCurrent(); if(!t) return;
+      const latest = t.attempts[t.attempts.length-1] || {reply:"",status:t.status,assignee:t.assignee||"Unassigned"};
+      const report = window.gradeAttempt(t, latest, state.weights); // from grader.js
+      t.grade = report; save();
+      renderGrade(report); renderStats(); renderList();
+    };
 
-  fStatus.onchange = renderList; fChannel.onchange = renderList; searchBox.oninput = renderList;
-  backBtn.onclick = showList;
-
-  editTicketBtn.onclick = async ()=>{
-    if(!(trainer && await requireTrainer())) return;
-    const t = getCurrent(); openTicketEditor(t, false);
-  };
-
-  deleteBtn.onclick = async ()=>{
-    if(!(trainer && await requireTrainer())) return;
-    const t=getCurrent(); if(!t) return;
-    if(!confirm("Delete this ticket (local only)?")) return;
-    state.tickets = state.tickets.filter(x=>x.id!==t.id);
-    save(); showList(); renderAll();
-  };
-
-  macroBtn.onclick = ()=>{
-    const add = "Thanks for reaching out! Could you share a screenshot and confirm your account email?";
-    replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
-  };
-
-  sendBtn.onclick = ()=>{
-    const t=getCurrent(); if(!t) return;
-    const text=replyBox.value.trim(); if(!text) return;
-    const msg = {id:uid(), author:"Trainee", ts:Date.now(), body:text};
-    t.messages.push(msg); t.attempts.push({ts:msg.ts, reply:text, status:t.status, assignee:t.assignee||"Unassigned"});
-    if(!t.firstAgentReplyAt) t.firstAgentReplyAt = msg.ts;
-    replyBox.value=""; save(); openDetail(t.id);
-  };
-
-  solveBtn.onclick = ()=>{
-    const t=getCurrent(); if(!t) return;
-    t.status="Solved"; save(); openDetail(t.id);
-  };
-
-  dStatus.onchange = ()=>{ const t=getCurrent(); if(!t) return; t.status=dStatus.value; save(); renderList(); };
-  dAssignee.onchange = ()=>{ const t=getCurrent(); if(!t) return; t.assignee=dAssignee.value; save(); };
-
-  gradeBtn.onclick = async ()=>{
-    const t=getCurrent(); if(!t) return;
-    const latest = t.attempts[t.attempts.length-1] || {reply:"",status:t.status,assignee:t.assignee||"Unassigned"};
-
-    // Prefer API grading; fallback to local grader if API missing
-    let report = null;
-    if (apiAvailable) {
-      try {
-        const r = await fetch('/api/grade', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({
-            reply: latest.reply,
-            status: latest.status,
-            assignee: latest.assignee,
-            expected: t.expected,
-            weights: state.weights
-          })
-        });
-        if (!r.ok) throw new Error('grade API error');
-        report = await r.json();
-      } catch {
-        apiAvailable = false;
+    // rendering
+    function renderAll(){ renderList(); renderStats(); refreshRole(); passLbl.textContent = state.weights.pass + "/100"; }
+    function refreshRole(){
+      roleLbl.textContent = trainer ? "Trainer mode" : "Trainee mode";
+      document.getElementById("editRubricBtn").disabled = !trainer;
+      document.getElementById("newTicketBtn").disabled = !trainer;
+      trainerHint.style.display = trainer ? "block" : "none";
+      document.querySelectorAll("#editTicketBtn,#deleteBtn").forEach(btn=>btn.disabled=!trainer);
+    }
+    function filtered(){
+      const q=(searchBox.value||"").toLowerCase();
+      return state.tickets.filter(t=>{
+        const okS = fStatus.value==="All"||t.status===fStatus.value;
+        const okC = fChannel.value==="All"||t.channel===fChannel.value;
+        const text = (t.subject+" "+t.message+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
+        const okQ = !q || text.includes(q);
+        return okS && okC && okQ;
+      });
+    }
+    function renderList(){
+      const items = filtered();
+      countLbl.textContent = `${items.length} tickets`;
+      list.innerHTML = items.map(t=>`
+        <div class="row" data-id="${t.id}">
+          <div class="avatar">📨</div>
+          <div style="flex:1;min-width:0">
+            <div class="small" style="display:flex;align-items:center;gap:8px">
+              <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
+              <span class="pill">${esc(t.channel)}</span>
+              ${t.grade?`<span class="badge">${t.grade.score.toFixed(0)}/100</span>`:""}
+            </div>
+            <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
+          </div>
+          <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
+        </div>
+      `).join("");
+      [...list.querySelectorAll(".row")].forEach(el=>el.onclick=()=>openDetail(el.dataset.id));
+      if(items.length===0){
+        list.innerHTML = `<div style="padding:48px;text-align:center;color:var(--muted)">
+          <div style="font-size:48px;margin-bottom:8px">👨‍✈️</div>
+          <div style="font-weight:700">No tickets</div><div class="small">Work you're assigned will appear here.</div></div>`;
       }
     }
-    if (!report) {
-      report = localGrade(t, latest); // safe fallback
+    function openDetail(id){
+      currentId=id;
+      const t=state.tickets.find(x=>x.id===id); if(!t) return;
+      document.getElementById("list").classList.add("hidden");
+      detail.classList.remove("hidden");
+      dSubject.textContent = t.subject;
+      dRequester.textContent = t.requester||"—";
+      dCreated.textContent = fmt(new Date(t.createdAt));
+      dStatus.value = t.status;
+      renderAssigneeOptions(t);
+      dAssignee.value = t.assignee||"Unassigned";
+      dExpected.textContent = trainer ? expectedPreview(t) : "—";
+      replyBox.value = "";
+      thread.innerHTML = "";
+      t.messages.forEach(m=>{
+        const d=document.createElement("div"); d.className="bubble";
+        d.innerHTML = `<div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
+          <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>`;
+        thread.appendChild(d);
+      });
+      renderGrade(t.grade || null);
     }
-
-    t.grade = report; save();
-    renderGrade(report); renderStats(); renderList();
-  };
-
-  // ---------- Rendering ----------
-  function renderAll(){ renderList(); renderStats(); refreshRole(); passLbl.textContent = state.weights.pass + "/100"; }
-  function refreshRole(){
-    roleLbl.textContent = trainer ? "Trainer mode" : "Trainee mode";
-    document.getElementById("editRubricBtn").disabled = !trainer;
-    document.getElementById("newTicketBtn").disabled = !trainer;
-    trainerHint.style.display = trainer ? "block" : "none";
-    document.querySelectorAll("#editTicketBtn,#deleteBtn").forEach(btn=>btn.disabled=!trainer);
-  }
-
-  function filtered(){
-    const q=(searchBox.value||"").toLowerCase();
-    return state.tickets.filter(t=>{
-      const okS = fStatus.value==="All"||t.status===fStatus.value;
-      const okC = fChannel.value==="All"||t.channel===fChannel.value;
-      const text = (t.subject+" "+t.message+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
-      const okQ = !q || text.includes(q);
-      return okS && okC && okQ;
-    });
-  }
-
-  function renderList(){
-    const items = filtered();
-    countLbl.textContent = `${items.length} tickets`;
-    list.innerHTML = items.map(t=>`
-      <div class="row" data-id="${t.id}">
-        <div class="avatar">📨</div>
-        <div style="flex:1;min-width:0">
-          <div class="small" style="display:flex;align-items:center;gap:8px">
-            <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
-            <span class="pill">${esc(t.channel)}</span>
-            ${t.grade?`<span class="badge">${t.grade.score.toFixed(0)}/100</span>`:""}
-          </div>
-          <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
-        </div>
-        <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
-      </div>
-    `).join("");
-    [...list.querySelectorAll(".row")].forEach(el=>el.onclick=()=>openDetail(el.dataset.id));
-    if(items.length===0){
-      list.innerHTML = `<div style="padding:48px;text-align:center;color:var(--muted)">
-        <div style="font-size:48px;margin-bottom:8px">👨‍✈️</div>
-        <div style="font-weight:700">No tickets</div><div class="small">Work you're assigned will appear here.</div></div>`;
+    function renderAssigneeOptions(t){
+      const defaults = ["Unassigned","Myself","Billing Team","Tech Team"];
+      const custom = Array.isArray(t.assigneeOptions)? t.assigneeOptions : [];
+      const opts = Array.from(new Set([...defaults, ...custom]));
+      dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
     }
-  }
-
-  function openDetail(id){
-    currentId=id;
-    const t=state.tickets.find(x=>x.id===id); if(!t) return;
-    document.getElementById("list").classList.add("hidden");
-    detail.classList.remove("hidden");
-    dSubject.textContent = t.subject;
-    dRequester.textContent = t.requester||"—";
-    dCreated.textContent = fmt(new Date(t.createdAt));
-    dStatus.value = t.status;
-    renderAssigneeOptions(t);
-    dAssignee.value = t.assignee||"Unassigned";
-    dExpected.textContent = trainer ? expectedPreview(t) : "—";
-    replyBox.value = "";
-
-    thread.innerHTML = "";
-    t.messages.forEach(m=>{
-      const d=document.createElement("div"); d.className="bubble";
-      d.innerHTML = `<div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
-        <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>`;
-      thread.appendChild(d);
-    });
-
-    renderGrade(t.grade || null);
-  }
-
-  function renderAssigneeOptions(t){
-    const defaults = ["Unassigned","Myself","Billing Team","Tech Team"];
-    const custom = Array.isArray(t.assigneeOptions)? t.assigneeOptions : [];
-    const opts = Array.from(new Set([...defaults, ...custom]));
-    dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
-  }
-
-  function showList(){
-    detail.classList.add("hidden");
-    document.getElementById("list").classList.remove("hidden");
-    renderList();
-  }
-
-  // ---------- Local fallback grader (mirrors API) ----------
-  function localGrade(ticket, attempt){
-    const w = state.weights;
-    const result = { checks:[], score:0, pass:false };
-    const reply = (attempt.reply||"").toLowerCase();
-
-    const need = (ticket.expected.keywords||[]).map(k=>k.toLowerCase());
-    const found = need.filter(k=> reply.includes(k));
-    const kwPct = need.length? (found.length/need.length):1;
-    result.checks.push({label:`Ticket response keywords (${found.length}/${need.length})`, ok: kwPct===1, detail: need.map(k=>`${reply.includes(k)?"✅":"❌"} ${k}`).join(", ")});
-
-    const sections = (ticket.expected.sections||[]).map(s=>s.toLowerCase());
-    let orderOk = true, lastIdx=-1, missing=[];
-    for(const sec of sections){
-      const idx = reply.indexOf(sec);
-      if(idx===-1){ missing.push(sec); orderOk=false; continue; }
-      if(idx<lastIdx){ orderOk=false; }
-      lastIdx = idx;
+    function showList(){ detail.classList.add("hidden"); document.getElementById("list").classList.remove("hidden"); renderList(); }
+    function renderGrade(report){
+      gradeTable.innerHTML = ""; scoreLbl.textContent = "0/100";
+      if(!report){ return; }
+      for(const c of report.checks){
+        const tr=document.createElement("tr");
+        tr.innerHTML = `<td class="small">${esc(c.label)}<div class="muted small">${esc(c.detail||"")}</div></td>
+                        <td class="small ${c.ok?"ok":"fail"}">${c.ok?"✅ Pass":"❌ Fail"}</td>`;
+        gradeTable.appendChild(tr);
+      }
+      scoreLbl.textContent = `${report.score.toFixed(0)}/100 ${report.pass?"• ✅ Pass":"• ❌ Fail"}`;
     }
-    let sectionPct = 1;
-    if(sections.length){
-      const present = sections.length - missing.length;
-      sectionPct = present/sections.length * (orderOk?1:0.8);
-    }
-    result.checks.push({label:`Response structure (sections)`, ok: sectionPct===1, detail: sections.length? (missing.length?`Missing: ${missing.join(", ")}`:(orderOk?"OK":"Out of order")) : "Not required"});
-
-    const statusOk = (attempt.status===ticket.expected.requiredStatus);
-    result.checks.push({label:`Submit As is "${ticket.expected.requiredStatus}"`, ok: statusOk, detail:`Selected: ${attempt.status}`});
-
-    const assigneeOk = (attempt.assignee===ticket.expected.requiredAssignee);
-    result.checks.push({label:`Assignee is "${ticket.expected.requiredAssignee}"`, ok: assigneeOk, detail:`Selected: ${attempt.assignee}`});
-
-    const sum = Math.max(1, (w.keywords||0)+(w.sections||0)+(w.status||0)+(w.assignee||0));
-    const sKeywords = kwPct * 100 * (w.keywords||0)/sum;
-    const sSections = sectionPct * 100 * (w.sections||0)/sum;
-    const sStatus   = (statusOk?100:0) * (w.status||0)/sum;
-    const sAssignee = (assigneeOk?100:0) * (w.assignee||0)/sum;
-    result.score = sKeywords + sSections + sStatus + sAssignee;
-    result.pass = result.score >= (w.pass||0);
-
-    return result;
-  }
-
-  function renderGrade(report){
-    gradeTable.innerHTML = "";
-    scoreLbl.textContent = "0/100";
-    if(!report){ return; }
-    for(const c of report.checks){
-      const tr=document.createElement("tr");
-      tr.innerHTML = `<td class="small">${esc(c.label)}<div class="muted small">${esc(c.detail||"")}</div></td>
-                      <td class="small ${c.ok?"ok":"fail"}">${c.ok?"✅ Pass":"❌ Fail"}</td>`;
-      gradeTable.appendChild(tr);
-    }
-    scoreLbl.textContent = `${report.score.toFixed(0)}/100 ${report.pass?"• ✅ Pass":"• ❌ Fail"}`;
-  }
-
-  function expectedPreview(t){
-    const k = (t.expected.keywords||[]).join(", ");
-    const s = (t.expected.sections||[]).join(" > ");
-    return `Required Submit As: ${t.expected.requiredStatus}
+    function expectedPreview(t){
+      const k = (t.expected.keywords||[]).join(", ");
+      const s = (t.expected.sections||[]).join(" > ");
+      return `Required Submit As: ${t.expected.requiredStatus}
 Required Assignee: ${t.expected.requiredAssignee}
 Keywords: ${k || "—"}
 Sections: ${s || "—"}`;
-  }
-
-  // ---------- Ticket editor (local-only for now) ----------
-  let editing = null;
-  function openTicketEditor(t, isNew){
-    editing = structuredClone(t);
-    tSub.value = editing.subject||"";
-    tReq.value = editing.requester||"";
-    tChan.value = editing.channel||"Email";
-    tAssignees.value = (editing.assigneeOptions||["Myself","Billing Team","Tech Team"]).join(",");
-    tMsg.value = editing.message||"";
-    tReqStatus.value = editing.expected?.requiredStatus||"Open";
-    tReqAssignee.value = editing.expected?.requiredAssignee||"Myself";
-    tKeywords.value = (editing.expected?.keywords||[]).join(",");
-    tSections.value = (editing.expected?.sections||[]).join("\n");
-    ticketDlg.showModal();
-    saveTicketBtn.onclick = ()=>{
-      editing.subject = tSub.value.trim()||"Untitled";
-      editing.requester = tReq.value.trim()||"user@example.com";
-      editing.channel = tChan.value;
-      editing.assigneeOptions = tAssignees.value.split(",").map(s=>s.trim()).filter(Boolean);
-      editing.message = tMsg.value;
-      editing.expected = {
-        requiredStatus: tReqStatus.value,
-        requiredAssignee: tReqAssignee.value.trim()||"Myself",
-        keywords: tKeywords.value.split(",").map(s=>s.trim()).filter(Boolean),
-        sections: tSections.value.split("\n").map(s=>s.trim()).filter(Boolean)
+    }
+    let editing=null;
+    function openTicketEditor(t,isNew){
+      editing = structuredClone(t);
+      tSub.value = editing.subject||""; tReq.value = editing.requester||""; tChan.value = editing.channel||"Email";
+      tAssignees.value = (editing.assigneeOptions||["Myself","Billing Team","Tech Team"]).join(",");
+      tMsg.value = editing.message||"";
+      tReqStatus.value = editing.expected?.requiredStatus||"Open";
+      tReqAssignee.value = editing.expected?.requiredAssignee||"Myself";
+      tKeywords.value = (editing.expected?.keywords||[]).join(",");
+      tSections.value = (editing.expected?.sections||[]).join("\n");
+      ticketDlg.showModal();
+      saveTicketBtn.onclick = ()=>{
+        editing.subject = tSub.value.trim()||"Untitled";
+        editing.requester = tReq.value.trim()||"user@example.com";
+        editing.channel = tChan.value;
+        editing.assigneeOptions = tAssignees.value.split(",").map(s=>s.trim()).filter(Boolean);
+        editing.message = tMsg.value;
+        editing.expected = {
+          requiredStatus: tReqStatus.value,
+          requiredAssignee: tReqAssignee.value.trim()||"Myself",
+          keywords: tKeywords.value.split(",").map(s=>s.trim()).filter(Boolean),
+          sections: tSections.value.split("\n").map(s=>s.trim()).filter(Boolean)
+        };
+        if(isNew){ state.tickets.unshift(editing); }
+        else{ const idx=state.tickets.findIndex(x=>x.id===t.id); if(idx>=0) state.tickets[idx]=editing; }
+        save(); ticketDlg.close(); renderAll(); openDetail(editing.id);
       };
-      if(isNew){
-        state.tickets.unshift(editing);
-      }else{
-        const idx=state.tickets.findIndex(x=>x.id===t.id);
-        if(idx>=0) state.tickets[idx]=editing;
-      }
-      save(); ticketDlg.close(); renderAll(); openDetail(editing.id);
-    };
-  }
+    }
+    function openRubricEditor(){
+      const w = state.weights;
+      const set = ()=>{
+        wKeywords.value = w.keywords; wKeywordsVal.textContent = w.keywords + "%";
+        wSections.value = w.sections; wSectionsVal.textContent = w.sections + "%";
+        wStatus.value   = w.status;   wStatusVal.textContent   = w.status + "%";
+        wAssignee.value = w.assignee; wAssigneeVal.textContent = w.assignee + "%";
+        wPass.value     = w.pass;     wPassVal.textContent     = w.pass + "/100";
+      };
+      set();
+      const on = (el, key, valEl, suffix)=>{
+        el.oninput = ()=>{ state.weights[key] = Number(el.value)||0; valEl.textContent = el.value + suffix; save(); passLbl.textContent = state.weights.pass + "/100"; };
+      };
+      on(wKeywords, "keywords", wKeywordsVal, "%");
+      on(wSections, "sections", wSectionsVal, "%");
+      on(wStatus,   "status",   wStatusVal,   "%");
+      on(wAssignee, "assignee", wAssigneeVal, "%");
+      on(wPass,     "pass",     wPassVal,     "/100");
+      rubricDlg.showModal();
+    }
+    function renderStats(){
+      const weekAgo = Date.now()-7*24*3600e3;
+      const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
+      const open = state.tickets.filter(t=>t.status!=="Solved").length;
+      kSolved.textContent = solved; kOpen.textContent = open;
+      const graded = state.tickets.map(t=>t.grade?.score).filter(x=>typeof x==="number");
+      kAvg.textContent = graded.length? (graded.reduce((a,b)=>a+b,0)/graded.length).toFixed(0): "—";
+    }
+    function uid(){ return Math.random().toString(36).slice(2,9); }
+    function fmt(d){ return d.toLocaleString(); }
+    function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+    function getCurrent(){ return state.tickets.find(x=>x.id===currentId); }
+    function showList(){ detail.classList.add("hidden"); document.getElementById("list").classList.remove("hidden"); renderList(); }
+    refreshRole(); renderAll(); showList();
+  })();
+  </script>
 
-  // ---------- Rubric sliders ----------
-  function openRubricEditor(){
-    const w = state.weights;
-    const set = ()=>{
-      wKeywords.value = w.keywords; wKeywordsVal.textContent = w.keywords + "%";
-      wSections.value = w.sections; wSectionsVal.textContent = w.sections + "%";
-      wStatus.value   = w.status;   wStatusVal.textContent   = w.status + "%";
-      wAssignee.value = w.assignee; wAssigneeVal.textContent = w.assignee + "%";
-      wPass.value     = w.pass;     wPassVal.textContent     = w.pass + "/100";
-    };
-    set();
-    const on = (el, key, valEl, suffix)=>{
-      el.oninput = ()=>{ state.weights[key] = Number(el.value)||0; valEl.textContent = el.value + suffix; save(); passLbl.textContent = state.weights.pass + "/100"; };
-    };
-    on(wKeywords, "keywords", wKeywordsVal, "%");
-    on(wSections, "sections", wSectionsVal, "%");
-    on(wStatus,   "status",   wStatusVal,   "%");
-    on(wAssignee, "assignee", wAssigneeVal, "%");
-    on(wPass,     "pass",     wPassVal,     "/100");
-    rubricDlg.showModal();
-  }
-
-  // ---------- Stats ----------
-  function renderStats(){
-    const weekAgo = Date.now()-7*24*3600e3;
-    const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
-    const open = state.tickets.filter(t=>t.status!=="Solved").length;
-    kSolved.textContent = solved; kOpen.textContent = open;
-    const graded = state.tickets.map(t=>t.grade?.score).filter(x=>typeof x==="number");
-    kAvg.textContent = graded.length? (graded.reduce((a,b)=>a+b,0)/graded.length).toFixed(0): "—";
-  }
-
-  // ---------- Helpers & init ----------
-  function uid(){ return Math.random().toString(36).slice(2,9); }
-  function fmt(d){ return d.toLocaleString(); }
-  function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
-  function getCurrent(){ return state.tickets.find(x=>x.id===currentId); }
-
-  function showList(){ detail.classList.add("hidden"); list.classList.remove("hidden"); renderList(); }
-
-  let currentId = null;
-  backBtn.onclick = showList;
-
-  // Go!
-  boot();
-})();
-</script>
+  <!-- The grader is split into its own file -->
+  <script src="grader.js"></script>
 </body>
 </html>
