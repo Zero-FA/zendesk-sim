@@ -288,25 +288,69 @@ Sign-off"></textarea>
   <script>
   (()=>{
 
-    // --- storage & auth helpers ---
-    function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
-    async function sha256B64(s){ const enc=new TextEncoder().encode(s); const buf=await crypto.subtle.digest("SHA-256",enc); return btoa(String.fromCharCode(...new Uint8Array(buf))); }
-    function randSalt(n=16){ const a=new Uint8Array(n); crypto.getRandomValues(a); return btoa(String.fromCharCode(...a)); }
-    function getPass(){ try{ return JSON.parse(localStorage.getItem(PASS)||"null"); }catch{return null;} }
-    function setPass(rec){ localStorage.setItem(PASS, JSON.stringify(rec)); }
-    async function requireTrainer(){
-      const rec=getPass();
-      if(!rec){ if(!confirm("No trainer password set. Set now?")) return false; return await setTrainerPassword(); }
-      const input=prompt("Enter trainer password:"); if(input===null) return false;
-      const ok = (await sha256B64(rec.salt+input))===rec.hashB64; if(!ok) alert("Incorrect password.");
-      return ok;
-    }
-async function setTrainerPassword(){
-  const p1 = "adminapex01"; // hard-coded password
+// --- storage & auth helpers ---
+function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+
+async function sha256B64(s){
+  const enc = new TextEncoder().encode(s);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+
+function randSalt(n=16){
+  const a = new Uint8Array(n);
+  crypto.getRandomValues(a);
+  return btoa(String.fromCharCode(...a));
+}
+
+function getPass(){
+  try { return JSON.parse(localStorage.getItem(PASS) || "null"); }
+  catch { return null; }
+}
+
+function setPass(rec){
+  localStorage.setItem(PASS, JSON.stringify(rec));
+}
+
+/**
+ * Sets the trainer password to a fixed value IF none exists yet.
+ * Does NOT overwrite an existing password.
+ */
+async function ensureTrainerPassword(){
+  if (getPass()) return; // already set, do nothing
+  const fixed = "adminapex01";               // <= your hard-coded password
   const salt = randSalt();
-  const hashB64 = await sha256B64(salt + p1);
-  setPass({salt, hashB64});
-  alert("Trainer password set to hard-coded value.");
+  const hashB64 = await sha256B64(salt + fixed);
+  setPass({ salt, hashB64 });
+  // Optional: console.log to confirm without UI noise
+  console.log("Trainer password initialized.");
+}
+
+/**
+ * Legacy function kept for compatibility.
+ * You can still call this to force-reset the password from code if needed.
+ */
+async function setTrainerPassword(){
+  const fixed = "adminapex01";               // <= your hard-coded password
+  const salt = randSalt();
+  const hashB64 = await sha256B64(salt + fixed);
+  setPass({ salt, hashB64 });
+  alert("Trainer password set.");
+}
+
+/**
+ * Gate to enter trainer mode.
+ * - Ensures a password exists (auto-sets if missing)
+ * - Prompts for the password and verifies it
+ */
+async function requireTrainer(){
+  await ensureTrainerPassword();              // make sure a pass exists
+  const rec = getPass();
+  const input = prompt("Enter trainer password:");
+  if (input === null) return false;
+  const ok = (await sha256B64(rec.salt + input)) === rec.hashB64;
+  if (!ok) alert("Incorrect password.");
+  return ok;
 }
 
     // --- state (already defined in previous script) ---
