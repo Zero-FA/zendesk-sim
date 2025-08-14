@@ -5,547 +5,610 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>SOP Simulator — Trainee</title>
 <style>
-  :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+:root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
 
-  /* top bar */
-  .top{height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;background:#fff;border-bottom:1px solid var(--line)}
-  .brand{display:flex;gap:8px;align-items:center}
-  .logo{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+/* top bar */
+.top{height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;background:#fff;border-bottom:1px solid var(--line)}
+.brand{display:flex;gap:8px;align-items:center}
+.logo{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
 
-  /* shell layout */
-  .layout{display:grid;gap:16px;grid-template-columns:220px 1fr;padding:16px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px}
-  .rail{padding:12px;display:flex;flex-direction:column}
-  .nav-label{font-size:12px;color:var(--muted);font-weight:600;margin:8px 0 6px}
-  .nav-item{padding:8px;border-radius:12px;display:flex;gap:8px;align-items:center}
-  .nav-item.active{background:#eef2f7;font-weight:600}
+/* shell layout */
+.layout{display:grid;gap:16px;grid-template-columns:220px 1fr;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.rail{padding:12px;display:flex;flex-direction:column}
+.nav-label{font-size:12px;color:var(--muted);font-weight:600;margin:8px 0 6px}
+.nav-item{padding:8px;border-radius:12px;display:flex;gap:8px;align-items:center}
+.nav-item.active{background:#eef2f7;font-weight:600}
 
-  /* controls */
-  .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:13px;cursor:pointer}
-  .btn:hover{background:#f8fafc}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.primary:hover{background:var(--accent2)}
-  .btn.danger{color:var(--warn);border-color:#fecaca}
-  .btn.danger:hover{background:#fef2f2}
-  .select,.input{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;background:#fff}
+/* controls */
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:13px;cursor:pointer}
+.btn:hover{background:#f8fafc}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent2)}
+.btn.danger{color:var(--warn);border-color:#fecaca}
+.btn.danger:hover{background:#fef2f2}
+.select,.input{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;background:#fff}
 
-  /* list */
-  .filters{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
-  .row{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
-  .row:hover{background:#f8fafc}
-  .avatar{width:36px;height:36px;border-radius:999px;background:#e5e7eb;display:grid;place-items:center;flex-shrink:0}
-  .pill{background:#eef2f7;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:11px}
-  .muted{color:var(--muted)}
-  .small{font-size:12px}
-  .bubble{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
-  .badge{font-size:11px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:999px}
-  .hidden{display:none}
+/* list */
+.filters{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
+.row{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:hover{background:#f8fafc}
+.avatar{width:36px;height:36px;border-radius:999px;background:#e5e7eb;display:grid;place-items:center;flex-shrink:0}
+.pill{background:#eef2f7;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:11px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.bubble{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+.badge{font-size:11px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:999px}
+.hidden{display:none}
 
-  /* reply box – vertical resize only */
-  textarea{
-    width:100%;
-    min-height:120px;
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:10px;
-    font:inherit;
-    resize:vertical;
-  }
+/* reply box – vertical resize only */
+textarea{
+width:100%;
+min-height:120px;
+border:1px solid var(--line);
+border-radius:12px;
+padding:10px;
+font:inherit;
+resize:vertical;
+}
 
-  .table{width:100%;border-collapse:collapse}
-  .table th,.table td{border-bottom:1px solid var(--line);padding:6px;text-align:left;font-size:12px}
-  .ok{color:#065f46}.fail{color:#991b1b}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border-bottom:1px solid var(--line);padding:6px;text-align:left;font-size:12px}
+.ok{color:#065f46}.fail{color:#991b1b}
 
-  /* responsive shell */
-  @media (max-width:1100px){.layout{grid-template-columns:1fr}}
+/* responsive shell */
+@media (max-width:1100px){.layout{grid-template-columns:1fr}}
 
-  /* ---------- Zendesk-ish detail layout ---------- */
-  .z-layout{display:grid;grid-template-columns:260px 1fr 300px;gap:16px;padding:12px}
-  .z-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
-  .z-left,.z-right{padding:12px}
-  .z-field{margin:8px 0}
-  .z-label{font-size:12px;color:var(--muted);margin-bottom:4px}
-  .z-value{font-size:12px}
-  .z-tags{display:flex;flex-wrap:wrap;gap:6px}
-  .z-tag{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:#f8fafc}
-  .z-main-head{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
-  .z-main-body{padding:12px}
-  .z-snap{border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:12px;color:var(--muted);margin-top:8px}
-  .composer{border-top:1px solid var(--line);padding:8px 12px}
+/* ---------- Zendesk-ish detail layout ---------- */
+.z-layout{display:grid;grid-template-columns:260px 1fr 300px;gap:16px;padding:12px}
+.z-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+.z-left,.z-right{padding:12px}
+.z-field{margin:8px 0}
+.z-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.z-value{font-size:12px}
+.z-tags{display:flex;flex-wrap:wrap;gap:6px}
+.z-tag{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:#f8fafc}
+.z-main-head{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+.z-main-body{padding:12px}
+.z-snap{border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:12px;color:var(--muted);margin-top:8px}
+.composer{border-top:1px solid var(--line);padding:8px 12px}
 </style>
 </head>
 <body>
-  <div class="top">
-    <div class="brand"><div class="logo">Z</div><div class="small muted">SOP Simulator (Trainee)</div></div>
-    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-      <button class="btn" id="resetBtn">Reset</button>
-    </div>
-  </div>
+<div class="top">
+<div class="brand"><div class="logo">Z</div><div class="small muted">SOP Simulator (Trainee)</div></div>
+<div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+<button class="btn" id="resetBtn">Reset</button>
+</div>
+</div>
 
-  <div class="layout">
-    <!-- LEFT RAIL -->
-    <aside class="rail card">
-      <div class="nav-label">Your work</div>
-      <div class="nav-item active"><span>📄</span><span>Tickets</span></div>
-      <div class="nav-label">Completed</div>
-      <div class="nav-item"><span>🗓️</span><span>Last 30 days</span></div>
-    </aside>
+<div class="layout">
+<!-- LEFT RAIL -->
+<aside class="rail card">
+<div class="nav-label">Your work</div>
+<div class="nav-item active"><span>📄</span><span>Tickets</span></div>
+<div class="nav-label">Completed</div>
+<div class="nav-item"><span>🗓️</span><span>Last 30 days</span></div>
+</aside>
 
-    <!-- CENTER -->
-    <main class="card">
-      <div class="filters">
-        <strong id="countLbl">0 tickets</strong>
-        <label class="small muted">Submit As
-          <select class="select" id="fStatus">
-            <option>All</option><option>Open</option><option>Pending</option><option>Solved</option>
-          </select>
-        </label>
-        <label class="small muted">Channel
-          <select class="select" id="fChannel">
-            <option>All</option><option>Email</option><option>Web</option><option>Chat</option>
-          </select>
-        </label>
-        <input id="searchBox" class="input" placeholder="Search subject or text"/>
-      </div>
+<!-- CENTER -->
+<main class="card">
+<div class="filters">
+<strong id="countLbl">0 tickets</strong>
+<label class="small muted">Submit As
+<select class="select" id="fStatus">
+<option>All</option><option>Open</option><option>Pending</option><option>Solved</option>
+</select>
+</label>
+<label class="small muted">Channel
+<select class="select" id="fChannel">
+<option>All</option><option>Email</option><option>Web</option><option>Chat</option>
+</select>
+</label>
+<input id="searchBox" class="input" placeholder="Search subject or text"/>
+</div>
 
-      <div id="list"></div>
+<div id="list"></div>
 
-      <!-- DETAIL (Zendesk-ish) -->
-      <div id="detail" class="hidden">
-        <div class="z-layout">
-          <!-- LEFT: fields -->
-          <aside class="z-left z-card">
-            <div class="z-field">
-              <div class="z-label">Assignee</div>
-              <select class="select" id="dAssignee"></select>
-            </div>
-            <div class="z-field">
-              <div class="z-label">Submit As</div>
-              <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
-            </div>
-            <div class="z-field">
-              <div class="z-label">Tags</div>
-              <div id="dTags" class="z-tags"></div>
-            </div>
-            <div class="z-field">
-              <div class="z-label">Category</div>
-              <div id="dCategory" class="z-value">—</div>
-            </div>
-            <div class="z-field">
-              <div class="z-label">Intent</div>
-              <div id="dIntent" class="z-value">—</div>
-            </div>
-            <div class="z-field">
-              <div class="z-label">Apex Account ID</div>
-              <div id="dAccount" class="z-value">—</div>
-            </div>
-            <div class="z-field">
-              <button class="btn" id="backBtn">← Back to list</button>
-            </div>
-          </aside>
+<!-- DETAIL (Zendesk-ish) -->
+<div id="detail" class="hidden">
+<div class="z-layout">
+<!-- LEFT: fields -->
+<aside class="z-left z-card">
+<div class="z-field">
+<div class="z-label">Assignee</div>
+<select class="select" id="dAssignee"></select>
+</div>
+<div class="z-field">
+<div class="z-label">Submit As</div>
+<select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
+</div>
+<div class="z-field">
+<div class="z-label">Tags</div>
+<div id="dTags" class="z-tags"></div>
+</div>
+<div class="z-field">
+<div class="z-label">Category</div>
+<div id="dCategory" class="z-value">—</div>
+</div>
+<div class="z-field">
+<div class="z-label">Intent</div>
+<div id="dIntent" class="z-value">—</div>
+</div>
+<div class="z-field">
+<div class="z-label">Apex Account ID</div>
+<div id="dAccount" class="z-value">—</div>
+</div>
+<div class="z-field">
+<button class="btn" id="backBtn">← Back to list</button>
+</div>
+</aside>
 
-          <!-- CENTER: thread + composer -->
-          <section class="z-card">
-            <div class="z-main-head">
-              <strong id="dSubject" style="font-weight:600"></strong>
-              <div style="margin-left:auto" class="small muted">
-                <span id="dRequester">—</span> • <span id="dCreated">—</span>
-              </div>
-            </div>
-            <div class="z-main-body">
-              <div id="thread"></div>
-              <div id="snapshots" class="z-snap hidden">No attachments</div>
-            </div>
-            <div class="composer">
-              <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
-              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
-                <button class="btn primary" id="submitBtn">Submit As</button>
-              </div>
-            </div>
-          </section>
+<!-- CENTER: thread + composer -->
+<section class="z-card">
+<div class="z-main-head">
+<strong id="dSubject" style="font-weight:600"></strong>
+<div style="margin-left:auto" class="small muted">
+<span id="dRequester">—</span> • <span id="dCreated">—</span>
+</div>
+</div>
+<div class="z-main-body">
+<div id="thread"></div>
+<div id="snapshots" class="z-snap hidden">No attachments</div>
+</div>
+<div class="composer">
+<textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+<button class="btn primary" id="submitBtn">Submit As</button>
+</div>
+</div>
+</section>
 
-          <!-- RIGHT: grader + stats -->
-          <aside class="z-right z-card">
-            <div class="small" style="font-weight:600">Auto-Grade</div>
-            <table class="table" id="gradeTable">
-              <thead><tr><th>Check</th><th>Result</th></tr></thead>
-              <tbody></tbody>
-            </table>
-            <div class="small" style="margin-top:8px">Score: <strong id="scoreLbl">0/100</strong></div>
-            <div class="small" style="margin-top:4px">Pass threshold: <strong id="passLbl"></strong></div>
-            <hr style="margin:12px 0;border:none;border-top:1px solid var(--line)"/>
-            <div class="small" style="font-weight:600">Ticket statistics</div>
-            <div class="kpi"><span class="muted small">Solved (7d): </span><span id="kSolved">0</span></div>
-            <div class="kpi"><span class="muted small">Open now: </span><span id="kOpen">0</span></div>
-            <div class="small" style="font-weight:600;margin-top:8px">QA average grade</div>
-            <div class="muted small">(auto-graded)</div>
-            <div style="font-size:24px;font-weight:800" id="kAvg">—</div>
-          </aside>
-        </div>
-      </div>
-    </main>
-  </div>
+<!-- RIGHT: grader + stats -->
+<aside class="z-right z-card">
+<div class="small" style="font-weight:600">Auto-Grade</div>
+<table class="table" id="gradeTable">
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="small" style="margin-top:8px">Score: <strong id="scoreLbl">0/100</strong></div>
+<div class="small" style="margin-top:4px">Pass threshold: <strong id="passLbl"></strong></div>
+<hr style="margin:12px 0;border:none;border-top:1px solid var(--line)"/>
+<div class="small" style="font-weight:600">Ticket statistics</div>
+<div class="kpi"><span class="muted small">Solved (7d): </span><span id="kSolved">0</span></div>
+<div class="kpi"><span class="muted small">Open now: </span><span id="kOpen">0</span></div>
+<div class="small" style="font-weight:600;margin-top:8px">QA average grade</div>
+<div class="muted small">(auto-graded)</div>
+<div style="font-size:24px;font-weight:800" id="kAvg">—</div>
+</aside>
+</div>
+</div>
+</main>
+</div>
 
 <!-- DEFAULT tickets & constants -->
 <script>
-(function () {
-  function uid(){ return Math.random().toString(36).slice(2,9); }
+function uid(){ return Math.random().toString(36).slice(2,9); }
 
-  const STORE = "sop_sim_state_v10";
-  const now   = Date.now();
-  const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
+const STORE = "sop_sim_state_v10";
+const now   = Date.now();
+const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
-  const DEFAULT = {
-    weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
-    tickets: [
-      {
+const DEFAULT = {
+weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
+tickets: [
+{
+id: uid(),
+subject: "Can't log in after password reset",
+requester: "sara@brand.co",
+channel: "Email",
+createdAt: now - 4 * 3600e3,
+status: "Open",
+assignee: "Myself",
+assigneeOptions: ALLOWED_ASSIGNEES,
+messages: [
+{ id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3,
+body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
+],
+expected: {
+requiredStatus: "Pending",
+requiredAssignee: "Myself",
+keywords: [
+// you can put full URLs here if you want them to paste the exact link:
+// "https://apextraderfunding.com/faq/password-reset"
+],
+sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
+},
+/* optional Zendesk-ish fields */
+tags: ["account_questions","language_en","sentiment_neutral"],
+category: "Support",
+intent: "Login Issue",
+accountId: "APEX-00001",
+attachments: [
+// { type:"image", url:"/assets/2fa-disabled.png" },
+// { type:"link",  url:"https://example.com/faq/login", title:"Login Troubleshooting" }
+],
+attempts: [],
+grade: null
+},
+{
+id: uid(),
+subject: "Refund for duplicate charge",
+requester: "customer@example.com",
+channel: "Email",
+createdAt: now - 30 * 3600e3,
+status: "Open",
+assignee: "Myself",
+assigneeOptions: ALLOWED_ASSIGNEES,
+messages: [
+{ id: uid(), author: "customer@example.com", ts: now - 30 * 3600e3,
+body: "I was double-charged this month. Can you refund the duplicate? Thanks!" }
+],
+expected: {
+requiredStatus: "Pending",
+requiredAssignee: "Payout",
+keywords: ["apologize","refund","duplicate","confirm","timeline"],
+sections: ["Greeting","Resolution","Next steps","Sign-off"]
+},
+tags: ["billing","intent_confidence_high"],
+category: "Billing",
+intent: "Refund - Duplicate",
+accountId: "APEX-92161-283",
+attachments: [
+{ type:"link", url:"https://apextraderfunding.com/faq/billing#duplicate-charge", title:"FAQ: Duplicate Charge" }
+],
+attempts: [],
+grade: null
+},
+{
         id: uid(),
-        subject: "Can't log in after password reset",
-        requester: "sara@brand.co",
+        subject: "Subject",
+        requester: "Email",
         channel: "Email",
         createdAt: now - 4 * 3600e3,
         status: "Open",
         assignee: "Myself",
         assigneeOptions: ALLOWED_ASSIGNEES,
         messages: [
-          {
-            id: uid(),
-            author: "sara@brand.co",
-            ts: now - 4 * 3600e3,
-            body: "Hi, I reset my password but still can’t log in..."
-          }
+          { id: uid(), author: "Email", ts: now - 4 * 3600e3,
+            body: "Message" }
         ],
         expected: {
-          requiredStatus: "Pending",
+          requiredStatus: "Solved",
           requiredAssignee: "Myself",
-          keywords: ["apologize","refund","duplicate","confirm","timeline"],
-          sections: ["Greeting","Resolution","Next steps","Sign-off"]
+          keywords: [],
+          sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
         },
-        tags: ["billing","intent_confidence_high"],
-        category: "Billing",
-        intent: "Refund - Duplicate",
-        accountId: "APEX-92161-283",
-        attachments: [
-          // Use a real public HTTPS image URL here:
-          { type: "image", url: "https://yourhost.com/path/screenshot.png", title: "Screenshot of error" }
-        ],
+        /* optional Zendesk-ish fields */
+        tags: ["account_questions","language_en","sentiment_neutral"],
+        category: "Support",
+        intent: "Issue",
+        accountId: "Fake APEX ID",
+attachments: [
+  {
+    type: "image",
+    url: "file:///C:/Users/48thw/Pictures/Screenpresso/2025-08-14_08h45_40.png",
+    title: "Screenshot of error"
+  }
+]
         attempts: [],
         grade: null
       }
-    ]
-  };
+]
+};
 
-  // expose to global so other scripts can use them
-  window.uid = uid;
-  window.STORE = STORE;
-  window.ALLOWED_ASSIGNEES = ALLOWED_ASSIGNEES;
-  window.DEFAULT = DEFAULT;
-})();
+// seed or load state
+let state = null;
+try { state = JSON.parse(localStorage.getItem(STORE) || "null"); } catch {}
+if (!state || !Array.isArray(state.tickets)) {
+state = structuredClone(DEFAULT);
+localStorage.setItem(STORE, JSON.stringify(state));
+}
 </script>
 
 <!-- Main app script -->
 <script>
 (() => {
-  // --- helpers / storage ---
-  function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
-  function fmt(d){ return d.toLocaleString(); }
-  function esc(s){
-    return String(s).replace(/[&<>"']/g, c => ({
-      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[c]));
-  }
+// --- helpers / storage ---
+function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+function fmt(d){ return d.toLocaleString(); }
+function esc(s){
+return String(s).replace(/[&<>"']/g, c => ({
+'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
+}
 
-  // --- elements ---
-  const list = document.getElementById("list");
-  const detail = document.getElementById("detail");
-  const countLbl = document.getElementById("countLbl");
-  const fStatus = document.getElementById("fStatus");
-  const fChannel = document.getElementById("fChannel");
-  const searchBox = document.getElementById("searchBox");
+// --- elements ---
+const list = document.getElementById("list");
+const detail = document.getElementById("detail");
+const countLbl = document.getElementById("countLbl");
+const fStatus = document.getElementById("fStatus");
+const fChannel = document.getElementById("fChannel");
+const searchBox = document.getElementById("searchBox");
 
-  const backBtn = document.getElementById("backBtn");
-  const dSubject = document.getElementById("dSubject");
-  const dRequester = document.getElementById("dRequester");
-  const dCreated = document.getElementById("dCreated");
-  const dStatus = document.getElementById("dStatus");
-  const dAssignee = document.getElementById("dAssignee");
-  const dTags = document.getElementById("dTags");
-  const dCategory = document.getElementById("dCategory");
-  const dIntent = document.getElementById("dIntent");
-  const dAccount = document.getElementById("dAccount");
-  const thread = document.getElementById("thread");
-  const snapshots = document.getElementById("snapshots");
-  const replyBox = document.getElementById("replyBox");
-  const submitBtn = document.getElementById("submitBtn");
+const backBtn = document.getElementById("backBtn");
+const dSubject = document.getElementById("dSubject");
+const dRequester = document.getElementById("dRequester");
+const dCreated = document.getElementById("dCreated");
+const dStatus = document.getElementById("dStatus");
+const dAssignee = document.getElementById("dAssignee");
+const dTags = document.getElementById("dTags");
+const dCategory = document.getElementById("dCategory");
+const dIntent = document.getElementById("dIntent");
+const dAccount = document.getElementById("dAccount");
+const thread = document.getElementById("thread");
+const snapshots = document.getElementById("snapshots");
+const replyBox = document.getElementById("replyBox");
+const submitBtn = document.getElementById("submitBtn");
 
-  const gradeTable = document.querySelector("#gradeTable tbody");
-  const scoreLbl = document.getElementById("scoreLbl");
-  const passLbl  = document.getElementById("passLbl");
+const gradeTable = document.querySelector("#gradeTable tbody");
+const scoreLbl = document.getElementById("scoreLbl");
+const passLbl  = document.getElementById("passLbl");
 
-  const kSolved = document.getElementById("kSolved");
-  const kOpen = document.getElementById("kOpen");
-  const kAvg = document.getElementById("kAvg");
+const kSolved = document.getElementById("kSolved");
+const kOpen = document.getElementById("kOpen");
+const kAvg = document.getElementById("kAvg");
 
-  const resetBtn = document.getElementById("resetBtn");
+const resetBtn = document.getElementById("resetBtn");
 
-  let currentId = null;
+let currentId = null;
 
-  // --- stats ---
-  function renderStats(){
-    const weekAgo = Date.now() - 7*24*3600e3;
-    const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
-    const open = state.tickets.filter(t=>t.status!=="Solved").length;
-    kSolved.textContent = solved;
-    kOpen.textContent = open;
-    const graded = state.tickets.map(t=>t.grade?.score).filter(x=>typeof x==="number");
-    kAvg.textContent = graded.length? (graded.reduce((a,b)=>a+b,0)/graded.length).toFixed(0): "—";
-  }
+// --- stats ---
+function renderStats(){
+const weekAgo = Date.now() - 7*24*3600e3;
+const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
+const open = state.tickets.filter(t=>t.status!=="Solved").length;
+kSolved.textContent = solved;
+kOpen.textContent = open;
+const graded = state.tickets.map(t=>t.grade?.score).filter(x=>typeof x==="number");
+kAvg.textContent = graded.length? (graded.reduce((a,b)=>a+b,0)/graded.length).toFixed(0): "—";
+}
 
-  // --- filters / list ---
-  function filtered(){
-    const q=(searchBox.value||"").toLowerCase();
-    return state.tickets.filter(t=>{
-      const okS = fStatus.value==="All"||t.status===fStatus.value;
-      const okC = fChannel.value==="All"||t.channel===fChannel.value;
-      const text = (t.subject+" "+t.requester+" "+t.messages.map(m=>m.body).join(" ")+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
-      const okQ = !q || text.includes(q);
-      return okS && okC && okQ;
-    });
-  }
+// --- filters / list ---
+function filtered(){
+const q=(searchBox.value||"").toLowerCase();
+return state.tickets.filter(t=>{
+const okS = fStatus.value==="All"||t.status===fStatus.value;
+const okC = fChannel.value==="All"||t.channel===fChannel.value;
+const text = (t.subject+" "+t.requester+" "+t.messages.map(m=>m.body).join(" ")+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
+const okQ = !q || text.includes(q);
+return okS && okC && okQ;
+});
+}
 
-  function renderList(){
-    const items = filtered();
-    countLbl.textContent = `${items.length} tickets`;
-    list.innerHTML = items.map(t=>`
-      <div class="row" data-id="${t.id}">
-        <div class="avatar">📨</div>
-        <div style="flex:1;min-width:0">
-          <div class="small" style="display:flex;align-items:center;gap:8px">
-            <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
-            <span class="pill">${esc(t.channel)}</span>
-            ${t.grade?`<span class="badge">${t.grade.score.toFixed(0)}/100</span>`:""}
-          </div>
-          <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
-        </div>
-        <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
-      </div>
-    `).join("");
+function renderList(){
+const items = filtered();
+countLbl.textContent = `${items.length} tickets`;
+list.innerHTML = items.map(t=>`
+     <div class="row" data-id="${t.id}">
+       <div class="avatar">📨</div>
+       <div style="flex:1;min-width:0">
+         <div class="small" style="display:flex;align-items:center;gap:8px">
+           <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
+           <span class="pill">${esc(t.channel)}</span>
+           ${t.grade?`<span class="badge">${t.grade.score.toFixed(0)}/100</span>`:""}
+         </div>
+         <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
+       </div>
+       <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
+     </div>
+   `).join("");
 
-    [...list.querySelectorAll(".row")].forEach(el=>el.onclick=()=>openDetail(el.dataset.id));
+[...list.querySelectorAll(".row")].forEach(el=>el.onclick=()=>openDetail(el.dataset.id));
 
-    if(items.length===0){
-      list.innerHTML = `<div style="padding:48px;text-align:center;color:var(--muted)">
-        <div style="font-size:48px;margin-bottom:8px">👨‍✈️</div>
-        <div style="font-weight:700">No tickets</div>
-        <div class="small">Work you're assigned will appear here.</div></div>`;
-    }
-  }
+if(items.length===0){
+list.innerHTML = `<div style="padding:48px;text-align:center;color:var(--muted)">
+       <div style="font-size:48px;margin-bottom:8px">👨‍✈️</div>
+       <div style="font-weight:700">No tickets</div>
+       <div class="small">Work you're assigned will appear here.</div></div>`;
+}
+}
 
-  function renderAssigneeOptions(t){
-    const opts=(t.assigneeOptions&&t.assigneeOptions.length)?t.assigneeOptions:ALLOWED_ASSIGNEES;
-    dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
-  }
+function renderAssigneeOptions(t){
+const opts=(t.assigneeOptions&&t.assigneeOptions.length)?t.assigneeOptions:ALLOWED_ASSIGNEES;
+dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
+}
 
-  function openDetail(id){
-    currentId=id;
-    const t=state.tickets.find(x=>x.id===id); if(!t) return;
+function openDetail(id){
+currentId=id;
+const t=state.tickets.find(x=>x.id===id); if(!t) return;
 
-    document.getElementById("list").classList.add("hidden");
-    detail.classList.remove("hidden");
+document.getElementById("list").classList.add("hidden");
+detail.classList.remove("hidden");
 
-    dSubject.textContent = t.subject;
-    dRequester.textContent = t.requester||"—";
-    dCreated.textContent = fmt(new Date(t.createdAt));
-    dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
-    renderAssigneeOptions(t);
-    dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
+dSubject.textContent = t.subject;
+dRequester.textContent = t.requester||"—";
+dCreated.textContent = fmt(new Date(t.createdAt));
+dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
+renderAssigneeOptions(t);
+dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
 
-    // fields left rail
-    const tags = (t.tags || []);
-    dTags.innerHTML = tags.length ? tags.map(x=>`<span class="z-tag">${esc(x)}</span>`).join("") : `<span class="z-value muted">—</span>`;
-    dCategory.textContent = t.category || "—";
-    dIntent.textContent = t.intent || "—";
-    dAccount.textContent = t.accountId || "—";
+// fields left rail
+const tags = (t.tags || []);
+dTags.innerHTML = tags.length ? tags.map(x=>`<span class="z-tag">${esc(x)}</span>`).join("") : `<span class="z-value muted">—</span>`;
+dCategory.textContent = t.category || "—";
+dIntent.textContent = t.intent || "—";
+dAccount.textContent = t.accountId || "—";
 
-    // thread
-    replyBox.value = "";
-    thread.innerHTML = "";
-    t.messages.forEach(m=>{
-      const d=document.createElement("div"); d.className="bubble";
-      d.innerHTML = `<div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
-        <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>`;
-      thread.appendChild(d);
-    });
+// thread
+replyBox.value = "";
+thread.innerHTML = "";
+t.messages.forEach(m=>{
+const d=document.createElement("div"); d.className="bubble";
+d.innerHTML = `<div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
+       <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>`;
+thread.appendChild(d);
+});
 
-    // attachments
-    if (t.attachments && t.attachments.length) {
-      snapshots.classList.remove("hidden");
-      snapshots.innerHTML = t.attachments.map(a=>{
-        if (a.type==="image") return `<div style="margin-bottom:8px"><img src="${esc(a.url)}" alt="" style="max-width:100%;border-radius:8px"/></div>`;
-        return `<div class="small"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`;
-      }).join("");
-    } else {
-      snapshots.classList.add("hidden");
-      snapshots.textContent = "No attachments";
-    }
+// attachments
+if (t.attachments && t.attachments.length) {
+snapshots.classList.remove("hidden");
+snapshots.innerHTML = t.attachments.map(a=>{
+if (a.type==="image") return `<div style="margin-bottom:8px"><img src="${esc(a.url)}" alt="" style="max-width:100%;border-radius:8px"/></div>`;
+return `<div class="small"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`;
+}).join("");
+} else {
+snapshots.classList.add("hidden");
+snapshots.textContent = "No attachments";
+}
 
-    renderGrade(t.grade || null);
-    renderStats();
-  }
+renderGrade(t.grade || null);
+renderStats();
+}
 
-  function showList(){
-    detail.classList.add("hidden");
-    document.getElementById("list").classList.remove("hidden");
-    renderList();
-    renderStats();
-  }
+function showList(){
+detail.classList.add("hidden");
+document.getElementById("list").classList.remove("hidden");
+renderList();
+renderStats();
+}
 
-  function renderGrade(report){
-    gradeTable.innerHTML = ""; scoreLbl.textContent = "0/100"; passLbl.textContent = state.weights.pass + "/100";
-    if(!report){ return; }
-    for(const c of report.checks){
-      const tr=document.createElement("tr");
-      tr.innerHTML = `<td class="small">${esc(c.label)}<div class="muted small">${esc(c.detail||"")}</div></td>
-                      <td class="small ${c.ok?"ok":"fail"}">${c.ok?"✅ Pass":"❌ Fail"}</td>`;
-      gradeTable.appendChild(tr);
-    }
-    scoreLbl.textContent = `${report.score.toFixed(0)}/100 ${report.pass?"• ✅ Pass":"• ❌ Fail"}`;
-  }
+function renderGrade(report){
+gradeTable.innerHTML = ""; scoreLbl.textContent = "0/100"; passLbl.textContent = state.weights.pass + "/100";
+if(!report){ return; }
+for(const c of report.checks){
+const tr=document.createElement("tr");
+tr.innerHTML = `<td class="small">${esc(c.label)}<div class="muted small">${esc(c.detail||"")}</div></td>
+                     <td class="small ${c.ok?"ok":"fail"}">${c.ok?"✅ Pass":"❌ Fail"}</td>`;
+gradeTable.appendChild(tr);
+}
+scoreLbl.textContent = `${report.score.toFixed(0)}/100 ${report.pass?"• ✅ Pass":"• ❌ Fail"}`;
+}
 
-  function renderAll(){ renderList(); renderStats(); passLbl.textContent = state.weights.pass + "/100"; }
+function renderAll(){ renderList(); renderStats(); passLbl.textContent = state.weights.pass + "/100"; }
 
-  // --- events ---
-  fStatus.onchange = renderList;
-  fChannel.onchange = renderList;
-  searchBox.oninput = renderList;
-  backBtn.onclick = showList;
+// --- events ---
+fStatus.onchange = renderList;
+fChannel.onchange = renderList;
+searchBox.oninput = renderList;
+backBtn.onclick = showList;
 
-  submitBtn.onclick = async () => {
-    const t = state.tickets.find(x=>x.id===currentId);
-    if (!t) return;
+submitBtn.onclick = async () => {
+const t = state.tickets.find(x=>x.id===currentId);
+if (!t) return;
 
-    if (typeof window.gradeAttempt !== "function") { alert('Grader is not loaded.'); return; }
-    if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
-      alert("This ticket is missing grading rules."); return;
-    }
+if (typeof window.gradeAttempt !== "function") { alert('Grader is not loaded.'); return; }
+if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
+alert("This ticket is missing grading rules."); return;
+}
 
-    const chosenStatus = dStatus.value;
-    const chosenAssignee = dAssignee.value;
-    const text = (replyBox.value || "").trim();
-    if (!text) { alert("Please write a reply before submitting."); return; }
+const chosenStatus = dStatus.value;
+const chosenAssignee = dAssignee.value;
+const text = (replyBox.value || "").trim();
+if (!text) { alert("Please write a reply before submitting."); return; }
 
-    try {
-      const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
-      t.messages.push(msg);
-      t.status = chosenStatus;
-      t.assignee = chosenAssignee;
+try {
+const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
+t.messages.push(msg);
+t.status = chosenStatus;
+t.assignee = chosenAssignee;
 
-      const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
-      t.attempts.push(attempt);
+const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
+t.attempts.push(attempt);
 
-      const report = await window.gradeAttempt(t, attempt, state.weights);
-      if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
-      t.grade = report;
+const report = await window.gradeAttempt(t, attempt, state.weights);
+if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
+t.grade = report;
 
-      save();
-      renderGrade(report);
-      renderStats();
-      renderList();
-      openDetail(t.id);
-      replyBox.value = "";
-    } catch (err) {
-      console.error("Submit/grade failed:", err);
-      alert("Grading failed. Check the browser console for details.");
-    }
-  };
+save();
+renderGrade(report);
+renderStats();
+renderList();
+openDetail(t.id);
+replyBox.value = "";
+} catch (err) {
+console.error("Submit/grade failed:", err);
+alert("Grading failed. Check the browser console for details.");
+}
+};
 
-  // Reset (code-protected)
-  const STUDENT_RESET_CODE = "apexreset01";
-  resetBtn.onclick = async () => {
-    const code = prompt("Enter reset code (provided by your trainer):");
-    if (code === null) return;
-    if (code.trim() !== STUDENT_RESET_CODE) { alert("Invalid code."); return; }
-    state = structuredClone(DEFAULT);
-    save();
-    renderAll();
-    showList();
-    alert("Reset complete.");
-  };
+// Reset (code-protected)
+const STUDENT_RESET_CODE = "apexreset01";
+resetBtn.onclick = async () => {
+const code = prompt("Enter reset code (provided by your trainer):");
+if (code === null) return;
+if (code.trim() !== STUDENT_RESET_CODE) { alert("Invalid code."); return; }
+state = structuredClone(DEFAULT);
+save();
+renderAll();
+showList();
+alert("Reset complete.");
+};
 
-  // boot
-  renderAll();
-  showList();
+// boot
+renderAll();
+showList();
 })();
 </script>
 
 <!-- Grader (unchanged) -->
 <script>
 (() => {
-  window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    const w = Object.assign({ sections: 60, status: 25, assignee: 15, pass: 80 }, weights || {});
-    const reply = String(attempt.reply || "");
+window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
+const w = Object.assign({ sections: 60, status: 25, assignee: 15, pass: 80 }, weights || {});
+const reply = String(attempt.reply || "");
 
-    let ai;
-    try {
-      const resp = await fetch("/api/grade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reply,
-          expectedStatus: ticket.expected?.requiredStatus,
-          expectedAssignee: ticket.expected?.requiredAssignee
-        })
-      });
-      ai = await resp.json();
-      if (!ai || !Array.isArray(ai.checks)) throw new Error("Bad AI JSON");
-    } catch (err) {
-      console.error("AI grading failed, falling back:", err);
-      const statusOk = String(attempt.status) === String(ticket.expected?.requiredStatus);
-      const assigneeOk = String(attempt.assignee) === String(ticket.expected?.requiredAssignee);
-      const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
-      const sStructure = 0;
-      const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
-      const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
-      const score = sStructure + sStatus + sAssignee;
+let ai;
+try {
+const resp = await fetch("/api/grade", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+reply,
+expectedStatus: ticket.expected?.requiredStatus,
+expectedAssignee: ticket.expected?.requiredAssignee
+})
+});
+ai = await resp.json();
+if (!ai || !Array.isArray(ai.checks)) throw new Error("Bad AI JSON");
+} catch (err) {
+console.error("AI grading failed, falling back:", err);
+const statusOk = String(attempt.status) === String(ticket.expected?.requiredStatus);
+const assigneeOk = String(attempt.assignee) === String(ticket.expected?.requiredAssignee);
+const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
+const sStructure = 0;
+const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+const score = sStructure + sStatus + sAssignee;
 
-      return {
-        checks: [
-          { label: "AI grading unavailable", ok: false, detail: "Fallback scoring used" },
-          { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status}` },
-          { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
-        ],
-        score,
-        pass: score >= (w.pass || 0)
-      };
-    }
+return {
+checks: [
+{ label: "AI grading unavailable", ok: false, detail: "Fallback scoring used" },
+{ label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status}` },
+{ label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
+],
+score,
+pass: score >= (w.pass || 0)
+};
+}
 
-    const [greet, ack, sol, offer, close, cStatus, cAssignee] = ai.checks;
-    const statusOk   = !!(cStatus && cStatus.ok);
-    const assigneeOk = !!(cAssignee && cAssignee.ok);
-    const structurePct = Math.max(0, Math.min(100, Number(ai.structurePct || 0)));
+const [greet, ack, sol, offer, close, cStatus, cAssignee] = ai.checks;
+const statusOk   = !!(cStatus && cStatus.ok);
+const assigneeOk = !!(cAssignee && cAssignee.ok);
+const structurePct = Math.max(0, Math.min(100, Number(ai.structurePct || 0)));
 
-    const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
-    const sStructure = structurePct * (w.sections||0) / sum;
-    const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
-    const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
-    const score = sStructure + sStatus + sAssignee;
+const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
+const sStructure = structurePct * (w.sections||0) / sum;
+const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+const score = sStructure + sStatus + sAssignee;
 
-    return {
-      checks: [
-        { label: "1) Greeting",      ok: !!greet?.ok,  detail: greet?.detail || "" },
-        { label: "2) Acknowledge",   ok: !!ack?.ok,    detail: ack?.detail || "" },
-        { label: "3) Solution",      ok: !!sol?.ok,    detail: sol?.detail || "" },
-        { label: "4) Offer Support", ok: !!offer?.ok,  detail: offer?.detail || "" },
-        { label: "5) Closing",       ok: !!close?.ok,  detail: close?.detail || "" },
-        { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status}` },
-        { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
-      ],
-      score,
-      pass: score >= (w.pass || 0)
-    };
-  };
+return {
+checks: [
+{ label: "1) Greeting",      ok: !!greet?.ok,  detail: greet?.detail || "" },
+{ label: "2) Acknowledge",   ok: !!ack?.ok,    detail: ack?.detail || "" },
+{ label: "3) Solution",      ok: !!sol?.ok,    detail: sol?.detail || "" },
+{ label: "4) Offer Support", ok: !!offer?.ok,  detail: offer?.detail || "" },
+{ label: "5) Closing",       ok: !!close?.ok,  detail: close?.detail || "" },
+{ label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status}` },
+{ label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
+],
+score,
+pass: score >= (w.pass || 0)
+};
+};
 })();
 </script>
 </body>
