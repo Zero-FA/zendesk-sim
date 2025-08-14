@@ -229,31 +229,27 @@ const DEFAULT = {
   tickets: [
     {
       id: uid(),
-      subject: "[Subject that shows in list]",
-      requester: "[customer@company.com]",     // who opened the ticket
-      channel: "Email",                        // "Email" | "Web" | "Chat"
-      createdAt: now - 4 * 3600e3,             // timestamp
-      status: "Open",                          // Open | Pending | On-hold | Solved
+      subject: "Can't log in after password reset",
+      requester: "sara@brand.co",
+      channel: "Email",
+      createdAt: now - 4 * 3600e3,
+      status: "Open",
       assignee: "Unassigned",
-      assigneeOptions: ["Unassigned","Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"],
-
-      // This is the latest customer message the trainee must respond to
-      message: `[Put the customer’s message here.
-If you want multiple lines, you can use a template string like this.]`,
-
-      // Optional prior conversation/history (shown above the editor)
+      assigneeOptions: ["Myself","Support Tier 2","Support Tier 3"],
       messages: [
-        { id: uid(), author: "[customer@company.com]", ts: now - 6 * 3600e3, body: "[Earlier message from customer]" }
+        {
+          id: uid(),
+          author: "sara@brand.co",
+          ts: now - 4 * 3600e3,
+          body: `Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara`
+        }
       ],
-
-      // Grading rules for what “correct” looks like
       expected: {
-        requiredStatus: "[Open|Pending|On-hold|Solved]",
-        requiredAssignee: "[Myself|Support Tier 2|Support Tier 3|Fraud General|Payout]",
-        keywords: [],                           // keep [] if you’re not using keyword checks
-        sections: ["Greeting","Open","Resolution","Closer","Sign-off"] // order-checked
+        requiredStatus: "Pending",
+        requiredAssignee: "Myself",
+        keywords: [],
+        sections: ["Greeting","Open","Resolution","Closer","Sign-off"]
       },
-
       attempts: [],
       grade: null
     }
