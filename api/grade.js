@@ -1,13 +1,12 @@
-// api/grade.js
+// /api/grade.js
 import OpenAI from "openai";
 
-// Use Vercel env var (set in Project → Settings → Environment Variables)
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Block super-long submissions before hitting the API
-const MAX_REPLY_CHARS = 8000; // adjust if needed
+// Keep replies reasonable
+const MAX_REPLY_CHARS = 8000;
 
-// Strict JSON schema for the model's response
+// Strict schema: 5 structure checks only
 const schema = {
   type: "object",
   properties: {
@@ -16,20 +15,19 @@ const schema = {
       items: {
         type: "object",
         properties: {
-          label: { type: "string" },
-          ok: { type: "boolean" },
+          label:  { type: "string" },
+          ok:     { type: "boolean" },
           detail: { type: "string" }
         },
         required: ["label", "ok", "detail"]
       }
     },
-    structurePct: { type: "number" }
+    structurePct: { type: "number" } // 0–100, aggregate of the 5
   },
   required: ["checks", "structurePct"],
   additionalProperties: false
 };
 
-// Concise style guide the model enforces
 const STYLE_GUIDE = `
 Support Ticket Style Guide (Apex Training)
 1) Greeting: use customer's first name; brief & warm; no generic corporate openers.
@@ -37,23 +35,17 @@ Support Ticket Style Guide (Apex Training)
 3) Solution: clear cause/explanation AND a specific, actionable step; include a link only if directly helpful; avoid long background/filler.
 4) Offer Support: one short invite for follow-ups; no unrelated resources.
 5) Closing: standard sign-off (e.g., "Best regards,") + agent name; no dramatic closings.
-Non-text checks: Submit As must match expected status; Assignee must match expected assignee.
-Scoring: The 5 structure parts share the "sections" weight equally; Status and Assignee use their own weights; pass if total ≥ weights.pass.
+
+Return exactly 5 checks in the above order. Do not include Submit As or Assignee checks.
 `;
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { reply, expectedStatus, expectedAssignee } = req.body || {};
-
-    // Basic validation + "novel" guard
+    const { reply } = req.body || {};
     const text = String(reply || "");
-    if (!text.trim()) {
-      return res.status(400).json({ error: "empty_reply" });
-    }
+    if (!text.trim()) return res.status(400).json({ error: "empty_reply" });
     if (text.length > MAX_REPLY_CHARS) {
       return res.status(413).json({
         error: "reply_too_long",
@@ -63,30 +55,24 @@ export default async function handler(req, res) {
       });
     }
 
-    const system = `You are a strict, fair QA grader for support tickets. Judge ONLY by the style guide. Be concise and deterministic.`;
+    const system = "You are a strict, fair QA grader for support tickets. Judge ONLY by the style guide. Be concise and deterministic.";
 
     const user = `
 STYLE GUIDE:
 ${STYLE_GUIDE}
 
-EXPECTED:
-- Submit As: "${expectedStatus}"
-- Assignee: "${expectedAssignee}"
-
 TRAINEE REPLY:
 """${text}"""
 
-Return JSON that matches the provided JSON Schema.
-- "checks": exactly 7 items in this order:
+Return JSON matching the schema:
+- "checks": exactly these 5 in order:
   1. Greeting
   2. Acknowledge
   3. Solution
   4. Offer Support
   5. Closing
-  6. Submit As is "${expectedStatus}"
-  7. Assignee is "${expectedAssignee}"
-Set ok=true/false and a short reason in "detail".
-Also return "structurePct" from 0–100 for the 5 structure items aggregated.
+Each item needs { label, ok, detail }.
+Also return "structurePct" (0–100) as your overall structure score for the 5 checks.
 `.trim();
 
     const r = await client.chat.completions.create({
@@ -99,10 +85,25 @@ Also return "structurePct" from 0–100 for the 5 structure items aggregated.
       ]
     });
 
+    // Safe parse + sanitize
     const content = r.choices?.[0]?.message?.content || "{}";
-    const parsed = JSON.parse(content);
+    let parsed;
+    try { parsed = JSON.parse(content); } catch { parsed = {}; }
 
-    return res.status(200).json(parsed);
+    // Guarantee exactly 5 checks with the right labels, clamp structurePct
+    const labels = ["Greeting", "Acknowledge", "Solution", "Offer Support", "Closing"];
+    const given = Array.isArray(parsed.checks) ? parsed.checks : [];
+    const checks = labels.map((label, i) => {
+      const c = given[i];
+      return {
+        label,
+        ok: typeof c?.ok === "boolean" ? c.ok : false,
+        detail: typeof c?.detail === "string" && c.detail ? c.detail : "Not evaluated"
+      };
+    });
+    const structurePct = Math.max(0, Math.min(100, Number(parsed.structurePct ?? 0)));
+
+    return res.status(200).json({ checks, structurePct });
   } catch (err) {
     console.error("grading_failed:", err);
     return res.status(500).json({ error: "grading_failed" });
