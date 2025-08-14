@@ -213,13 +213,14 @@ Sign-off"></textarea>
 
 <!-- DEFAULT tickets & constants (must be before app code) -->
 <script>
+<script>
   // Unique ID generator for tickets/messages
   function uid() { 
     return Math.random().toString(36).slice(2, 9); 
   }
 
   // Storage keys - change STORE version to force overwrite for everyone
-  const STORE = "sop_sim_state_v10";  // bump this number to reset everyone
+  const STORE = "sop_sim_state_v10";
   const PASS  = "sop_sim_pass_v2";
   const now   = Date.now();
 
@@ -241,7 +242,7 @@ Sign-off"></textarea>
         subject: "Can't log in after password reset",
         requester: "sara@brand.co",
         channel: "Email",
-        createdAt: now - 4 * 3600e3, // 4 hours ago
+        createdAt: now - 4 * 3600e3,
         status: "Open",
         assignee: "Myself",
         assigneeOptions: ALLOWED_ASSIGNEES,
@@ -267,7 +268,7 @@ Sign-off"></textarea>
         subject: "Refund for duplicate charge",
         requester: "customer@example.com",
         channel: "Email",
-        createdAt: now - 30 * 3600e3, // 30 hours ago
+        createdAt: now - 30 * 3600e3,
         status: "Open",
         assignee: "Myself",
         assigneeOptions: ALLOWED_ASSIGNEES,
@@ -282,7 +283,7 @@ Sign-off"></textarea>
         expected: {
           requiredStatus: "Pending",
           requiredAssignee: "Payout",
-          keywords: ["apologize", "refund", "duplicate", "confirm", "timeline"],
+          keywords: [],
           sections: ["Greeting", "Resolution", "Next steps", "Sign-off"]
         },
         attempts: [],
@@ -291,9 +292,15 @@ Sign-off"></textarea>
     ]
   };
 
-  // Force overwrite local data every time this file loads
-  localStorage.removeItem(STORE); 
-  let state = structuredClone(DEFAULT);
+  // Load existing state or seed defaults once
+  let state = null;
+  try {
+    state = JSON.parse(localStorage.getItem(STORE) || "null");
+  } catch {}
+  if (!state || !Array.isArray(state.tickets)) {
+    state = structuredClone(DEFAULT);
+    localStorage.setItem(STORE, JSON.stringify(state));
+  }
 </script>
 
   <!-- Main app script -->
@@ -321,9 +328,14 @@ Sign-off"></textarea>
     }
 
     // --- state ---
-    localStorage.removeItem(STORE); // wipe old data every time
-state = structuredClone(DEFAULT); // overwrite existing state object
-save();
+let state;
+try {
+  state = JSON.parse(localStorage.getItem(STORE) || "null");
+} catch {}
+if (!state || !Array.isArray(state.tickets)) {
+  state = structuredClone(DEFAULT);
+  localStorage.setItem(STORE, JSON.stringify(state));
+}
     let trainer = false;
     let currentId = null;
 
