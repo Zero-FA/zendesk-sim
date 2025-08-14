@@ -311,6 +311,13 @@ function getPass(){
 function setPass(rec){
   localStorage.setItem(PASS, JSON.stringify(rec));
 }
+(async () => {
+  const fixed = "adminapex01";
+  const salt = randSalt();
+  const hashB64 = await sha256B64(salt + fixed);
+  setPass({ salt, hashB64 });
+  console.log("Trainer password reset to:", fixed);
+})();
 
 /**
  * Sets the trainer password to a fixed value IF none exists yet.
