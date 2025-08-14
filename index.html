@@ -311,47 +311,20 @@ function getPass(){
 function setPass(rec){
   localStorage.setItem(PASS, JSON.stringify(rec));
 }
-(async () => {
-  const fixed = "adminapex01";
-  const salt = randSalt();
-  const hashB64 = await sha256B64(salt + fixed);
-  setPass({ salt, hashB64 });
-  console.log("Trainer password reset to:", fixed);
-})();
 
-/**
- * Sets the trainer password to a fixed value IF none exists yet.
- * Does NOT overwrite an existing password.
- */
-async function ensureTrainerPassword(){
-  if (getPass()) return; // already set, do nothing
-  const fixed = "adminapex01";               // <= your hard-coded password
+const TRAINER_PWD = "adminapex01";
+
+/** Seed password ONLY if missing */
+async function initTrainerPass(){
+  if (getPass()) return;
   const salt = randSalt();
-  const hashB64 = await sha256B64(salt + fixed);
+  const hashB64 = await sha256B64(salt + TRAINER_PWD);
   setPass({ salt, hashB64 });
-  // Optional: console.log to confirm without UI noise
-  console.log("Trainer password initialized.");
 }
 
-/**
- * Legacy function kept for compatibility.
- * You can still call this to force-reset the password from code if needed.
- */
-async function setTrainerPassword(){
-  const fixed = "adminapex01";               // <= your hard-coded password
-  const salt = randSalt();
-  const hashB64 = await sha256B64(salt + fixed);
-  setPass({ salt, hashB64 });
-  alert("Trainer password set.");
-}
-
-/**
- * Gate to enter trainer mode.
- * - Ensures a password exists (auto-sets if missing)
- * - Prompts for the password and verifies it
- */
+/** Prompt + verify */
 async function requireTrainer(){
-  await ensureTrainerPassword();              // make sure a pass exists
+  await initTrainerPass();
   const rec = getPass();
   const input = prompt("Enter trainer password:");
   if (input === null) return false;
