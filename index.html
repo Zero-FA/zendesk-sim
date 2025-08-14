@@ -431,62 +431,61 @@ Sign-off"></textarea>
     };
 
     // ONE-BUTTON SUBMIT-AS (also grades)
-    submitBtn.onclick = () => {
-      const t = getCurrent();
-      if (!t) return;
+    // FIXED
+submitBtn.onclick = async () => {
+  const t = getCurrent();
+  if (!t) return;
 
-      // 0) sanity checks
-      if (typeof window.gradeAttempt !== "function") {
-        console.error("grader not loaded");
-        alert('Grader is not loaded. Make sure the grader script is included at the end of the page.');
-        return;
-      }
-      if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
-        console.error("Ticket missing expected.requiredStatus/requiredAssignee", t);
-        alert("This ticket is missing grading rules. Open it in Trainer → Edit and set Required Submit As and Required Assignee.");
-        return;
-      }
+  // 0) sanity checks (keep your existing ones)
+  if (typeof window.gradeAttempt !== "function") {
+    console.error("grader not loaded");
+    alert('Grader is not loaded. Make sure the grader script is included at the end of the page.');
+    return;
+  }
+  if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
+    console.error("Ticket missing expected.requiredStatus/requiredAssignee", t);
+    alert("This ticket is missing grading rules. Open it in Trainer → Edit and set Required Submit As and Required Assignee.");
+    return;
+  }
 
-      // 1) read current selections and reply
-      const chosenStatus = dStatus.value;
-      const chosenAssignee = dAssignee.value;
-      const text = (replyBox.value || "").trim();
-      if (!text) { alert("Please write a reply before submitting."); return; }
-      // Optional strictness:
-      // if (chosenAssignee === "Unassigned") { alert("Choose an assignee before submitting."); return; }
+  // 1) read selections & reply (same as before)
+  const chosenStatus = dStatus.value;
+  const chosenAssignee = dAssignee.value;
+  const text = (replyBox.value || "").trim();
+  if (!text) { alert("Please write a reply before submitting."); return; }
 
-      try {
-        // 2) append trainee reply to the thread
-        const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
-        t.messages.push(msg);
+  try {
+    // 2) append trainee reply to the thread (same as before)
+    const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
+    t.messages.push(msg);
 
-        // 3) persist selections on the ticket
-        t.status = chosenStatus;
-        t.assignee = chosenAssignee;
+    // 3) persist selections (same as before)
+    t.status = chosenStatus;
+    t.assignee = chosenAssignee;
 
-        // 4) record attempt (what we grade)
-        const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
-        t.attempts.push(attempt);
+    // 4) record attempt
+    const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
+    t.attempts.push(attempt);
 
-        // 5) grade (from grader)
-        const report = window.gradeAttempt(t, attempt, state.weights);
-        if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
-        t.grade = report;
+    // 5) *** AWAIT the async grader ***
+    const report = await window.gradeAttempt(t, attempt, state.weights);
+    if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
+    t.grade = report;
 
-        // 6) save & refresh UI
-        save();
-        renderGrade(report);
-        renderStats();
-        renderList();
-        openDetail(t.id);
+    // 6) save & refresh UI (same as before)
+    save();
+    renderGrade(report);
+    renderStats();
+    renderList();
+    openDetail(t.id);
 
-        // 7) clear editor only after success
-        replyBox.value = "";
-      } catch (err) {
-        console.error("Submit/grade failed:", err);
-        alert("Grading failed. Check the browser console for details.");
-      }
-    };
+    // 7) clear editor
+    replyBox.value = "";
+  } catch (err) {
+    console.error("Submit/grade failed:", err);
+    alert("Grading failed. Check the browser console for details.");
+  }
+};
 
     // --- rendering ---
     function renderAll(){ renderList(); renderStats(); refreshRole(); passLbl.textContent = state.weights.pass + "/100"; }
