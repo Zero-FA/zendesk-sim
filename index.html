@@ -458,7 +458,7 @@ submitBtn.onclick = () => {
   // 0) sanity checks
   if (typeof window.gradeAttempt !== "function") {
     console.error("grader.js not loaded or gradeAttempt not defined on window.");
-    alert('Grader is not loaded. Ensure <script src="grader.js"></script> is at the end of index.html and the file exists.');
+    alert('Grader is not loaded. Make sure the file "grader.js" is included at the end of index.html.'); // <-- fixed
     return;
   }
   if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
@@ -468,12 +468,10 @@ submitBtn.onclick = () => {
   }
 
   // 1) read current selections and reply
-  const chosenStatus = dStatus.value;            // Submit As dropdown
-  const chosenAssignee = dAssignee.value;        // Assignee dropdown
-  const text = (replyBox.value || "").trim();    // trainee reply
+  const chosenStatus = dStatus.value;
+  const chosenAssignee = dAssignee.value;
+  const text = (replyBox.value || "").trim();
   if (!text) { alert("Please write a reply before submitting."); return; }
-  // Optional strictness:
-  // if (chosenAssignee === "Unassigned") { alert("Choose an assignee before submitting."); return; }
 
   try {
     // 2) append trainee reply to the thread
@@ -484,7 +482,7 @@ submitBtn.onclick = () => {
     t.status = chosenStatus;
     t.assignee = chosenAssignee;
 
-    // 4) record attempt (this is what we grade)
+    // 4) record attempt (what we grade)
     const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
     t.attempts.push(attempt);
 
@@ -498,7 +496,7 @@ submitBtn.onclick = () => {
     renderGrade(report);
     renderStats();
     renderList();
-    openDetail(t.id); // re-open so the new message shows
+    openDetail(t.id);
 
     // 7) clear editor only after success
     replyBox.value = "";
@@ -661,7 +659,6 @@ Sections: ${s || "—"}`;
     function getCurrent(){ return state.tickets.find(x=>x.id===currentId); }
     function showList(){ detail.classList.add("hidden"); document.getElementById("list").classList.remove("hidden"); renderList(); }
     refreshRole(); renderAll(); showList();
-  })();
   </script>
 
   <!-- The grader is split into its own file -->
