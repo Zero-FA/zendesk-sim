@@ -295,7 +295,9 @@ Sign-off"></textarea>
     }
 
     // --- state ---
-    let state = load() || DEFAULT;
+    localStorage.removeItem(STORE); // wipe old data every time
+let state = DEFAULT;
+save();
     let trainer = false;
     let currentId = null;
 
