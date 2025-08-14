@@ -190,6 +190,7 @@
 
 <!-- DEFAULT tickets & constants -->
 <script>
+(function () {
   function uid(){ return Math.random().toString(36).slice(2,9); }
 
   const STORE = "sop_sim_state_v10";
@@ -199,50 +200,49 @@
   const DEFAULT = {
     weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
     tickets: [
-{
-  id: uid(),
-  subject: "Can't log in after password reset",
-  requester: "sara@brand.co",
-  channel: "Email",
-  createdAt: now - 4 * 3600e3,
-  status: "Open",
-  assignee: "Myself",
-  assigneeOptions: ALLOWED_ASSIGNEES,
-  messages: [
-    {
-      id: uid(),
-      author: "sara@brand.co",
-      ts: now - 4 * 3600e3,
-      body: "Hi, I reset my password but still can’t log in..."
-    }
-  ],
-  expected: {
-    requiredStatus: "Pending",
-    requiredAssignee: "Myself",
-    keywords: ["apologize","refund","duplicate","confirm","timeline"],
-    sections: ["Greeting","Resolution","Next steps","Sign-off"]
-  },
-  tags: ["billing","intent_confidence_high"],
-  category: "Billing",
-  intent: "Refund - Duplicate",
-  accountId: "APEX-92161-283",
-  attachments: [
-    // ⚠️ Replace this with a public https:// link (file:// won't load in browsers)
-    { type: "image", url: "https://yourhost.com/path/screenshot.png", title: "Screenshot of error" }
-  ],
-  attempts: [],
-  grade: null
-}
+      {
+        id: uid(),
+        subject: "Can't log in after password reset",
+        requester: "sara@brand.co",
+        channel: "Email",
+        createdAt: now - 4 * 3600e3,
+        status: "Open",
+        assignee: "Myself",
+        assigneeOptions: ALLOWED_ASSIGNEES,
+        messages: [
+          {
+            id: uid(),
+            author: "sara@brand.co",
+            ts: now - 4 * 3600e3,
+            body: "Hi, I reset my password but still can’t log in..."
+          }
+        ],
+        expected: {
+          requiredStatus: "Pending",
+          requiredAssignee: "Myself",
+          keywords: ["apologize","refund","duplicate","confirm","timeline"],
+          sections: ["Greeting","Resolution","Next steps","Sign-off"]
+        },
+        tags: ["billing","intent_confidence_high"],
+        category: "Billing",
+        intent: "Refund - Duplicate",
+        accountId: "APEX-92161-283",
+        attachments: [
+          // Use a real public HTTPS image URL here:
+          { type: "image", url: "https://yourhost.com/path/screenshot.png", title: "Screenshot of error" }
+        ],
+        attempts: [],
+        grade: null
+      }
     ]
   };
 
-  // seed or load state
-  let state = null;
-  try { state = JSON.parse(localStorage.getItem(STORE) || "null"); } catch {}
-  if (!state || !Array.isArray(state.tickets)) {
-    state = structuredClone(DEFAULT);
-    localStorage.setItem(STORE, JSON.stringify(state));
-  }
+  // expose to global so other scripts can use them
+  window.uid = uid;
+  window.STORE = STORE;
+  window.ALLOWED_ASSIGNEES = ALLOWED_ASSIGNEES;
+  window.DEFAULT = DEFAULT;
+})();
 </script>
 
 <!-- Main app script -->
