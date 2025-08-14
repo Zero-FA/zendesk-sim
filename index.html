@@ -483,14 +483,13 @@ showList();
 <script>
 (() => {
   window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    // weights: { sections, status, assignee, pass }
+    // Default weights if not provided
     const w = Object.assign({ sections: 60, status: 25, assignee: 15, pass: 80 }, weights || {});
     const reply = String(attempt.reply || "");
-
     const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-    const eq = (a, b) => String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+    const eq = (a,b)=>String(a??'').trim().toLowerCase()===String(b??'').trim().toLowerCase();
 
-    // Try API (structure only). If it fails, we’ll fall back to zeros for structure.
+    // 1) Ask API for the 5 structure checks (safe to fail)
     let ai = null;
     try {
       const resp = await fetch("/api/grade", {
@@ -500,10 +499,9 @@ showList();
       });
       if (resp.ok) ai = await resp.json();
     } catch (err) {
-      console.warn("AI grading unavailable, using deterministic scoring only.", err);
+      console.warn("AI grading unavailable, using deterministic checks only.", err);
     }
 
-    // Structure checks (5) from AI or defaults
     const structureLabels = ["Greeting", "Acknowledge", "Solution", "Offer Support", "Closing"];
     const structureChecks = structureLabels.map((label, i) => {
       const c = Array.isArray(ai?.checks) ? ai.checks[i] : null;
@@ -515,26 +513,29 @@ showList();
     });
     const structurePct = clamp(Number(ai?.structurePct ?? 0), 0, 100);
 
-    // Deterministic checks (2): compare trainee selections vs ticket expectations
-    const statusOk   = eq(attempt.status,   ticket.expected?.requiredStatus);
-    const assigneeOk = eq(attempt.assignee, ticket.expected?.requiredAssignee);
+    // 2) Deterministic checks from the TICKET (single source of truth)
+    const expectedStatus   = ticket.expected?.requiredStatus ?? "";
+    const expectedAssignee = ticket.expected?.requiredAssignee ?? "";
+
+    const statusOk   = eq(attempt.status,   expectedStatus);
+    const assigneeOk = eq(attempt.assignee, expectedAssignee);
 
     const statusCheck = {
-      label: `Submit As is "${ticket.expected?.requiredStatus}"`,
+      label: `Submit As is "${expectedStatus}"`,
       ok: statusOk,
       detail: `Selected: ${attempt.status ?? "—"}`
     };
     const assigneeCheck = {
-      label: `Assignee is "${ticket.expected?.requiredAssignee}"`,
+      label: `Assignee is "${expectedAssignee}"`,
       ok: assigneeOk,
       detail: `Selected: ${attempt.assignee ?? "—"}`
     };
 
-    // Scoring
-    const sum = Math.max(1, (w.sections || 0) + (w.status || 0) + (w.assignee || 0));
-    const sStructure = structurePct * (w.sections || 0) / sum;
-    const sStatus    = (statusOk ? 100 : 0) * (w.status || 0) / sum;
-    const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee || 0) / sum;
+    // 3) Scoring
+    const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
+    const sStructure = structurePct * (w.sections||0) / sum;
+    const sStatus    = (statusOk   ? 100 : 0) * (w.status   ||0) / sum;
+    const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee ||0) / sum;
     const score = sStructure + sStatus + sAssignee;
 
     return {
