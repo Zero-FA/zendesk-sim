@@ -1,8 +1,13 @@
 // api/grade.js
 import OpenAI from "openai";
 
+// Use Vercel env var (set in Project → Settings → Environment Variables)
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Block super-long submissions before hitting the API
+const MAX_REPLY_CHARS = 8000; // adjust if needed
+
+// Strict JSON schema for the model's response
 const schema = {
   type: "object",
   properties: {
@@ -24,6 +29,7 @@ const schema = {
   additionalProperties: false
 };
 
+// Concise style guide the model enforces
 const STYLE_GUIDE = `
 Support Ticket Style Guide (Apex Training)
 1) Greeting: use customer's first name; brief & warm; no generic corporate openers.
@@ -43,7 +49,22 @@ export default async function handler(req, res) {
   try {
     const { reply, expectedStatus, expectedAssignee } = req.body || {};
 
+    // Basic validation + "novel" guard
+    const text = String(reply || "");
+    if (!text.trim()) {
+      return res.status(400).json({ error: "empty_reply" });
+    }
+    if (text.length > MAX_REPLY_CHARS) {
+      return res.status(413).json({
+        error: "reply_too_long",
+        max: MAX_REPLY_CHARS,
+        received: text.length,
+        message: `Reply exceeds ${MAX_REPLY_CHARS} characters. Please shorten it.`
+      });
+    }
+
     const system = `You are a strict, fair QA grader for support tickets. Judge ONLY by the style guide. Be concise and deterministic.`;
+
     const user = `
 STYLE GUIDE:
 ${STYLE_GUIDE}
@@ -53,7 +74,7 @@ EXPECTED:
 - Assignee: "${expectedAssignee}"
 
 TRAINEE REPLY:
-"""${reply || ""}"""
+"""${text}"""
 
 Return JSON that matches the provided JSON Schema.
 - "checks": exactly 7 items in this order:
@@ -66,7 +87,7 @@ Return JSON that matches the provided JSON Schema.
   7. Assignee is "${expectedAssignee}"
 Set ok=true/false and a short reason in "detail".
 Also return "structurePct" from 0–100 for the 5 structure items aggregated.
-`;
+`.trim();
 
     const r = await client.chat.completions.create({
       model: "gpt-4.1-mini",
