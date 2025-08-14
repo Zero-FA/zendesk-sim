@@ -211,108 +211,88 @@ Sign-off"></textarea>
 
   <input type="file" id="fileInput" accept="application/json" class="hidden"/>
 
-<!-- DEFAULT tickets & constants (must be before app code) -->
-<script>
-<script>
-  // Unique ID generator for tickets/messages
-  function uid() { 
-    return Math.random().toString(36).slice(2, 9); 
-  }
+  <!-- DEFAULT tickets & constants (must be before app code) -->
+  <script>
+    // Unique ID generator for tickets/messages
+    function uid(){ return Math.random().toString(36).slice(2,9); }
 
-  // Storage keys - change STORE version to force overwrite for everyone
-  const STORE = "sop_sim_state_v10";
-  const PASS  = "sop_sim_pass_v2";
-  const now   = Date.now();
+    // Storage keys
+    const STORE = "sop_sim_state_v10";
+    const PASS  = "sop_sim_pass_v2";
+    const now   = Date.now();
 
-  // Allowed assignees for dropdown
-  const ALLOWED_ASSIGNEES = [
-    "Myself",
-    "Support Tier 2",
-    "Support Tier 3",
-    "Fraud General",
-    "Payout"
-  ];
+    // Allowed assignees for dropdown
+    const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
-  // Default dataset - will load when state is reset or STORE version changes
-  const DEFAULT = {
-    weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
-    tickets: [
-      {
-        id: uid(),
-        subject: "Can't log in after password reset",
-        requester: "sara@brand.co",
-        channel: "Email",
-        createdAt: now - 4 * 3600e3,
-        status: "Open",
-        assignee: "Myself",
-        assigneeOptions: ALLOWED_ASSIGNEES,
-        messages: [
-          { 
-            id: uid(), 
-            author: "sara@brand.co", 
-            ts: now - 4 * 3600e3, 
-            body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" 
-          }
-        ],
-        expected: {
-          requiredStatus: "Pending",
-          requiredAssignee: "Myself",
-          keywords: [],
-          sections: ["Greeting", "Diagnosis", "Resolution", "Next steps", "Sign-off"]
+    // Default dataset
+    const DEFAULT = {
+      weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
+      tickets: [
+        {
+          id: uid(),
+          subject: "Can't log in after password reset",
+          requester: "sara@brand.co",
+          channel: "Email",
+          createdAt: now - 4 * 3600e3,
+          status: "Open",
+          assignee: "Myself",
+          assigneeOptions: ALLOWED_ASSIGNEES,
+          messages: [
+            { id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3,
+              body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
+          ],
+          expected: {
+            requiredStatus: "Pending",
+            requiredAssignee: "Myself",
+            keywords: [],
+            sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
+          },
+          attempts: [],
+          grade: null
         },
-        attempts: [],
-        grade: null
-      },
-      {
-        id: uid(),
-        subject: "Refund for duplicate charge",
-        requester: "customer@example.com",
-        channel: "Email",
-        createdAt: now - 30 * 3600e3,
-        status: "Open",
-        assignee: "Myself",
-        assigneeOptions: ALLOWED_ASSIGNEES,
-        messages: [
-          { 
-            id: uid(), 
-            author: "customer@example.com", 
-            ts: now - 30 * 3600e3, 
-            body: "I was double-charged this month. Can you refund the duplicate? Thanks!" 
-          }
-        ],
-        expected: {
-          requiredStatus: "Pending",
-          requiredAssignee: "Payout",
-          keywords: [],
-          sections: ["Greeting", "Resolution", "Next steps", "Sign-off"]
-        },
-        attempts: [],
-        grade: null
-      }
-    ]
-  };
+        {
+          id: uid(),
+          subject: "Refund for duplicate charge",
+          requester: "customer@example.com",
+          channel: "Email",
+          createdAt: now - 30 * 3600e3,
+          status: "Open",
+          assignee: "Myself",
+          assigneeOptions: ALLOWED_ASSIGNEES,
+          messages: [
+            { id: uid(), author: "customer@example.com", ts: now - 30 * 3600e3,
+              body: "I was double-charged this month. Can you refund the duplicate? Thanks!" }
+          ],
+          expected: {
+            requiredStatus: "Pending",
+            requiredAssignee: "Payout",
+            keywords: [],
+            sections: ["Greeting","Resolution","Next steps","Sign-off"]
+          },
+          attempts: [],
+          grade: null
+        }
+      ]
+    };
 
-  // Load existing state or seed defaults once
-  let state = null;
-  try {
-    state = JSON.parse(localStorage.getItem(STORE) || "null");
-  } catch {}
-  if (!state || !Array.isArray(state.tickets)) {
-    state = structuredClone(DEFAULT);
-    localStorage.setItem(STORE, JSON.stringify(state));
-  }
-</script>
+    // Load existing state or seed defaults once
+    let state = null;
+    try { state = JSON.parse(localStorage.getItem(STORE) || "null"); } catch {}
+    if (!state || !Array.isArray(state.tickets)) {
+      state = structuredClone(DEFAULT);
+      localStorage.setItem(STORE, JSON.stringify(state));
+    }
+  </script>
 
   <!-- Main app script -->
   <script>
   (()=>{
 
     // --- storage & auth helpers ---
-    function load(){ try{ return JSON.parse(localStorage.getItem(STORE) || "null"); }catch{return null;} }
     function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
     async function sha256B64(s){ const enc=new TextEncoder().encode(s); const buf=await crypto.subtle.digest("SHA-256",enc); return btoa(String.fromCharCode(...new Uint8Array(buf))); }
     function randSalt(n=16){ const a=new Uint8Array(n); crypto.getRandomValues(a); return btoa(String.fromCharCode(...a)); }
-    function getPass(){ try{ return JSON.parse(localStorage.getItem(PASS)||"null"); }catch{return null; } }
+    function getPass(){ try{ return JSON.parse(localStorage.getItem(PASS)||"null"); }catch{return null;} }
     function setPass(rec){ localStorage.setItem(PASS, JSON.stringify(rec)); }
     async function requireTrainer(){
       const rec=getPass();
@@ -327,15 +307,7 @@ Sign-off"></textarea>
       const salt=randSalt(); const hashB64=await sha256B64(salt+p1); setPass({salt,hashB64}); alert("Trainer password set."); trainer=true; refreshRole(); return true;
     }
 
-    // --- state ---
-let state;
-try {
-  state = JSON.parse(localStorage.getItem(STORE) || "null");
-} catch {}
-if (!state || !Array.isArray(state.tickets)) {
-  state = structuredClone(DEFAULT);
-  localStorage.setItem(STORE, JSON.stringify(state));
-}
+    // --- state (already defined in previous script) ---
     let trainer = false;
     let currentId = null;
 
@@ -434,8 +406,8 @@ if (!state || !Array.isArray(state.tickets)) {
       const code = prompt("Enter reset code (provided by your trainer):");
       if (code === null) return;
       if (code.trim() !== STUDENT_RESET_CODE) { alert("Invalid code."); return; }
-      localStorage.removeItem(STORE);
-      state = DEFAULT;
+      state = structuredClone(DEFAULT);
+      save();
       renderAll();
       showList();
       alert("Reset complete.");
@@ -480,7 +452,7 @@ if (!state || !Array.isArray(state.tickets)) {
       replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
     };
 
-    // Submit & grade (awaits async grader)
+    // Submit & grade
     submitBtn.onclick = async () => {
       const t = getCurrent();
       if (!t) return;
@@ -581,7 +553,6 @@ if (!state || !Array.isArray(state.tickets)) {
       dCreated.textContent = fmt(new Date(t.createdAt));
       dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
       renderAssigneeOptions(t);
-      // If current assignee not in allowed list, select first allowed
       if (![...dAssignee.options].some(o=>o.value===t.assignee)) {
         dAssignee.value = ALLOWED_ASSIGNEES[0];
       } else {
@@ -599,8 +570,8 @@ if (!state || !Array.isArray(state.tickets)) {
       renderGrade(t.grade || null);
     }
     function renderAssigneeOptions(t){
-      // Force-allow only the specified list
-      dAssignee.innerHTML = ALLOWED_ASSIGNEES.map(o=>`<option>${esc(o)}</option>`).join("");
+      const opts=(t.assigneeOptions&&t.assigneeOptions.length)?t.assigneeOptions:ALLOWED_ASSIGNEES;
+      dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
     }
     function showList(){ detail.classList.add("hidden"); document.getElementById("list").classList.remove("hidden"); renderList(); }
     function renderGrade(report){
@@ -623,76 +594,13 @@ Keywords: ${k || "—"}
 Sections: ${s || "—"}`;
     }
 
-    // ticket editor (trainer)
-    function openTicketEditor(t,isNew){
-      const editing = structuredClone(t);
-      tSub.value = editing.subject||""; tReq.value = editing.requester||""; tChan.value = editing.channel||"Email";
-      tAssignees.value = (editing.assigneeOptions||[...ALLOWED_ASSIGNEES]).join(",");
-      tMsg.value = (editing.messages && editing.messages[editing.messages.length-1]?.body) || "";
-      tReqStatus.value = ["Open","Pending","Solved"].includes(editing.expected?.requiredStatus) ? editing.expected.requiredStatus : "Open";
-      tReqAssignee.value = editing.expected?.requiredAssignee||"Myself";
-      tKeywords.value = (editing.expected?.keywords||[]).join(",");
-      tSections.value = (editing.expected?.sections||[]).join("\n");
-      ticketDlg.showModal();
-      saveTicketBtn.onclick = ()=>{
-        editing.subject = tSub.value.trim()||"Untitled";
-        editing.requester = tReq.value.trim()||"user@example.com";
-        editing.channel = tChan.value;
-        // Only keep allowed assignees
-        editing.assigneeOptions = tAssignees.value.split(",").map(s=>s.trim()).filter(v=>ALLOWED_ASSIGNEES.includes(v));
-        const newBody = tMsg.value;
-        if (newBody) {
-          const last = editing.messages && editing.messages[editing.messages.length-1];
-          if (last && last.author === editing.requester) last.body = newBody;
-          else editing.messages.push({ id: uid(), author: editing.requester, ts: Date.now(), body: newBody });
-        }
-        editing.expected = {
-          requiredStatus: ["Open","Pending","Solved"].includes(tReqStatus.value) ? tReqStatus.value : "Open",
-          requiredAssignee: ALLOWED_ASSIGNEES.includes(tReqAssignee.value.trim()) ? tReqAssignee.value.trim() : "Myself",
-          keywords: tKeywords.value.split(",").map(s=>s.trim()).filter(Boolean),
-          sections: tSections.value.split("\n").map(s=>s.trim()).filter(Boolean)
-        };
-        if(isNew){ state.tickets.unshift(editing); }
-        else{ const idx=state.tickets.findIndex(x=>x.id===t.id); if(idx>=0) state.tickets[idx]=editing; }
-        save(); ticketDlg.close(); renderAll(); openDetail(editing.id);
-      };
-    }
-
-    // rubric editor
-    function openRubricEditor(){
-      const w = state.weights;
-      const set = ()=>{
-        wKeywords.value = w.keywords; wKeywordsVal.textContent = w.keywords + "%";
-        wSections.value = w.sections; wSectionsVal.textContent = w.sections + "%";
-        wStatus.value   = w.status;   wStatusVal.textContent   = w.status + "%";
-        wAssignee.value = w.assignee; wAssigneeVal.textContent = w.assignee + "%";
-        wPass.value     = w.pass;     wPassVal.textContent     = w.pass + "/100";
-      };
-      set();
-      const on = (el, key, valEl, suffix)=>{
-        el.oninput = ()=>{ state.weights[key] = Number(el.value)||0; valEl.textContent = el.value + suffix; save(); passLbl.textContent = state.weights.pass + "/100"; };
-      };
-      on(wKeywords, "keywords", wKeywordsVal, "%");
-      on(wSections, "sections", wSectionsVal, "%");
-      on(wStatus,   "status",   wStatusVal,   "%");
-      on(wAssignee, "assignee", wAssigneeVal, "%");
-      on(wPass,     "pass",     wPassVal,     "/100");
-      rubricDlg.showModal();
-    }
-
-    // stats
-    function renderStats(){
-      const weekAgo = Date.now()-7*24*3600e3;
-      const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
-      const open = state.tickets.filter(t=>t.status!=="Solved").length;
-      kSolved.textContent = solved; kOpen.textContent = open;
-      const graded = state.tickets.map(t=>t.grade?.score).filter(x=>typeof x==="number");
-      kAvg.textContent = graded.length? (graded.reduce((a,b)=>a+b,0)/graded.length).toFixed(0): "—";
-    }
-
     // helpers
     function fmt(d){ return d.toLocaleString(); }
-    function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","">":"&gt;"}[c])); }
+    function esc(s){
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
     function getCurrent(){ return state.tickets.find(x=>x.id===currentId); }
 
     // boot
@@ -700,76 +608,74 @@ Sections: ${s || "—"}`;
 
   })();
   </script>
-<script>
-(() => {
-  // GPT-powered grader client: calls your Vercel API and returns the same shape your UI expects
-  window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    const w = Object.assign({ sections: 60, status: 25, assignee: 15, pass: 80 }, weights || {});
-    const reply = String(attempt.reply || "");
 
-    // Call your serverless function
-    let ai;
-    try {
-      const resp = await fetch("/api/grade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reply,
-          expectedStatus: ticket.expected?.requiredStatus,
-          expectedAssignee: ticket.expected?.requiredAssignee
-        })
-      });
-      ai = await resp.json();
-      if (!ai || !Array.isArray(ai.checks)) throw new Error("Bad AI JSON");
-    } catch (err) {
-      console.error("AI grading failed, falling back:", err);
-      // Fallback: only Status/Assignee
-      const statusOk = String(attempt.status) === String(ticket.expected?.requiredStatus);
-      const assigneeOk = String(attempt.assignee) === String(ticket.expected?.requiredAssignee);
+  <script>
+  (() => {
+    // GPT-powered grader client
+    window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
+      const w = Object.assign({ sections: 60, status: 25, assignee: 15, pass: 80 }, weights || {});
+      const reply = String(attempt.reply || "");
+
+      let ai;
+      try {
+        const resp = await fetch("/api/grade", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reply,
+            expectedStatus: ticket.expected?.requiredStatus,
+            expectedAssignee: ticket.expected?.requiredAssignee
+          })
+        });
+        ai = await resp.json();
+        if (!ai || !Array.isArray(ai.checks)) throw new Error("Bad AI JSON");
+      } catch (err) {
+        console.error("AI grading failed, falling back:", err);
+        const statusOk = String(attempt.status) === String(ticket.expected?.requiredStatus);
+        const assigneeOk = String(attempt.assignee) === String(ticket.expected?.requiredAssignee);
+        const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
+        const sStructure = 0;
+        const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+        const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+        const score = sStructure + sStatus + sAssignee;
+
+        return {
+          checks: [
+            { label: "AI grading unavailable", ok: false, detail: "Fallback scoring used" },
+            { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status}` },
+            { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
+          ],
+          score,
+          pass: score >= (w.pass || 0)
+        };
+      }
+
+      const [greet, ack, sol, offer, close, cStatus, cAssignee] = ai.checks;
+      const statusOk   = !!(cStatus && cStatus.ok);
+      const assigneeOk = !!(cAssignee && cAssignee.ok);
+      const structurePct = Math.max(0, Math.min(100, Number(ai.structurePct || 0)));
+
       const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
-      const sStructure = 0;
+      const sStructure = structurePct * (w.sections||0) / sum;
       const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
       const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
       const score = sStructure + sStatus + sAssignee;
 
       return {
         checks: [
-          { label: "AI grading unavailable", ok: false, detail: "Fallback scoring used" },
-          { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status}` },
+          { label: "1) Greeting",      ok: !!greet?.ok,  detail: greet?.detail || "" },
+          { label: "2) Acknowledge",   ok: !!ack?.ok,    detail: ack?.detail || "" },
+          { label: "3) Solution",      ok: !!sol?.ok,    detail: sol?.detail || "" },
+          { label: "4) Offer Support", ok: !!offer?.ok,  detail: offer?.detail || "" },
+          { label: "5) Closing",       ok: !!close?.ok,  detail: close?.detail || "" },
+          { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status}` },
           { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
         ],
         score,
         pass: score >= (w.pass || 0)
       };
-    }
-
-    // Map AI result to your UI/weights
-    const [greet, ack, sol, offer, close, cStatus, cAssignee] = ai.checks;
-    const statusOk   = !!(cStatus && cStatus.ok);
-    const assigneeOk = !!(cAssignee && cAssignee.ok);
-    const structurePct = Math.max(0, Math.min(100, Number(ai.structurePct || 0)));
-
-    const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
-    const sStructure = structurePct * (w.sections||0) / sum;
-    const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
-    const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
-    const score = sStructure + sStatus + sAssignee;
-
-    return {
-      checks: [
-        { label: "1) Greeting",      ok: !!greet?.ok,  detail: greet?.detail || "" },
-        { label: "2) Acknowledge",   ok: !!ack?.ok,    detail: ack?.detail || "" },
-        { label: "3) Solution",      ok: !!sol?.ok,    detail: sol?.detail || "" },
-        { label: "4) Offer Support", ok: !!offer?.ok,  detail: offer?.detail || "" },
-        { label: "5) Closing",       ok: !!close?.ok,  detail: close?.detail || "" },
-        { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status}` },
-        { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
-      ],
-      score,
-      pass: score >= (w.pass || 0)
     };
-  };
-})();
-</script>
+  })();
+  </script>
 </body>
 </html>
