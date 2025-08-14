@@ -344,113 +344,169 @@ const submitBtn = document.getElementById("submitBtn");
     const wAssigneeVal = document.getElementById("wAssigneeVal");
     const wPassVal     = document.getElementById("wPassVal");
 
-    // events
-    unlockBtn.onclick = async ()=>{
-      const rec=getPass();
-      if(!rec){ const ok=await setTrainerPassword(); if(!ok) return; }
-      else { const ok=await requireTrainer(); if(!ok) return; trainer=true; refreshRole(); }
-    };
-    exportBtn.onclick = ()=>{
-      const blob = new Blob([JSON.stringify(state, null, 2)],{type:"application/json"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sop_scenarios.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-    };
-    importBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      fileInput.click();
-    };
-    fileInput.onchange = (e)=>{
-      const f=e.target.files[0]; if(!f) return;
-      const r=new FileReader();
-      r.onload=()=>{ try{ const data=JSON.parse(r.result);
-        if(!Array.isArray(data.tickets)||!data.weights) throw new Error("bad");
-        state=data; save(); renderAll(); showList(); alert("Imported ✅");
-      }catch{ alert("Invalid JSON"); } finally { e.target.value=""; } };
-      r.readAsText(f);
-    };
-    resetBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      if(!confirm("Reset scenarios to factory defaults?")) return;
-      localStorage.removeItem(STORE); state = DEFAULT; renderAll(); showList();
-    };
-    newTicketBtn.onclick = async ()=>{
-      if(!trainer){ alert("Trainer only"); return; }
-      const id=uid();
-      editing = { id, subject:"New scenario", requester:"user@example.com", channel:"Email", createdAt:Date.now(), status:"Open", assignee:"Unassigned",
-        assigneeOptions:["Myself","Billing Team","Tech Team"],
-        message:"Customer message here...",
-        expected:{ requiredStatus:"Open", requiredAssignee:"Myself", keywords:[], sections:[] },
-        messages:[], attempts:[], grade:null
-      };
-      openTicketEditor(editing, true);
-    };
-    editRubricBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      openRubricEditor();
-    };
+// events
+unlockBtn.onclick = async () => {
+  const rec = getPass();
+  if (!rec) {
+    const ok = await setTrainerPassword();
+    if (!ok) return;
+  } else {
+    const ok = await requireTrainer();
+    if (!ok) return;
+    trainer = true;
+    refreshRole();
+  }
+};
 
-    fStatus.onchange = renderList; fChannel.onchange = renderList; searchBox.oninput = renderList;
-    backBtn.onclick = showList;
-    editTicketBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      const t = getCurrent(); openTicketEditor(t, false);
-    };
-    deleteBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      const t=getCurrent(); if(!t) return;
-      if(!confirm("Delete this ticket?")) return;
-      state.tickets = state.tickets.filter(x=>x.id!==t.id);
-      save(); showList(); renderAll();
-    };
-    macroBtn.onclick = ()=>{
-      const add = "Thanks for reaching out! Could you share a screenshot and confirm your account email?";
-      replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
-    };
+exportBtn.onclick = () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "sop_scenarios.json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+importBtn.onclick = async () => {
+  if (!(trainer && await requireTrainer())) return;
+  fileInput.click();
+};
+
+fileInput.onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (!Array.isArray(data.tickets) || !data.weights) throw new Error("bad");
+      state = data; save(); renderAll(); showList(); alert("Imported ✅");
+    } catch {
+      alert("Invalid JSON");
+    } finally {
+      e.target.value = "";
+    }
+  };
+  r.readAsText(f);
+};
+
+resetBtn.onclick = async () => {
+  if (!(trainer && await requireTrainer())) return;
+  if (!confirm("Reset scenarios to factory defaults?")) return;
+  localStorage.removeItem(STORE);
+  state = DEFAULT;
+  renderAll();
+  showList();
+};
+
+newTicketBtn.onclick = async () => {
+  if (!trainer) { alert("Trainer only"); return; }
+  const id = uid();
+  editing = {
+    id,
+    subject: "New scenario",
+    requester: "user@example.com",
+    channel: "Email",
+    createdAt: Date.now(),
+    status: "Open",
+    assignee: "Unassigned",
+    assigneeOptions: ["Myself", "Billing Team", "Tech Team"],
+    // If you're using only messages[] for the thread, you can omit message:
+    message: "Customer message here...",
+    expected: { requiredStatus: "Open", requiredAssignee: "Myself", keywords: [], sections: [] },
+    messages: [],
+    attempts: [],
+    grade: null
+  };
+  openTicketEditor(editing, true);
+};
+
+editRubricBtn.onclick = async () => {
+  if (!(trainer && await requireTrainer())) return;
+  openRubricEditor();
+};
+
+fStatus.onchange = renderList;
+fChannel.onchange = renderList;
+searchBox.oninput = renderList;
+
+backBtn.onclick = showList;
+
+editTicketBtn.onclick = async () => {
+  if (!(trainer && await requireTrainer())) return;
+  const t = getCurrent();
+  openTicketEditor(t, false);
+};
+
+deleteBtn.onclick = async () => {
+  if (!(trainer && await requireTrainer())) return;
+  const t = getCurrent(); if (!t) return;
+  if (!confirm("Delete this ticket?")) return;
+  state.tickets = state.tickets.filter(x => x.id !== t.id);
+  save(); showList(); renderAll();
+};
+
+macroBtn.onclick = () => {
+  const add = "Thanks for reaching out! Could you share a screenshot and confirm your account email?";
+  replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
+};
+
+// ONE-BUTTON SUBMIT-AS (also grades)
 submitBtn.onclick = () => {
   const t = getCurrent();
   if (!t) return;
 
-  // 1) read current selections
-  const chosenStatus = dStatus.value;             // Submit As dropdown
-  const chosenAssignee = dAssignee.value;         // Assignee dropdown
-  const text = (replyBox.value || "").trim();     // trainee reply
-
-  if (!text) {
-    alert("Please write a reply before submitting.");
+  // 0) sanity checks
+  if (typeof window.gradeAttempt !== "function") {
+    console.error("grader.js not loaded or gradeAttempt not defined on window.");
+    alert('Grader is not loaded. Ensure <script src="grader.js"></script> is at the end of index.html and the file exists.');
+    return;
+  }
+  if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
+    console.error("Ticket missing expected.requiredStatus/requiredAssignee", t);
+    alert("This ticket is missing grading rules. Open it in Trainer → Edit and set Required Submit As and Required Assignee.");
     return;
   }
 
-  // 2) append trainee reply to the thread
-  const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
-  t.messages.push(msg);
+  // 1) read current selections and reply
+  const chosenStatus = dStatus.value;            // Submit As dropdown
+  const chosenAssignee = dAssignee.value;        // Assignee dropdown
+  const text = (replyBox.value || "").trim();    // trainee reply
+  if (!text) { alert("Please write a reply before submitting."); return; }
+  // Optional strictness:
+  // if (chosenAssignee === "Unassigned") { alert("Choose an assignee before submitting."); return; }
 
-  // 3) persist the trainee's chosen status/assignee on the ticket
-  t.status = chosenStatus;
-  t.assignee = chosenAssignee;
+  try {
+    // 2) append trainee reply to the thread
+    const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
+    t.messages.push(msg);
 
-  // 4) record attempt (what we grade)
-  const attempt = {
-    ts: msg.ts,
-    reply: text,
-    status: chosenStatus,
-    assignee: chosenAssignee
-  };
-  t.attempts.push(attempt);
+    // 3) persist selections on the ticket
+    t.status = chosenStatus;
+    t.assignee = chosenAssignee;
 
-  // clear the editor
-  replyBox.value = "";
+    // 4) record attempt (this is what we grade)
+    const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
+    t.attempts.push(attempt);
 
-  // 5) grade using grader.js (client-side)
-  const report = window.gradeAttempt(t, attempt, state.weights);
-  t.grade = report;
+    // 5) grade (from grader.js)
+    const report = window.gradeAttempt(t, attempt, state.weights);
+    if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
+    t.grade = report;
 
-  // save & refresh UI
-  save();
-  renderGrade(report);
-  renderStats();
-  renderList();
-  openDetail(t.id); // re-open to show the new message in the thread
+    // 6) save & refresh UI
+    save();
+    renderGrade(report);
+    renderStats();
+    renderList();
+    openDetail(t.id); // re-open so the new message shows
+
+    // 7) clear editor only after success
+    replyBox.value = "";
+  } catch (err) {
+    console.error("Submit/grade failed:", err);
+    alert("Grading failed. Check the browser console for details.");
+  }
 };
-
 
     // rendering
     function renderAll(){ renderList(); renderStats(); refreshRole(); passLbl.textContent = state.weights.pass + "/100"; }
