@@ -386,11 +386,21 @@ Sign-off"></textarea>
       }catch{ alert("Invalid JSON"); } finally { e.target.value=""; } };
       r.readAsText(f);
     };
-    resetBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      if(!confirm("Reset scenarios to factory defaults?")) return;
-      localStorage.removeItem(STORE); state = DEFAULT; renderAll(); showList();
-    };
+    // Change this code each class if you want to reset everyone
+const STUDENT_RESET_CODE = "APEX-2025-COHORT-01";
+resetBtn.onclick = async () => {
+  const code = prompt("Enter reset code (provided by your trainer):");
+  if (code === null) return; // Cancel clicked
+  if (code.trim() !== STUDENT_RESET_CODE) {
+    alert("Invalid code.");
+    return;
+  }
+  localStorage.removeItem(STORE);
+  state = DEFAULT;
+  renderAll();
+  showList();
+  alert("Reset complete.");
+};
     newTicketBtn.onclick = async ()=>{
       if(!trainer){ alert("Trainer only"); return; }
       const id=uid();
