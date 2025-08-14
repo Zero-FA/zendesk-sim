@@ -657,5 +657,76 @@ Sections: ${s || "—"}`;
 
   })();
   </script>
+<script>
+(() => {
+  // GPT-powered grader client: calls your Vercel API and returns the same shape your UI expects
+  window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
+    const w = Object.assign({ sections: 60, status: 25, assignee: 15, pass: 80 }, weights || {});
+    const reply = String(attempt.reply || "");
+
+    // Call your serverless function
+    let ai;
+    try {
+      const resp = await fetch("/api/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reply,
+          expectedStatus: ticket.expected?.requiredStatus,
+          expectedAssignee: ticket.expected?.requiredAssignee
+        })
+      });
+      ai = await resp.json();
+      if (!ai || !Array.isArray(ai.checks)) throw new Error("Bad AI JSON");
+    } catch (err) {
+      console.error("AI grading failed, falling back:", err);
+      // Fallback: only Status/Assignee
+      const statusOk = String(attempt.status) === String(ticket.expected?.requiredStatus);
+      const assigneeOk = String(attempt.assignee) === String(ticket.expected?.requiredAssignee);
+      const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
+      const sStructure = 0;
+      const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+      const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+      const score = sStructure + sStatus + sAssignee;
+
+      return {
+        checks: [
+          { label: "AI grading unavailable", ok: false, detail: "Fallback scoring used" },
+          { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status}` },
+          { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
+        ],
+        score,
+        pass: score >= (w.pass || 0)
+      };
+    }
+
+    // Map AI result to your UI/weights
+    const [greet, ack, sol, offer, close, cStatus, cAssignee] = ai.checks;
+    const statusOk   = !!(cStatus && cStatus.ok);
+    const assigneeOk = !!(cAssignee && cAssignee.ok);
+    const structurePct = Math.max(0, Math.min(100, Number(ai.structurePct || 0)));
+
+    const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
+    const sStructure = structurePct * (w.sections||0) / sum;
+    const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+    const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+    const score = sStructure + sStatus + sAssignee;
+
+    return {
+      checks: [
+        { label: "1) Greeting",      ok: !!greet?.ok,  detail: greet?.detail || "" },
+        { label: "2) Acknowledge",   ok: !!ack?.ok,    detail: ack?.detail || "" },
+        { label: "3) Solution",      ok: !!sol?.ok,    detail: sol?.detail || "" },
+        { label: "4) Offer Support", ok: !!offer?.ok,  detail: offer?.detail || "" },
+        { label: "5) Closing",       ok: !!close?.ok,  detail: close?.detail || "" },
+        { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status}` },
+        { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
+      ],
+      score,
+      pass: score >= (w.pass || 0)
+    };
+  };
+})();
+</script>
 </body>
 </html>
