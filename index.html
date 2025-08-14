@@ -121,9 +121,7 @@
                   <button class="btn" id="macroBtn">Insert macro</button>
                 </div>
                 <div>
-                  <button class="btn" id="gradeBtn">Grade attempt</button>
-                  <button class="btn" id="solveBtn">Mark solved</button>
-                  <button class="btn primary" id="sendBtn">Send reply</button>
+<button class="btn primary" id="submitBtn">Submit As</button>
                 </div>
               </div>
             </div>
@@ -311,11 +309,9 @@ const DEFAULT = {
     const dStatus = document.getElementById("dStatus");
     const dAssignee = document.getElementById("dAssignee");
     const thread = document.getElementById("thread");
-    const replyBox = document.getElementById("replyBox");
-    const macroBtn = document.getElementById("macroBtn");
-    const sendBtn = document.getElementById("sendBtn");
-    const solveBtn = document.getElementById("solveBtn");
-    const gradeBtn = document.getElementById("gradeBtn");
+const replyBox = document.getElementById("replyBox");
+const macroBtn = document.getElementById("macroBtn");
+const submitBtn = document.getElementById("submitBtn");
     const gradeTable = document.querySelector("#gradeTable tbody");
     const scoreLbl = document.getElementById("scoreLbl");
     const passLbl  = document.getElementById("passLbl");
@@ -409,27 +405,52 @@ const DEFAULT = {
       const add = "Thanks for reaching out! Could you share a screenshot and confirm your account email?";
       replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
     };
-    sendBtn.onclick = ()=>{
-      const t=getCurrent(); if(!t) return;
-      const text=replyBox.value.trim(); if(!text) return;
-      const msg = {id:uid(), author:"Trainee", ts:Date.now(), body:text};
-      t.messages.push(msg); t.attempts.push({ts:msg.ts, reply:text, status:t.status, assignee:t.assignee||"Unassigned"});
-      if(!t.firstAgentReplyAt) t.firstAgentReplyAt = msg.ts;
-      replyBox.value=""; save(); openDetail(t.id);
-    };
-    solveBtn.onclick = ()=>{
-      const t=getCurrent(); if(!t) return;
-      t.status="Solved"; save(); openDetail(t.id);
-    };
-    dStatus.onchange = ()=>{ const t=getCurrent(); if(!t) return; t.status=dStatus.value; save(); renderList(); };
-    dAssignee.onchange = ()=>{ const t=getCurrent(); if(!t) return; t.assignee=dAssignee.value; save(); };
-    gradeBtn.onclick = ()=>{
-      const t=getCurrent(); if(!t) return;
-      const latest = t.attempts[t.attempts.length-1] || {reply:"",status:t.status,assignee:t.assignee||"Unassigned"};
-      const report = window.gradeAttempt(t, latest, state.weights); // from grader.js
-      t.grade = report; save();
-      renderGrade(report); renderStats(); renderList();
-    };
+submitBtn.onclick = () => {
+  const t = getCurrent();
+  if (!t) return;
+
+  // 1) read current selections
+  const chosenStatus = dStatus.value;             // Submit As dropdown
+  const chosenAssignee = dAssignee.value;         // Assignee dropdown
+  const text = (replyBox.value || "").trim();     // trainee reply
+
+  if (!text) {
+    alert("Please write a reply before submitting.");
+    return;
+  }
+
+  // 2) append trainee reply to the thread
+  const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
+  t.messages.push(msg);
+
+  // 3) persist the trainee's chosen status/assignee on the ticket
+  t.status = chosenStatus;
+  t.assignee = chosenAssignee;
+
+  // 4) record attempt (what we grade)
+  const attempt = {
+    ts: msg.ts,
+    reply: text,
+    status: chosenStatus,
+    assignee: chosenAssignee
+  };
+  t.attempts.push(attempt);
+
+  // clear the editor
+  replyBox.value = "";
+
+  // 5) grade using grader.js (client-side)
+  const report = window.gradeAttempt(t, attempt, state.weights);
+  t.grade = report;
+
+  // save & refresh UI
+  save();
+  renderGrade(report);
+  renderStats();
+  renderList();
+  openDetail(t.id); // re-open to show the new message in the thread
+};
+
 
     // rendering
     function renderAll(){ renderList(); renderStats(); refreshRole(); passLbl.textContent = state.weights.pass + "/100"; }
