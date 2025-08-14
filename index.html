@@ -264,28 +264,28 @@
       },
 {
         id: uid(),
-        subject: "[SUBJECT]",
-        requester: "[EMAIL]",
+        subject: "Subject",
+        requester: "Email",
         channel: "Email",
         createdAt: now - 4 * 3600e3,
         status: "Open",
         assignee: "Myself",
         assigneeOptions: ALLOWED_ASSIGNEES,
         messages: [
-          { id: uid(), author: "[EMAIL]", ts: now - 4 * 3600e3,
-            body: "[MESSAGE]" }
+          { id: uid(), author: "Email", ts: now - 4 * 3600e3,
+            body: "Message" }
         ],
         expected: {
-          requiredStatus: "[STATUS]",
-          requiredAssignee: "[ASSIGNEE]",
-          keywords: [KEYWORDS],
+          requiredStatus: "Solved",
+          requiredAssignee: "Myself",
+          keywords: [],
           sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
         },
         /* optional Zendesk-ish fields */
         tags: ["account_questions","language_en","sentiment_neutral"],
         category: "Support",
-        intent: "[ISSUE]",
-        accountId: "APEX-00001",
+        intent: "Issue",
+        accountId: "Fake APEX ID",
 attachments: [
   {
     type: "image",
