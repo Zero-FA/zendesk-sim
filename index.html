@@ -78,7 +78,7 @@
         <strong id="countLbl">0 tickets</strong>
         <label class="small muted">Submit As
           <select class="select" id="fStatus">
-            <option>All</option><option>Open</option><option>Pending</option><option>On-hold</option><option>Solved</option>
+            <option>All</option><option>Open</option><option>Pending</option><option>Solved</option>
           </select>
         </label>
         <label class="small muted">Channel
@@ -96,10 +96,10 @@
           <div id="dSubject" style="font-weight:600"></div>
           <div style="margin-left:auto"></div>
           <label class="small muted">Submit As
-            <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>On-hold</option><option>Solved</option></select>
+            <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
           </label>
           <label class="small muted">Assignee
-            <select class="select" id="dAssignee"><option>Unassigned</option><option>Myself</option><option>Billing Team</option><option>Tech Team</option></select>
+            <select class="select" id="dAssignee"><option>Myself</option><option>Support Tier 2</option><option>Support Tier 3</option><option>Fraud General</option><option>Payout</option></select>
           </label>
           <button class="btn" id="editTicketBtn">Edit</button>
           <button class="btn danger" id="deleteBtn">Delete</button>
@@ -164,16 +164,16 @@
         <label class="small">Channel
           <select id="tChan" class="select"><option>Email</option><option>Web</option><option>Chat</option></select>
         </label>
-        <label class="small">Assignee options (comma) <input id="tAssignees" class="input" placeholder="Myself,Billing Team,Tech Team"/></label>
+        <label class="small">Assignee options (comma) <input id="tAssignees" class="input" placeholder="Myself,Support Tier 2,Support Tier 3,Fraud General,Payout"/></label>
       </div>
       <label class="small" style="display:block;margin-top:8px">Customer Message<textarea id="tMsg" class="input" style="width:100%;min-height:120px"></textarea></label>
       <div class="nav-label">Expected rubric</div>
       <div class="grid2">
         <label class="small">Required Submit As
-          <select id="tReqStatus" class="select"><option>Open</option><option>Pending</option><option>On-hold</option><option>Solved</option></select>
+          <select id="tReqStatus" class="select"><option>Open</option><option>Pending</option><option>Solved</option></select>
         </label>
         <label class="small">Required Assignee
-          <input id="tReqAssignee" class="input" placeholder="Myself or Team name"/>
+          <input id="tReqAssignee" class="input" placeholder="Myself, Support Tier 2, Support Tier 3, Fraud General, Payout"/>
         </label>
       </div>
       <label class="small" style="display:block;margin-top:8px">Required Keywords (comma) <input id="tKeywords" class="input" placeholder="apologize, refund, steps"/></label>
@@ -213,12 +213,13 @@ Sign-off"></textarea>
 
   <!-- DEFAULT tickets & constants (put BEFORE app code) -->
   <script>
-  // ID generator (must be defined before DEFAULT uses it)
   function uid(){ return Math.random().toString(36).slice(2,9); }
 
-  const STORE = "sop_sim_state_v6";   // bumped to v6 so old local data won't hide your defaults
+  const STORE = "sop_sim_state_v6";
   const PASS  = "sop_sim_pass_v2";
   const now   = Date.now();
+
+  const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
   const DEFAULT = {
     weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
@@ -230,8 +231,8 @@ Sign-off"></textarea>
         channel: "Email",
         createdAt: now - 4 * 3600e3,
         status: "Open",
-        assignee: "Unassigned",
-        assigneeOptions: ["Myself","Support Tier 2","Support Tier 3"],
+        assignee: "Myself",
+        assigneeOptions: ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"],
         messages: [
           { id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3, body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
         ],
@@ -251,14 +252,14 @@ Sign-off"></textarea>
         channel: "Email",
         createdAt: now - 30 * 3600e3,
         status: "Open",
-        assignee: "Unassigned",
-        assigneeOptions: ["Myself","Billing Team","Tech Team"],
+        assignee: "Myself",
+        assigneeOptions: ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"],
         messages: [
           { id: uid(), author: "customer@example.com", ts: now - 30 * 3600e3, body: "I was double-charged this month. Can you refund the duplicate? Thanks!" }
         ],
         expected: {
           requiredStatus: "Pending",
-          requiredAssignee: "Billing Team",
+          requiredAssignee: "Payout",
           keywords: ["apologize","refund","duplicate","confirm","timeline"],
           sections: ["Greeting","Resolution","Next steps","Sign-off"]
         },
@@ -386,28 +387,27 @@ Sign-off"></textarea>
       }catch{ alert("Invalid JSON"); } finally { e.target.value=""; } };
       r.readAsText(f);
     };
-    // Change this code each class if you want to reset everyone
-const STUDENT_RESET_CODE = "apexreset01";
-resetBtn.onclick = async () => {
-  const code = prompt("Enter reset code (provided by your trainer):");
-  if (code === null) return; // Cancel clicked
-  if (code.trim() !== STUDENT_RESET_CODE) {
-    alert("Invalid code.");
-    return;
-  }
-  localStorage.removeItem(STORE);
-  state = DEFAULT;
-  renderAll();
-  showList();
-  alert("Reset complete.");
-};
+
+    // Code-protected Reset
+    const STUDENT_RESET_CODE = "apexreset01";
+    resetBtn.onclick = async () => {
+      const code = prompt("Enter reset code (provided by your trainer):");
+      if (code === null) return;
+      if (code.trim() !== STUDENT_RESET_CODE) { alert("Invalid code."); return; }
+      localStorage.removeItem(STORE);
+      state = DEFAULT;
+      renderAll();
+      showList();
+      alert("Reset complete.");
+    };
+
     newTicketBtn.onclick = async ()=>{
       if(!trainer){ alert("Trainer only"); return; }
       const id=uid();
       const editing = {
         id, subject:"New scenario", requester:"user@example.com", channel:"Email", createdAt:Date.now(),
-        status:"Open", assignee:"Unassigned",
-        assigneeOptions:["Myself","Billing Team","Tech Team"],
+        status:"Open", assignee:"Myself",
+        assigneeOptions:[...ALLOWED_ASSIGNEES],
         messages: [{ id: uid(), author: "user@example.com", ts: Date.now(), body: "Customer message here..." }],
         expected:{ requiredStatus:"Open", requiredAssignee:"Myself", keywords:[], sections:[] },
         attempts:[], grade:null
@@ -440,62 +440,53 @@ resetBtn.onclick = async () => {
       replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
     };
 
-    // ONE-BUTTON SUBMIT-AS (also grades)
-    // FIXED
-submitBtn.onclick = async () => {
-  const t = getCurrent();
-  if (!t) return;
+    // Submit & grade (awaits async grader)
+    submitBtn.onclick = async () => {
+      const t = getCurrent();
+      if (!t) return;
 
-  // 0) sanity checks (keep your existing ones)
-  if (typeof window.gradeAttempt !== "function") {
-    console.error("grader not loaded");
-    alert('Grader is not loaded. Make sure the grader script is included at the end of the page.');
-    return;
-  }
-  if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
-    console.error("Ticket missing expected.requiredStatus/requiredAssignee", t);
-    alert("This ticket is missing grading rules. Open it in Trainer → Edit and set Required Submit As and Required Assignee.");
-    return;
-  }
+      if (typeof window.gradeAttempt !== "function") {
+        console.error("grader not loaded");
+        alert('Grader is not loaded. Make sure the grader script is included at the end of the page.');
+        return;
+      }
+      if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
+        console.error("Ticket missing expected.requiredStatus/requiredAssignee", t);
+        alert("This ticket is missing grading rules. Open it in Trainer → Edit and set Required Submit As and Required Assignee.");
+        return;
+      }
 
-  // 1) read selections & reply (same as before)
-  const chosenStatus = dStatus.value;
-  const chosenAssignee = dAssignee.value;
-  const text = (replyBox.value || "").trim();
-  if (!text) { alert("Please write a reply before submitting."); return; }
+      const chosenStatus = dStatus.value;
+      const chosenAssignee = dAssignee.value;
+      const text = (replyBox.value || "").trim();
+      if (!text) { alert("Please write a reply before submitting."); return; }
 
-  try {
-    // 2) append trainee reply to the thread (same as before)
-    const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
-    t.messages.push(msg);
+      try {
+        const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
+        t.messages.push(msg);
 
-    // 3) persist selections (same as before)
-    t.status = chosenStatus;
-    t.assignee = chosenAssignee;
+        t.status = chosenStatus;
+        t.assignee = chosenAssignee;
 
-    // 4) record attempt
-    const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
-    t.attempts.push(attempt);
+        const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
+        t.attempts.push(attempt);
 
-    // 5) *** AWAIT the async grader ***
-    const report = await window.gradeAttempt(t, attempt, state.weights);
-    if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
-    t.grade = report;
+        const report = await window.gradeAttempt(t, attempt, state.weights);
+        if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
+        t.grade = report;
 
-    // 6) save & refresh UI (same as before)
-    save();
-    renderGrade(report);
-    renderStats();
-    renderList();
-    openDetail(t.id);
+        save();
+        renderGrade(report);
+        renderStats();
+        renderList();
+        openDetail(t.id);
 
-    // 7) clear editor
-    replyBox.value = "";
-  } catch (err) {
-    console.error("Submit/grade failed:", err);
-    alert("Grading failed. Check the browser console for details.");
-  }
-};
+        replyBox.value = "";
+      } catch (err) {
+        console.error("Submit/grade failed:", err);
+        alert("Grading failed. Check the browser console for details.");
+      }
+    };
 
     // --- rendering ---
     function renderAll(){ renderList(); renderStats(); refreshRole(); passLbl.textContent = state.weights.pass + "/100"; }
@@ -548,9 +539,14 @@ submitBtn.onclick = async () => {
       dSubject.textContent = t.subject;
       dRequester.textContent = t.requester||"—";
       dCreated.textContent = fmt(new Date(t.createdAt));
-      dStatus.value = t.status;
+      dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
       renderAssigneeOptions(t);
-      dAssignee.value = t.assignee||"Unassigned";
+      // If current assignee not in allowed list, select first allowed
+      if (![...dAssignee.options].some(o=>o.value===t.assignee)) {
+        dAssignee.value = ALLOWED_ASSIGNEES[0];
+      } else {
+        dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
+      }
       dExpected.textContent = trainer ? expectedPreview(t) : "—";
       replyBox.value = "";
       thread.innerHTML = "";
@@ -563,10 +559,8 @@ submitBtn.onclick = async () => {
       renderGrade(t.grade || null);
     }
     function renderAssigneeOptions(t){
-      const defaults = ["Unassigned","Myself","Billing Team","Tech Team"];
-      const custom = Array.isArray(t.assigneeOptions)? t.assigneeOptions : [];
-      const opts = Array.from(new Set([...defaults, ...custom]));
-      dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
+      // Force-allow only the specified list
+      dAssignee.innerHTML = ALLOWED_ASSIGNEES.map(o=>`<option>${esc(o)}</option>`).join("");
     }
     function showList(){ detail.classList.add("hidden"); document.getElementById("list").classList.remove("hidden"); renderList(); }
     function renderGrade(report){
@@ -593,9 +587,9 @@ Sections: ${s || "—"}`;
     function openTicketEditor(t,isNew){
       const editing = structuredClone(t);
       tSub.value = editing.subject||""; tReq.value = editing.requester||""; tChan.value = editing.channel||"Email";
-      tAssignees.value = (editing.assigneeOptions||["Myself","Billing Team","Tech Team"]).join(",");
+      tAssignees.value = (editing.assigneeOptions||[...ALLOWED_ASSIGNEES]).join(",");
       tMsg.value = (editing.messages && editing.messages[editing.messages.length-1]?.body) || "";
-      tReqStatus.value = editing.expected?.requiredStatus||"Open";
+      tReqStatus.value = ["Open","Pending","Solved"].includes(editing.expected?.requiredStatus) ? editing.expected.requiredStatus : "Open";
       tReqAssignee.value = editing.expected?.requiredAssignee||"Myself";
       tKeywords.value = (editing.expected?.keywords||[]).join(",");
       tSections.value = (editing.expected?.sections||[]).join("\n");
@@ -604,17 +598,17 @@ Sections: ${s || "—"}`;
         editing.subject = tSub.value.trim()||"Untitled";
         editing.requester = tReq.value.trim()||"user@example.com";
         editing.channel = tChan.value;
-        editing.assigneeOptions = tAssignees.value.split(",").map(s=>s.trim()).filter(Boolean);
+        // Only keep allowed assignees
+        editing.assigneeOptions = tAssignees.value.split(",").map(s=>s.trim()).filter(v=>ALLOWED_ASSIGNEES.includes(v));
         const newBody = tMsg.value;
         if (newBody) {
-          // Ensure the last message is the customer message to respond to
           const last = editing.messages && editing.messages[editing.messages.length-1];
           if (last && last.author === editing.requester) last.body = newBody;
           else editing.messages.push({ id: uid(), author: editing.requester, ts: Date.now(), body: newBody });
         }
         editing.expected = {
-          requiredStatus: tReqStatus.value,
-          requiredAssignee: tReqAssignee.value.trim()||"Myself",
+          requiredStatus: ["Open","Pending","Solved"].includes(tReqStatus.value) ? tReqStatus.value : "Open",
+          requiredAssignee: ALLOWED_ASSIGNEES.includes(tReqAssignee.value.trim()) ? tReqAssignee.value.trim() : "Myself",
           keywords: tKeywords.value.split(",").map(s=>s.trim()).filter(Boolean),
           sections: tSections.value.split("\n").map(s=>s.trim()).filter(Boolean)
         };
@@ -658,7 +652,7 @@ Sections: ${s || "—"}`;
 
     // helpers
     function fmt(d){ return d.toLocaleString(); }
-    function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+    function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","">":"&gt;"}[c])); }
     function getCurrent(){ return state.tickets.find(x=>x.id===currentId); }
 
     // boot
