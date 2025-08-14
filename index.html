@@ -301,11 +301,13 @@ Sign-off"></textarea>
       const ok = (await sha256B64(rec.salt+input))===rec.hashB64; if(!ok) alert("Incorrect password.");
       return ok;
     }
-    async function setTrainerPassword(){
-      const p1=prompt("Set trainer password:"); if(!p1) return false;
-      const p2=prompt("Confirm password:"); if(p1!==p2){ alert("Passwords do not match."); return false; }
-      const salt=randSalt(); const hashB64=await sha256B64(salt+p1); setPass({salt,hashB64}); alert("Trainer password set."); trainer=true; refreshRole(); return true;
-    }
+async function setTrainerPassword(){
+  const p1 = "adminapex01"; // hard-coded password
+  const salt = randSalt();
+  const hashB64 = await sha256B64(salt + p1);
+  setPass({salt, hashB64});
+  alert("Trainer password set to hard-coded value.");
+}
 
     // --- state (already defined in previous script) ---
     let trainer = false;
