@@ -501,6 +501,21 @@ Sign-off"></textarea>
     };
 
     // --- rendering ---
+function renderStats(){
+  const weekAgo = Date.now() - 7 * 24 * 3600e3;
+
+  // count solved in last 7d
+  const solved = state.tickets.filter(t => t.status === "Solved" && t.createdAt >= weekAgo).length;
+  kSolved.textContent = solved;
+
+  // count currently open (not Solved)
+  const open = state.tickets.filter(t => t.status !== "Solved").length;
+  kOpen.textContent = open;
+
+  // average score from graded tickets
+  const graded = state.tickets.map(t => t.grade?.score).filter(x => typeof x === "number");
+  kAvg.textContent = graded.length ? (graded.reduce((a,b) => a + b, 0) / graded.length).toFixed(0) : "—";
+}
     function renderAll(){ renderList(); renderStats(); refreshRole(); passLbl.textContent = state.weights.pass + "/100"; }
     function refreshRole(){
       roleLbl.textContent = trainer ? "Trainer mode" : "Trainee mode";
