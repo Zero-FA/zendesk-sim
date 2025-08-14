@@ -2,8 +2,6 @@
 import OpenAI from "openai";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-// Keep replies reasonable
 const MAX_REPLY_CHARS = 8000;
 
 // Strict schema: 5 structure checks only
@@ -22,7 +20,7 @@ const schema = {
         required: ["label", "ok", "detail"]
       }
     },
-    structurePct: { type: "number" } // 0–100, aggregate of the 5
+    structurePct: { type: "number" } // 0–100
   },
   required: ["checks", "structurePct"],
   additionalProperties: false
@@ -90,7 +88,6 @@ Also return "structurePct" (0–100) as your overall structure score for the 5 c
     let parsed;
     try { parsed = JSON.parse(content); } catch { parsed = {}; }
 
-    // Guarantee exactly 5 checks with the right labels, clamp structurePct
     const labels = ["Greeting", "Acknowledge", "Solution", "Offer Support", "Closing"];
     const given = Array.isArray(parsed.checks) ? parsed.checks : [];
     const checks = labels.map((label, i) => {
@@ -98,7 +95,7 @@ Also return "structurePct" (0–100) as your overall structure score for the 5 c
       return {
         label,
         ok: typeof c?.ok === "boolean" ? c.ok : false,
-        detail: typeof c?.detail === "string" && c.detail ? c.detail : "Not evaluated"
+        detail: typeof c?.detail === "string" && c.detail ? c.detail : (given[i] ? "Not met" : "AI unavailable")
       };
     });
     const structurePct = Math.max(0, Math.min(100, Number(parsed.structurePct ?? 0)));
