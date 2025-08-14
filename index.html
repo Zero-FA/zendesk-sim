@@ -402,11 +402,12 @@ async function requireTrainer(){
     const wPassVal     = document.getElementById("wPassVal");
 
     // --- events ---
-    unlockBtn.onclick = async ()=>{
-      const rec=getPass();
-      if(!rec){ const ok=await setTrainerPassword(); if(!ok) return; }
-      else { const ok=await requireTrainer(); if(!ok) return; trainer=true; refreshRole(); }
-    };
+unlockBtn.onclick = async () => {
+  const ok = await requireTrainer();
+  if (!ok) return;
+  trainer = true;
+  refreshRole();
+};
     exportBtn.onclick = ()=>{
       const blob = new Blob([JSON.stringify(state, null, 2)],{type:"application/json"});
       const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sop_scenarios.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
