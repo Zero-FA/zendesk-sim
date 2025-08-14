@@ -121,7 +121,7 @@
                   <button class="btn" id="macroBtn">Insert macro</button>
                 </div>
                 <div>
-<button class="btn primary" id="submitBtn">Submit As</button>
+                  <button class="btn primary" id="submitBtn">Submit As</button>
                 </div>
               </div>
             </div>
@@ -211,53 +211,69 @@ Sign-off"></textarea>
 
   <input type="file" id="fileInput" accept="application/json" class="hidden"/>
 
-<!-- Your tickets are embedded below in DEFAULT -->
-<script>
-// ID generator (must be defined before DEFAULT uses it)
-function uid() {
-  return Math.random().toString(36).substring(2, 9);
-}
+  <!-- DEFAULT tickets & constants (put BEFORE app code) -->
+  <script>
+  // ID generator (must be defined before DEFAULT uses it)
+  function uid(){ return Math.random().toString(36).slice(2,9); }
 
-const STORE = "sop_sim_state_v5";
-const PASS  = "sop_sim_pass_v1";
-const now   = Date.now();
+  const STORE = "sop_sim_state_v6";   // bumped to v6 so old local data won't hide your defaults
+  const PASS  = "sop_sim_pass_v2";
+  const now   = Date.now();
 
-const DEFAULT = {
-  weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
-  tickets: [
-    {
-      id: uid(),
-      subject: "Can't log in after password reset",
-      requester: "sara@brand.co",
-      channel: "Email",
-      createdAt: now - 4 * 3600e3,
-      status: "Open",
-      assignee: "Unassigned",
-      assigneeOptions: ["Myself","Support Tier 2","Support Tier 3"],
-      messages: [
-        {
-          id: uid(),
-          author: "sara@brand.co",
-          ts: now - 4 * 3600e3,
-          body: `Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara`
-        }
-      ],
-      expected: {
-        requiredStatus: "Pending",
-        requiredAssignee: "Myself",
-        keywords: [],
-        sections: ["Greeting","Open","Resolution","Closer","Sign-off"]
+  const DEFAULT = {
+    weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
+    tickets: [
+      {
+        id: uid(),
+        subject: "Can't log in after password reset",
+        requester: "sara@brand.co",
+        channel: "Email",
+        createdAt: now - 4 * 3600e3,
+        status: "Open",
+        assignee: "Unassigned",
+        assigneeOptions: ["Myself","Support Tier 2","Support Tier 3"],
+        messages: [
+          { id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3, body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
+        ],
+        expected: {
+          requiredStatus: "Pending",
+          requiredAssignee: "Myself",
+          keywords: ["apologize","reset","session","cache","incognito","confirm"],
+          sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
+        },
+        attempts: [],
+        grade: null
       },
-      attempts: [],
-      grade: null
-    }
-  ]
-};
-</script>
-  
+      {
+        id: uid(),
+        subject: "Refund for duplicate charge",
+        requester: "customer@example.com",
+        channel: "Email",
+        createdAt: now - 30 * 3600e3,
+        status: "Open",
+        assignee: "Unassigned",
+        assigneeOptions: ["Myself","Billing Team","Tech Team"],
+        messages: [
+          { id: uid(), author: "customer@example.com", ts: now - 30 * 3600e3, body: "I was double-charged this month. Can you refund the duplicate? Thanks!" }
+        ],
+        expected: {
+          requiredStatus: "Pending",
+          requiredAssignee: "Billing Team",
+          keywords: ["apologize","refund","duplicate","confirm","timeline"],
+          sections: ["Greeting","Resolution","Next steps","Sign-off"]
+        },
+        attempts: [],
+        grade: null
+      }
+    ]
+  };
+  </script>
+
   <!-- Main app script -->
   <script>
   (()=>{
+
+    // --- storage & auth helpers ---
     function load(){ try{ return JSON.parse(localStorage.getItem(STORE) || "null"); }catch{return null;} }
     function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
     async function sha256B64(s){ const enc=new TextEncoder().encode(s); const buf=await crypto.subtle.digest("SHA-256",enc); return btoa(String.fromCharCode(...new Uint8Array(buf))); }
@@ -277,11 +293,12 @@ const DEFAULT = {
       const salt=randSalt(); const hashB64=await sha256B64(salt+p1); setPass({salt,hashB64}); alert("Trainer password set."); trainer=true; refreshRole(); return true;
     }
 
+    // --- state ---
     let state = load() || DEFAULT;
     let trainer = false;
     let currentId = null;
 
-    // elements
+    // --- elements ---
     const roleLbl = document.getElementById("roleLbl");
     const unlockBtn = document.getElementById("unlockBtn");
     const exportBtn = document.getElementById("exportBtn");
@@ -309,9 +326,10 @@ const DEFAULT = {
     const dStatus = document.getElementById("dStatus");
     const dAssignee = document.getElementById("dAssignee");
     const thread = document.getElementById("thread");
-const replyBox = document.getElementById("replyBox");
-const macroBtn = document.getElementById("macroBtn");
-const submitBtn = document.getElementById("submitBtn");
+    const replyBox = document.getElementById("replyBox");
+    const macroBtn = document.getElementById("macroBtn");
+    const submitBtn = document.getElementById("submitBtn");
+
     const gradeTable = document.querySelector("#gradeTable tbody");
     const scoreLbl = document.getElementById("scoreLbl");
     const passLbl  = document.getElementById("passLbl");
@@ -344,169 +362,133 @@ const submitBtn = document.getElementById("submitBtn");
     const wAssigneeVal = document.getElementById("wAssigneeVal");
     const wPassVal     = document.getElementById("wPassVal");
 
-// events
-unlockBtn.onclick = async () => {
-  const rec = getPass();
-  if (!rec) {
-    const ok = await setTrainerPassword();
-    if (!ok) return;
-  } else {
-    const ok = await requireTrainer();
-    if (!ok) return;
-    trainer = true;
-    refreshRole();
-  }
-};
+    // --- events ---
+    unlockBtn.onclick = async ()=>{
+      const rec=getPass();
+      if(!rec){ const ok=await setTrainerPassword(); if(!ok) return; }
+      else { const ok=await requireTrainer(); if(!ok) return; trainer=true; refreshRole(); }
+    };
+    exportBtn.onclick = ()=>{
+      const blob = new Blob([JSON.stringify(state, null, 2)],{type:"application/json"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sop_scenarios.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    };
+    importBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      fileInput.click();
+    };
+    fileInput.onchange = (e)=>{
+      const f=e.target.files[0]; if(!f) return;
+      const r=new FileReader();
+      r.onload=()=>{ try{
+        const data=JSON.parse(r.result);
+        if(!Array.isArray(data.tickets)||!data.weights) throw new Error("bad");
+        state=data; save(); renderAll(); showList(); alert("Imported ✅");
+      }catch{ alert("Invalid JSON"); } finally { e.target.value=""; } };
+      r.readAsText(f);
+    };
+    resetBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      if(!confirm("Reset scenarios to factory defaults?")) return;
+      localStorage.removeItem(STORE); state = DEFAULT; renderAll(); showList();
+    };
+    newTicketBtn.onclick = async ()=>{
+      if(!trainer){ alert("Trainer only"); return; }
+      const id=uid();
+      const editing = {
+        id, subject:"New scenario", requester:"user@example.com", channel:"Email", createdAt:Date.now(),
+        status:"Open", assignee:"Unassigned",
+        assigneeOptions:["Myself","Billing Team","Tech Team"],
+        messages: [{ id: uid(), author: "user@example.com", ts: Date.now(), body: "Customer message here..." }],
+        expected:{ requiredStatus:"Open", requiredAssignee:"Myself", keywords:[], sections:[] },
+        attempts:[], grade:null
+      };
+      openTicketEditor(editing, true);
+    };
+    editRubricBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      openRubricEditor();
+    };
 
-exportBtn.onclick = () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "sop_scenarios.json";
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-};
+    fStatus.onchange = renderList;
+    fChannel.onchange = renderList;
+    searchBox.oninput = renderList;
 
-importBtn.onclick = async () => {
-  if (!(trainer && await requireTrainer())) return;
-  fileInput.click();
-};
+    backBtn.onclick = showList;
+    editTicketBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      const t = getCurrent(); openTicketEditor(t, false);
+    };
+    deleteBtn.onclick = async ()=>{
+      if(!(trainer && await requireTrainer())) return;
+      const t=getCurrent(); if(!t) return;
+      if(!confirm("Delete this ticket?")) return;
+      state.tickets = state.tickets.filter(x=>x.id!==t.id);
+      save(); showList(); renderAll();
+    };
+    macroBtn.onclick = ()=>{
+      const add = "Thanks for reaching out! Could you share a screenshot and confirm your account email?";
+      replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
+    };
 
-fileInput.onchange = (e) => {
-  const f = e.target.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    try {
-      const data = JSON.parse(r.result);
-      if (!Array.isArray(data.tickets) || !data.weights) throw new Error("bad");
-      state = data; save(); renderAll(); showList(); alert("Imported ✅");
-    } catch {
-      alert("Invalid JSON");
-    } finally {
-      e.target.value = "";
-    }
-  };
-  r.readAsText(f);
-};
+    // ONE-BUTTON SUBMIT-AS (also grades)
+    submitBtn.onclick = () => {
+      const t = getCurrent();
+      if (!t) return;
 
-resetBtn.onclick = async () => {
-  if (!(trainer && await requireTrainer())) return;
-  if (!confirm("Reset scenarios to factory defaults?")) return;
-  localStorage.removeItem(STORE);
-  state = DEFAULT;
-  renderAll();
-  showList();
-};
+      // 0) sanity checks
+      if (typeof window.gradeAttempt !== "function") {
+        console.error("grader not loaded");
+        alert('Grader is not loaded. Make sure the grader script is included at the end of the page.');
+        return;
+      }
+      if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
+        console.error("Ticket missing expected.requiredStatus/requiredAssignee", t);
+        alert("This ticket is missing grading rules. Open it in Trainer → Edit and set Required Submit As and Required Assignee.");
+        return;
+      }
 
-newTicketBtn.onclick = async () => {
-  if (!trainer) { alert("Trainer only"); return; }
-  const id = uid();
-  editing = {
-    id,
-    subject: "New scenario",
-    requester: "user@example.com",
-    channel: "Email",
-    createdAt: Date.now(),
-    status: "Open",
-    assignee: "Unassigned",
-    assigneeOptions: ["Myself", "Billing Team", "Tech Team"],
-    // If you're using only messages[] for the thread, you can omit message:
-    message: "Customer message here...",
-    expected: { requiredStatus: "Open", requiredAssignee: "Myself", keywords: [], sections: [] },
-    messages: [],
-    attempts: [],
-    grade: null
-  };
-  openTicketEditor(editing, true);
-};
+      // 1) read current selections and reply
+      const chosenStatus = dStatus.value;
+      const chosenAssignee = dAssignee.value;
+      const text = (replyBox.value || "").trim();
+      if (!text) { alert("Please write a reply before submitting."); return; }
+      // Optional strictness:
+      // if (chosenAssignee === "Unassigned") { alert("Choose an assignee before submitting."); return; }
 
-editRubricBtn.onclick = async () => {
-  if (!(trainer && await requireTrainer())) return;
-  openRubricEditor();
-};
+      try {
+        // 2) append trainee reply to the thread
+        const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
+        t.messages.push(msg);
 
-fStatus.onchange = renderList;
-fChannel.onchange = renderList;
-searchBox.oninput = renderList;
+        // 3) persist selections on the ticket
+        t.status = chosenStatus;
+        t.assignee = chosenAssignee;
 
-backBtn.onclick = showList;
+        // 4) record attempt (what we grade)
+        const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
+        t.attempts.push(attempt);
 
-editTicketBtn.onclick = async () => {
-  if (!(trainer && await requireTrainer())) return;
-  const t = getCurrent();
-  openTicketEditor(t, false);
-};
+        // 5) grade (from grader)
+        const report = window.gradeAttempt(t, attempt, state.weights);
+        if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
+        t.grade = report;
 
-deleteBtn.onclick = async () => {
-  if (!(trainer && await requireTrainer())) return;
-  const t = getCurrent(); if (!t) return;
-  if (!confirm("Delete this ticket?")) return;
-  state.tickets = state.tickets.filter(x => x.id !== t.id);
-  save(); showList(); renderAll();
-};
+        // 6) save & refresh UI
+        save();
+        renderGrade(report);
+        renderStats();
+        renderList();
+        openDetail(t.id);
 
-macroBtn.onclick = () => {
-  const add = "Thanks for reaching out! Could you share a screenshot and confirm your account email?";
-  replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
-};
+        // 7) clear editor only after success
+        replyBox.value = "";
+      } catch (err) {
+        console.error("Submit/grade failed:", err);
+        alert("Grading failed. Check the browser console for details.");
+      }
+    };
 
-// ONE-BUTTON SUBMIT-AS (also grades)
-submitBtn.onclick = () => {
-  const t = getCurrent();
-  if (!t) return;
-
-  // 0) sanity checks
-  if (typeof window.gradeAttempt !== "function") {
-    console.error("grader.js not loaded or gradeAttempt not defined on window.");
-    alert('Grader is not loaded. Make sure the file "grader.js" is included at the end of index.html.'); // <-- fixed
-    return;
-  }
-  if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
-    console.error("Ticket missing expected.requiredStatus/requiredAssignee", t);
-    alert("This ticket is missing grading rules. Open it in Trainer → Edit and set Required Submit As and Required Assignee.");
-    return;
-  }
-
-  // 1) read current selections and reply
-  const chosenStatus = dStatus.value;
-  const chosenAssignee = dAssignee.value;
-  const text = (replyBox.value || "").trim();
-  if (!text) { alert("Please write a reply before submitting."); return; }
-
-  try {
-    // 2) append trainee reply to the thread
-    const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
-    t.messages.push(msg);
-
-    // 3) persist selections on the ticket
-    t.status = chosenStatus;
-    t.assignee = chosenAssignee;
-
-    // 4) record attempt (what we grade)
-    const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
-    t.attempts.push(attempt);
-
-    // 5) grade (from grader.js)
-    const report = window.gradeAttempt(t, attempt, state.weights);
-    if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
-    t.grade = report;
-
-    // 6) save & refresh UI
-    save();
-    renderGrade(report);
-    renderStats();
-    renderList();
-    openDetail(t.id);
-
-    // 7) clear editor only after success
-    replyBox.value = "";
-  } catch (err) {
-    console.error("Submit/grade failed:", err);
-    alert("Grading failed. Check the browser console for details.");
-  }
-};
-
-    // rendering
+    // --- rendering ---
     function renderAll(){ renderList(); renderStats(); refreshRole(); passLbl.textContent = state.weights.pass + "/100"; }
     function refreshRole(){
       roleLbl.textContent = trainer ? "Trainer mode" : "Trainee mode";
@@ -520,7 +502,7 @@ submitBtn.onclick = () => {
       return state.tickets.filter(t=>{
         const okS = fStatus.value==="All"||t.status===fStatus.value;
         const okC = fChannel.value==="All"||t.channel===fChannel.value;
-        const text = (t.subject+" "+t.message+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
+        const text = (t.subject+" "+t.requester+" "+t.messages.map(m=>m.body).join(" ")+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
         const okQ = !q || text.includes(q);
         return okS && okC && okQ;
       });
@@ -597,12 +579,13 @@ Required Assignee: ${t.expected.requiredAssignee}
 Keywords: ${k || "—"}
 Sections: ${s || "—"}`;
     }
-    let editing=null;
+
+    // ticket editor (trainer)
     function openTicketEditor(t,isNew){
-      editing = structuredClone(t);
+      const editing = structuredClone(t);
       tSub.value = editing.subject||""; tReq.value = editing.requester||""; tChan.value = editing.channel||"Email";
       tAssignees.value = (editing.assigneeOptions||["Myself","Billing Team","Tech Team"]).join(",");
-      tMsg.value = editing.message||"";
+      tMsg.value = (editing.messages && editing.messages[editing.messages.length-1]?.body) || "";
       tReqStatus.value = editing.expected?.requiredStatus||"Open";
       tReqAssignee.value = editing.expected?.requiredAssignee||"Myself";
       tKeywords.value = (editing.expected?.keywords||[]).join(",");
@@ -613,7 +596,13 @@ Sections: ${s || "—"}`;
         editing.requester = tReq.value.trim()||"user@example.com";
         editing.channel = tChan.value;
         editing.assigneeOptions = tAssignees.value.split(",").map(s=>s.trim()).filter(Boolean);
-        editing.message = tMsg.value;
+        const newBody = tMsg.value;
+        if (newBody) {
+          // Ensure the last message is the customer message to respond to
+          const last = editing.messages && editing.messages[editing.messages.length-1];
+          if (last && last.author === editing.requester) last.body = newBody;
+          else editing.messages.push({ id: uid(), author: editing.requester, ts: Date.now(), body: newBody });
+        }
         editing.expected = {
           requiredStatus: tReqStatus.value,
           requiredAssignee: tReqAssignee.value.trim()||"Myself",
@@ -625,6 +614,8 @@ Sections: ${s || "—"}`;
         save(); ticketDlg.close(); renderAll(); openDetail(editing.id);
       };
     }
+
+    // rubric editor
     function openRubricEditor(){
       const w = state.weights;
       const set = ()=>{
@@ -645,6 +636,8 @@ Sections: ${s || "—"}`;
       on(wPass,     "pass",     wPassVal,     "/100");
       rubricDlg.showModal();
     }
+
+    // stats
     function renderStats(){
       const weekAgo = Date.now()-7*24*3600e3;
       const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
@@ -653,15 +646,91 @@ Sections: ${s || "—"}`;
       const graded = state.tickets.map(t=>t.grade?.score).filter(x=>typeof x==="number");
       kAvg.textContent = graded.length? (graded.reduce((a,b)=>a+b,0)/graded.length).toFixed(0): "—";
     }
-    function uid(){ return Math.random().toString(36).slice(2,9); }
+
+    // helpers
     function fmt(d){ return d.toLocaleString(); }
     function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
     function getCurrent(){ return state.tickets.find(x=>x.id===currentId); }
-    function showList(){ detail.classList.add("hidden"); document.getElementById("list").classList.remove("hidden"); renderList(); }
+
+    // boot
     refreshRole(); renderAll(); showList();
+
+  })();
   </script>
 
-  <!-- The grader is split into its own file -->
-  <script src="grader.js"></script>
+  <!-- Grader (inline so there’s no external dependency) -->
+  <script>
+  // Exposes window.gradeAttempt(ticket, attempt, weights)
+  // - ticket.expected = { requiredStatus, requiredAssignee, keywords[], sections[] }
+  // - attempt = { reply, status, assignee }
+  // - weights = { keywords, sections, status, assignee, pass }
+  (function () {
+    function gradeAttempt(ticket, attempt, weights) {
+      const w = Object.assign({ keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 }, weights || {});
+      const reply = String(attempt.reply || "").toLowerCase();
+      const result = { checks: [], score: 0, pass: false };
+
+      // Keywords
+      const need = (ticket.expected?.keywords || []).map(k => k.toLowerCase());
+      const found = need.filter(k => reply.includes(k));
+      const kwPct = need.length ? (found.length / need.length) : 1;
+      result.checks.push({
+        label: `Ticket response keywords (${found.length}/${need.length})`,
+        ok: kwPct === 1,
+        detail: need.length ? need.map(k => `${reply.includes(k) ? "✅" : "❌"} ${k}`).join(", ") : "Not required"
+      });
+
+      // Sections (presence + order)
+      const sections = (ticket.expected?.sections || []).map(s => s.toLowerCase());
+      let orderOk = true, lastIdx = -1, missing = [];
+      for (const sec of sections) {
+        const idx = reply.indexOf(sec);
+        if (idx === -1) { missing.push(sec); orderOk = false; continue; }
+        if (idx < lastIdx) orderOk = false;
+        lastIdx = idx;
+      }
+      let sectionPct = 1;
+      if (sections.length) {
+        const present = sections.length - missing.length;
+        sectionPct = present / sections.length * (orderOk ? 1 : 0.8);
+      }
+      result.checks.push({
+        label: `Response structure (sections)`,
+        ok: sectionPct === 1,
+        detail: sections.length ? (missing.length ? `Missing: ${missing.join(", ")}` : (orderOk ? "OK" : "Out of order")) : "Not required"
+      });
+
+      // Submit As
+      const statusOk = String(attempt.status) === String(ticket.expected?.requiredStatus);
+      result.checks.push({
+        label: `Submit As is "${ticket.expected?.requiredStatus}"`,
+        ok: statusOk,
+        detail: `Selected: ${attempt.status}`
+      });
+
+      // Assignee
+      const assigneeOk = String(attempt.assignee) === String(ticket.expected?.requiredAssignee);
+      result.checks.push({
+        label: `Assignee is "${ticket.expected?.requiredAssignee}"`,
+        ok: assigneeOk,
+        detail: `Selected: ${attempt.assignee}`
+      });
+
+      // Weighted score (normalized)
+      const sum = Math.max(1, (w.keywords || 0) + (w.sections || 0) + (w.status || 0) + (w.assignee || 0));
+      const sKeywords = kwPct * 100 * (w.keywords || 0) / sum;
+      const sSections = sectionPct * 100 * (w.sections || 0) / sum;
+      const sStatus   = (statusOk ? 100 : 0) * (w.status || 0) / sum;
+      const sAssignee = (assigneeOk ? 100 : 0) * (w.assignee || 0) / sum;
+
+      result.score = sKeywords + sSections + sStatus + sAssignee;
+      result.pass = result.score >= (w.pass || 0);
+
+      return result;
+    }
+
+    window.gradeAttempt = gradeAttempt;
+  })();
+  </script>
 </body>
 </html>
