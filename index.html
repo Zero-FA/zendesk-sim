@@ -5,153 +5,195 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>SOP Simulator — Trainee</title>
 <style>
-/* Zendesk-ish detail layout */
-.z-layout{display:grid;grid-template-columns:260px 1fr 300px;gap:16px;padding:12px}
-.z-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
-.z-left,.z-right{padding:12px}
-.z-field{margin:8px 0}
-.z-label{font-size:12px;color:var(--muted);margin-bottom:4px}
-.z-value{font-size:12px}
-.z-tags{display:flex;flex-wrap:wrap;gap:6px}
-.z-tag{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:#f8fafc}
-.z-main-head{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
-.z-main-body{padding:12px}
-.z-snap{border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:12px;color:var(--muted)}
-.composer{border-top:1px solid var(--line);padding:8px 12px}
-#replyBox{resize:vertical} /* only vertical resizing */
   :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+
+  /* top bar */
   .top{height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;background:#fff;border-bottom:1px solid var(--line)}
   .brand{display:flex;gap:8px;align-items:center}
   .logo{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
-  .layout{display:grid;gap:16px;grid-template-columns:220px 1fr 320px;padding:16px}
+
+  /* shell layout */
+  .layout{display:grid;gap:16px;grid-template-columns:220px 1fr;padding:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px}
   .rail{padding:12px;display:flex;flex-direction:column}
   .nav-label{font-size:12px;color:var(--muted);font-weight:600;margin:8px 0 6px}
   .nav-item{padding:8px;border-radius:12px;display:flex;gap:8px;align-items:center}
   .nav-item.active{background:#eef2f7;font-weight:600}
+
+  /* controls */
   .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:13px;cursor:pointer}
   .btn:hover{background:#f8fafc}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
   .btn.primary:hover{background:var(--accent2)}
   .btn.danger{color:var(--warn);border-color:#fecaca}
   .btn.danger:hover{background:#fef2f2}
-  .filters{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
   .select,.input{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;background:#fff}
+
+  /* list */
+  .filters{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
   .row{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
   .row:hover{background:#f8fafc}
   .avatar{width:36px;height:36px;border-radius:999px;background:#e5e7eb;display:grid;place-items:center;flex-shrink:0}
   .pill{background:#eef2f7;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:11px}
   .muted{color:var(--muted)}
   .small{font-size:12px}
-  .head{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
-  .grid{display:grid;gap:16px;grid-template-columns:300px 1fr 320px;padding:12px}
   .bubble{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
- textarea {
-  width: 100%;
-  min-height: 120px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px;
-  font: inherit;
-  resize: vertical;
-}
   .badge{font-size:11px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:999px}
-  .kpi{display:flex;justify-content:space-between;align-items:center}
-  .right{padding:12px}.pad{padding:12px}
   .hidden{display:none}
-  .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  /* reply box – vertical resize only */
+  textarea{
+    width:100%;
+    min-height:120px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px;
+    font:inherit;
+    resize:vertical;
+  }
+
   .table{width:100%;border-collapse:collapse}
   .table th,.table td{border-bottom:1px solid var(--line);padding:6px;text-align:left;font-size:12px}
   .ok{color:#065f46}.fail{color:#991b1b}
-  @media (max-width:1100px){.layout{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}
-  dialog::backdrop{background:rgba(0,0,0,.25)}
-  dialog{border:1px solid var(--line);border-radius:16px;padding:0;max-width:720px;width:calc(100% - 24px)}
+
+  /* responsive shell */
+  @media (max-width:1100px){.layout{grid-template-columns:1fr}}
+
+  /* ---------- Zendesk-ish detail layout ---------- */
+  .z-layout{display:grid;grid-template-columns:260px 1fr 300px;gap:16px;padding:12px}
+  .z-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .z-left,.z-right{padding:12px}
+  .z-field{margin:8px 0}
+  .z-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .z-value{font-size:12px}
+  .z-tags{display:flex;flex-wrap:wrap;gap:6px}
+  .z-tag{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:#f8fafc}
+  .z-main-head{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+  .z-main-body{padding:12px}
+  .z-snap{border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:12px;color:var(--muted);margin-top:8px}
+  .composer{border-top:1px solid var(--line);padding:8px 12px}
 </style>
 </head>
 <body>
   <div class="top">
     <div class="brand"><div class="logo">Z</div><div class="small muted">SOP Simulator (Trainee)</div></div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-      <!-- Only Reset remains -->
       <button class="btn" id="resetBtn">Reset</button>
     </div>
   </div>
 
-<div class="z-layout">
-  <!-- LEFT: fields -->
-  <aside class="z-left z-card">
-    <div class="z-field">
-      <div class="z-label">Assignee</div>
-      <select class="select" id="dAssignee"></select>
-    </div>
-    <div class="z-field">
-      <div class="z-label">Submit As</div>
-      <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
-    </div>
-    <div class="z-field">
-      <div class="z-label">Tags</div>
-      <div id="dTags" class="z-tags"></div>
-    </div>
-    <div class="z-field">
-      <div class="z-label">Category</div>
-      <div id="dCategory" class="z-value">—</div>
-    </div>
-    <div class="z-field">
-      <div class="z-label">Intent</div>
-      <div id="dIntent" class="z-value">—</div>
-    </div>
-    <div class="z-field">
-      <div class="z-label">Apex Account ID</div>
-      <div id="dAccount" class="z-value">—</div>
-    </div>
-  </aside>
+  <div class="layout">
+    <!-- LEFT RAIL -->
+    <aside class="rail card">
+      <div class="nav-label">Your work</div>
+      <div class="nav-item active"><span>📄</span><span>Tickets</span></div>
+      <div class="nav-label">Completed</div>
+      <div class="nav-item"><span>🗓️</span><span>Last 30 days</span></div>
+    </aside>
 
-  <!-- CENTER: message thread + composer -->
-  <section class="z-card">
-    <div class="z-main-head">
-      <strong id="dSubject" style="font-weight:600"></strong>
-      <div style="margin-left:auto" class="small muted">Requester: <span id="dRequester">—</span> • <span id="dCreated">—</span></div>
-    </div>
-    <div class="z-main-body">
-      <div id="thread"></div>
-      <div id="snapshots" class="z-snap hidden">No attachments</div>
-    </div>
-    <div class="composer">
-      <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
-        <button class="btn primary" id="submitBtn">Submit As</button>
+    <!-- CENTER -->
+    <main class="card">
+      <div class="filters">
+        <strong id="countLbl">0 tickets</strong>
+        <label class="small muted">Submit As
+          <select class="select" id="fStatus">
+            <option>All</option><option>Open</option><option>Pending</option><option>Solved</option>
+          </select>
+        </label>
+        <label class="small muted">Channel
+          <select class="select" id="fChannel">
+            <option>All</option><option>Email</option><option>Web</option><option>Chat</option>
+          </select>
+        </label>
+        <input id="searchBox" class="input" placeholder="Search subject or text"/>
       </div>
-    </div>
-  </section>
 
-  <!-- RIGHT: auto-grade / KPIs -->
-  <aside class="z-right z-card">
-    <div class="small" style="font-weight:600">Auto-Grade</div>
-    <table class="table" id="gradeTable">
-      <thead><tr><th>Check</th><th>Result</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <div class="small" style="margin-top:8px">Score: <strong id="scoreLbl">0/100</strong></div>
-    <div class="small" style="margin-top:4px">Pass threshold: <strong id="passLbl"></strong></div>
-    <hr style="margin:12px 0;border:none;border-top:1px solid var(--line)"/>
-    <div class="small" style="font-weight:600">Ticket statistics</div>
-    <div class="kpi"><span class="muted small">Solved (7d)</span><span id="kSolved">0</span></div>
-    <div class="kpi"><span class="muted small">Open now</span><span id="kOpen">0</span></div>
-    <div class="small" style="font-weight:600;margin-top:8px">QA average grade</div>
-    <div class="muted small">(auto-graded)</div>
-    <div style="font-size:24px;font-weight:800" id="kAvg">—</div>
-  </aside>
-</div>
+      <div id="list"></div>
 
-<!-- DEFAULT tickets & constants (must be before app code) -->
+      <!-- DETAIL (Zendesk-ish) -->
+      <div id="detail" class="hidden">
+        <div class="z-layout">
+          <!-- LEFT: fields -->
+          <aside class="z-left z-card">
+            <div class="z-field">
+              <div class="z-label">Assignee</div>
+              <select class="select" id="dAssignee"></select>
+            </div>
+            <div class="z-field">
+              <div class="z-label">Submit As</div>
+              <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
+            </div>
+            <div class="z-field">
+              <div class="z-label">Tags</div>
+              <div id="dTags" class="z-tags"></div>
+            </div>
+            <div class="z-field">
+              <div class="z-label">Category</div>
+              <div id="dCategory" class="z-value">—</div>
+            </div>
+            <div class="z-field">
+              <div class="z-label">Intent</div>
+              <div id="dIntent" class="z-value">—</div>
+            </div>
+            <div class="z-field">
+              <div class="z-label">Apex Account ID</div>
+              <div id="dAccount" class="z-value">—</div>
+            </div>
+            <div class="z-field">
+              <button class="btn" id="backBtn">← Back to list</button>
+            </div>
+          </aside>
+
+          <!-- CENTER: thread + composer -->
+          <section class="z-card">
+            <div class="z-main-head">
+              <strong id="dSubject" style="font-weight:600"></strong>
+              <div style="margin-left:auto" class="small muted">
+                <span id="dRequester">—</span> • <span id="dCreated">—</span>
+              </div>
+            </div>
+            <div class="z-main-body">
+              <div id="thread"></div>
+              <div id="snapshots" class="z-snap hidden">No attachments</div>
+            </div>
+            <div class="composer">
+              <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
+              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+                <button class="btn primary" id="submitBtn">Submit As</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- RIGHT: grader + stats -->
+          <aside class="z-right z-card">
+            <div class="small" style="font-weight:600">Auto-Grade</div>
+            <table class="table" id="gradeTable">
+              <thead><tr><th>Check</th><th>Result</th></tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="small" style="margin-top:8px">Score: <strong id="scoreLbl">0/100</strong></div>
+            <div class="small" style="margin-top:4px">Pass threshold: <strong id="passLbl"></strong></div>
+            <hr style="margin:12px 0;border:none;border-top:1px solid var(--line)"/>
+            <div class="small" style="font-weight:600">Ticket statistics</div>
+            <div class="kpi"><span class="muted small">Solved (7d)</span><span id="kSolved">0</span></div>
+            <div class="kpi"><span class="muted small">Open now</span><span id="kOpen">0</span></div>
+            <div class="small" style="font-weight:600;margin-top:8px">QA average grade</div>
+            <div class="muted small">(auto-graded)</div>
+            <div style="font-size:24px;font-weight:800" id="kAvg">—</div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<!-- DEFAULT tickets & constants -->
 <script>
   function uid(){ return Math.random().toString(36).slice(2,9); }
 
   const STORE = "sop_sim_state_v10";
   const now   = Date.now();
-
   const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
   const DEFAULT = {
@@ -173,9 +215,21 @@
         expected: {
           requiredStatus: "Pending",
           requiredAssignee: "Myself",
-          keywords: [],
+          keywords: [
+            // you can put full URLs here if you want them to paste the exact link:
+            // "https://apextraderfunding.com/faq/password-reset"
+          ],
           sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
         },
+        /* optional Zendesk-ish fields */
+        tags: ["account_questions","language_en","sentiment_neutral"],
+        category: "Support",
+        intent: "Login Issue",
+        accountId: "APEX-00001",
+        attachments: [
+          // { type:"image", url:"/assets/2fa-disabled.png" },
+          // { type:"link",  url:"https://example.com/faq/login", title:"Login Troubleshooting" }
+        ],
         attempts: [],
         grade: null
       },
@@ -195,9 +249,16 @@
         expected: {
           requiredStatus: "Pending",
           requiredAssignee: "Payout",
-          keywords: [],
+          keywords: ["apologize","refund","duplicate","confirm","timeline"],
           sections: ["Greeting","Resolution","Next steps","Sign-off"]
         },
+        tags: ["billing","intent_confidence_high"],
+        category: "Billing",
+        intent: "Refund - Duplicate",
+        accountId: "APEX-92161-283",
+        attachments: [
+          { type:"link", url:"https://apextraderfunding.com/faq/billing#duplicate-charge", title:"FAQ: Duplicate Charge" }
+        ],
         attempts: [],
         grade: null
       }
@@ -237,10 +298,14 @@
   const dSubject = document.getElementById("dSubject");
   const dRequester = document.getElementById("dRequester");
   const dCreated = document.getElementById("dCreated");
-  const dExpected = document.getElementById("dExpected");
   const dStatus = document.getElementById("dStatus");
   const dAssignee = document.getElementById("dAssignee");
+  const dTags = document.getElementById("dTags");
+  const dCategory = document.getElementById("dCategory");
+  const dIntent = document.getElementById("dIntent");
+  const dAccount = document.getElementById("dAccount");
   const thread = document.getElementById("thread");
+  const snapshots = document.getElementById("snapshots");
   const replyBox = document.getElementById("replyBox");
   const submitBtn = document.getElementById("submitBtn");
 
@@ -251,11 +316,12 @@
   const kSolved = document.getElementById("kSolved");
   const kOpen = document.getElementById("kOpen");
   const kAvg = document.getElementById("kAvg");
+
   const resetBtn = document.getElementById("resetBtn");
 
   let currentId = null;
 
-  // --- stats (define before renderAll) ---
+  // --- stats ---
   function renderStats(){
     const weekAgo = Date.now() - 7*24*3600e3;
     const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
@@ -314,8 +380,10 @@
   function openDetail(id){
     currentId=id;
     const t=state.tickets.find(x=>x.id===id); if(!t) return;
+
     document.getElementById("list").classList.add("hidden");
     detail.classList.remove("hidden");
+
     dSubject.textContent = t.subject;
     dRequester.textContent = t.requester||"—";
     dCreated.textContent = fmt(new Date(t.createdAt));
@@ -323,12 +391,14 @@
     renderAssigneeOptions(t);
     dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
 
-    // trainer preview hidden, but keep content for code debugging
-    dExpected.textContent = `Required Submit As: ${t.expected.requiredStatus}
-Required Assignee: ${t.expected.requiredAssignee}
-Keywords: ${(t.expected.keywords||[]).join(", ") || "—"}
-Sections: ${(t.expected.sections||[]).join(" > ") || "—"}`;
+    // fields left rail
+    const tags = (t.tags || []);
+    dTags.innerHTML = tags.length ? tags.map(x=>`<span class="z-tag">${esc(x)}</span>`).join("") : `<span class="z-value muted">—</span>`;
+    dCategory.textContent = t.category || "—";
+    dIntent.textContent = t.intent || "—";
+    dAccount.textContent = t.accountId || "—";
 
+    // thread
     replyBox.value = "";
     thread.innerHTML = "";
     t.messages.forEach(m=>{
@@ -337,10 +407,29 @@ Sections: ${(t.expected.sections||[]).join(" > ") || "—"}`;
         <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>`;
       thread.appendChild(d);
     });
+
+    // attachments
+    if (t.attachments && t.attachments.length) {
+      snapshots.classList.remove("hidden");
+      snapshots.innerHTML = t.attachments.map(a=>{
+        if (a.type==="image") return `<div style="margin-bottom:8px"><img src="${esc(a.url)}" alt="" style="max-width:100%;border-radius:8px"/></div>`;
+        return `<div class="small"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`;
+      }).join("");
+    } else {
+      snapshots.classList.add("hidden");
+      snapshots.textContent = "No attachments";
+    }
+
     renderGrade(t.grade || null);
+    renderStats();
   }
 
-  function showList(){ detail.classList.add("hidden"); document.getElementById("list").classList.remove("hidden"); renderList(); }
+  function showList(){
+    detail.classList.add("hidden");
+    document.getElementById("list").classList.remove("hidden");
+    renderList();
+    renderStats();
+  }
 
   function renderGrade(report){
     gradeTable.innerHTML = ""; scoreLbl.textContent = "0/100"; passLbl.textContent = state.weights.pass + "/100";
@@ -362,18 +451,13 @@ Sections: ${(t.expected.sections||[]).join(" > ") || "—"}`;
   searchBox.oninput = renderList;
   backBtn.onclick = showList;
 
-  // Submit & grade
   submitBtn.onclick = async () => {
     const t = state.tickets.find(x=>x.id===currentId);
     if (!t) return;
 
-    if (typeof window.gradeAttempt !== "function") {
-      alert('Grader is not loaded.');
-      return;
-    }
+    if (typeof window.gradeAttempt !== "function") { alert('Grader is not loaded.'); return; }
     if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
-      alert("This ticket is missing grading rules.");
-      return;
+      alert("This ticket is missing grading rules."); return;
     }
 
     const chosenStatus = dStatus.value;
