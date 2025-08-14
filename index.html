@@ -199,69 +199,40 @@
   const DEFAULT = {
     weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
     tickets: [
-      {
-        id: uid(),
-        subject: "Can't log in after password reset",
-        requester: "sara@brand.co",
-        channel: "Email",
-        createdAt: now - 4 * 3600e3,
-        status: "Open",
-        assignee: "Myself",
-        assigneeOptions: ALLOWED_ASSIGNEES,
-        messages: [
-          { id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3,
-            body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
-        ],
-        expected: {
-          requiredStatus: "Pending",
-          requiredAssignee: "Myself",
-          keywords: [
-            // you can put full URLs here if you want them to paste the exact link:
-            // "https://apextraderfunding.com/faq/password-reset"
-          ],
-          sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
-        },
-        /* optional Zendesk-ish fields */
-        tags: ["account_questions","language_en","sentiment_neutral"],
-        category: "Support",
-        intent: "Login Issue",
-        accountId: "APEX-00001",
-        attachments: [
-          // { type:"image", url:"/assets/2fa-disabled.png" },
-          // { type:"link",  url:"https://example.com/faq/login", title:"Login Troubleshooting" }
-        ],
-        attempts: [],
-        grade: null
-      },
-      {
-        id: uid(),
-        subject: "Refund for duplicate charge",
-        requester: "customer@example.com",
-        channel: "Email",
-        createdAt: now - 30 * 3600e3,
-        status: "Open",
-        assignee: "Myself",
-        assigneeOptions: ALLOWED_ASSIGNEES,
-        messages: [
-          { id: uid(), author: "customer@example.com", ts: now - 30 * 3600e3,
-            body: "I was double-charged this month. Can you refund the duplicate? Thanks!" }
-        ],
-        expected: {
-          requiredStatus: "Pending",
-          requiredAssignee: "Payout",
-          keywords: ["apologize","refund","duplicate","confirm","timeline"],
-          sections: ["Greeting","Resolution","Next steps","Sign-off"]
-        },
-        tags: ["billing","intent_confidence_high"],
-        category: "Billing",
-        intent: "Refund - Duplicate",
-        accountId: "APEX-92161-283",
-        attachments: [
-          { type:"link", url:"https://cdn.discordapp.com/attachments/1369362874891505704/1405216489794965715/image.png?ex=689f56d6&is=689e0556&hm=4f74263c28a1250036635f1a2252f9947e2f7feed91752bedb1c89ecd239cb1d&", title:"FAQ: Duplicate Charge" }
-        ],
-        attempts: [],
-        grade: null
-      },
+{
+  id: uid(),
+  subject: "Can't log in after password reset",
+  requester: "sara@brand.co",
+  channel: "Email",
+  createdAt: now - 4 * 3600e3,
+  status: "Open",
+  assignee: "Myself",
+  assigneeOptions: ALLOWED_ASSIGNEES,
+  messages: [
+    {
+      id: uid(),
+      author: "sara@brand.co",
+      ts: now - 4 * 3600e3,
+      body: "Hi, I reset my password but still can’t log in..."
+    }
+  ],
+  expected: {
+    requiredStatus: "Pending",
+    requiredAssignee: "Myself",
+    keywords: ["apologize","refund","duplicate","confirm","timeline"],
+    sections: ["Greeting","Resolution","Next steps","Sign-off"]
+  },
+  tags: ["billing","intent_confidence_high"],
+  category: "Billing",
+  intent: "Refund - Duplicate",
+  accountId: "APEX-92161-283",
+  attachments: [
+    // ⚠️ Replace this with a public https:// link (file:// won't load in browsers)
+    { type: "image", url: "https://yourhost.com/path/screenshot.png", title: "Screenshot of error" }
+  ],
+  attempts: [],
+  grade: null
+}
     ]
   };
 
