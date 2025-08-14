@@ -3,27 +3,34 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Zendesk-Style Trainer — SOP Simulator (Standalone)</title>
+<title>SOP Simulator — Trainee</title>
 <style>
   :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
   .top{height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;background:#fff;border-bottom:1px solid var(--line)}
-  .brand{display:flex;gap:8px;align-items:center}.logo{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+  .brand{display:flex;gap:8px;align-items:center}
+  .logo{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
   .layout{display:grid;gap:16px;grid-template-columns:220px 1fr 320px;padding:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px}
   .rail{padding:12px;display:flex;flex-direction:column}
   .nav-label{font-size:12px;color:var(--muted);font-weight:600;margin:8px 0 6px}
-  .nav-item{padding:8px;border-radius:12px;cursor:pointer;display:flex;gap:8px;align-items:center}
-  .nav-item:hover{background:#f1f5f9}.nav-item.active{background:#eef2f7;font-weight:600}
+  .nav-item{padding:8px;border-radius:12px;display:flex;gap:8px;align-items:center}
+  .nav-item.active{background:#eef2f7;font-weight:600}
   .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:13px;cursor:pointer}
-  .btn:hover{background:#f8fafc}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.primary:hover{background:var(--accent2)}
-  .btn.danger{color:var(--warn);border-color:#fecaca}.btn.danger:hover{background:#fef2f2}
+  .btn:hover{background:#f8fafc}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:var(--accent2)}
+  .btn.danger{color:var(--warn);border-color:#fecaca}
+  .btn.danger:hover{background:#fef2f2}
   .filters{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
   .select,.input{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;background:#fff}
-  .row{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}.row:hover{background:#f8fafc}
+  .row{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
+  .row:hover{background:#f8fafc}
   .avatar{width:36px;height:36px;border-radius:999px;background:#e5e7eb;display:grid;place-items:center;flex-shrink:0}
   .pill{background:#eef2f7;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:11px}
-  .muted{color:var(--muted)} .small{font-size:12px}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
   .head{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
   .grid{display:grid;gap:16px;grid-template-columns:300px 1fr 320px;padding:12px}
   .bubble{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
@@ -31,29 +38,21 @@
   .badge{font-size:11px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:999px}
   .kpi{display:flex;justify-content:space-between;align-items:center}
   .right{padding:12px}.pad{padding:12px}
-  .hint{font-size:12px;color:var(--muted)}
   .hidden{display:none}
   .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
-  .slider-row{display:grid;grid-template-columns:1fr 90px;gap:8px;align-items:center}
-  .slider-row input[type=range]{width:100%}
+  .table{width:100%;border-collapse:collapse}
+  .table th,.table td{border-bottom:1px solid var(--line);padding:6px;text-align:left;font-size:12px}
+  .ok{color:#065f46}.fail{color:#991b1b}
   @media (max-width:1100px){.layout{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}
   dialog::backdrop{background:rgba(0,0,0,.25)}
   dialog{border:1px solid var(--line);border-radius:16px;padding:0;max-width:720px;width:calc(100% - 24px)}
-  .dlg-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
-  .dlg-body{padding:12px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .table{width:100%;border-collapse:collapse}.table th,.table td{border-bottom:1px solid var(--line);padding:6px;text-align:left;font-size:12px}
-  .ok{color:#065f46}.fail{color:#991b1b}
 </style>
 </head>
 <body>
   <div class="top">
-    <div class="brand"><div class="logo">Z</div><div class="small muted">SOP Simulator</div></div>
-    <div class="small muted" id="roleLbl">Trainee mode</div>
+    <div class="brand"><div class="logo">Z</div><div class="small muted">SOP Simulator (Trainee)</div></div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-      <button class="btn" id="unlockBtn">Unlock Trainer</button>
-      <button class="btn" id="exportBtn">Export Scenarios</button>
-      <button class="btn" id="importBtn">Import Scenarios</button>
+      <!-- Only Reset remains -->
       <button class="btn" id="resetBtn">Reset</button>
     </div>
   </div>
@@ -65,11 +64,6 @@
       <div class="nav-item active"><span>📄</span><span>Tickets</span></div>
       <div class="nav-label">Completed</div>
       <div class="nav-item"><span>🗓️</span><span>Last 30 days</span></div>
-      <div class="grow"></div>
-      <div class="grid2">
-        <button class="btn primary" id="newTicketBtn">New Ticket</button>
-        <button class="btn" id="editRubricBtn">Rubric</button>
-      </div>
     </aside>
 
     <!-- CENTER -->
@@ -88,6 +82,7 @@
         </label>
         <input id="searchBox" class="input" placeholder="Search subject or text"/>
       </div>
+
       <div id="list"></div>
 
       <div id="detail" class="hidden">
@@ -101,31 +96,26 @@
           <label class="small muted">Assignee
             <select class="select" id="dAssignee"><option>Myself</option><option>Support Tier 2</option><option>Support Tier 3</option><option>Fraud General</option><option>Payout</option></select>
           </label>
-          <button class="btn" id="editTicketBtn">Edit</button>
-          <button class="btn danger" id="deleteBtn">Delete</button>
         </div>
         <div class="grid">
           <aside>
             <div class="small muted">Requester</div><div id="dRequester" class="small">—</div>
             <div class="small muted" style="margin-top:6px">Created</div><div id="dCreated" class="small">—</div>
-            <div class="small muted" style="margin-top:6px">Expected (Trainer)</div>
-            <div id="dExpected" class="bubble small mono">—</div>
-            <div class="hint" id="trainerHint">Visible only in trainer mode</div>
+            <!-- Trainer preview hidden for trainees -->
+            <div class="small muted" style="margin-top:6px;display:none">Expected (Trainer)</div>
+            <div id="dExpected" class="bubble small mono" style="display:none">—</div>
           </aside>
+
           <section>
             <div id="thread"></div>
             <div style="border-top:1px solid var(--line);padding-top:8px">
               <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
-              <div style="display:flex;gap:8px;justify-content:space-between;margin-top:6px">
-                <div class="small muted">
-                  <button class="btn" id="macroBtn">Insert macro</button>
-                </div>
-                <div>
-                  <button class="btn primary" id="submitBtn">Submit As</button>
-                </div>
+              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+                <button class="btn primary" id="submitBtn">Submit As</button>
               </div>
             </div>
           </section>
+
           <aside class="pad card">
             <div class="small" style="font-weight:600">Auto-Grade</div>
             <table class="table" id="gradeTable">
@@ -154,570 +144,353 @@
     </aside>
   </div>
 
-  <!-- Ticket Editor Dialog -->
-  <dialog id="ticketDlg">
-    <div class="dlg-head"><div style="font-weight:600">Ticket Editor (Trainer)</div><button class="btn" onclick="ticketDlg.close()">✕</button></div>
-    <div class="dlg-body">
-      <div class="grid2">
-        <label class="small">Subject <input id="tSub" class="input"/></label>
-        <label class="small">Requester <input id="tReq" class="input"/></label>
-        <label class="small">Channel
-          <select id="tChan" class="select"><option>Email</option><option>Web</option><option>Chat</option></select>
-        </label>
-        <label class="small">Assignee options (comma) <input id="tAssignees" class="input" placeholder="Myself,Support Tier 2,Support Tier 3,Fraud General,Payout"/></label>
-      </div>
-      <label class="small" style="display:block;margin-top:8px">Customer Message<textarea id="tMsg" class="input" style="width:100%;min-height:120px"></textarea></label>
-      <div class="nav-label">Expected rubric</div>
-      <div class="grid2">
-        <label class="small">Required Submit As
-          <select id="tReqStatus" class="select"><option>Open</option><option>Pending</option><option>Solved</option></select>
-        </label>
-        <label class="small">Required Assignee
-          <input id="tReqAssignee" class="input" placeholder="Myself, Support Tier 2, Support Tier 3, Fraud General, Payout"/>
-        </label>
-      </div>
-      <label class="small" style="display:block;margin-top:8px">Required Keywords (comma) <input id="tKeywords" class="input" placeholder="apologize, refund, steps"/></label>
-      <label class="small" style="display:block;margin-top:8px">Required Sections (one per line, in order)
-        <textarea id="tSections" class="input" style="width:100%;min-height:100px" placeholder="Greeting
-Diagnosis
-Resolution
-Next steps
-Sign-off"></textarea>
-      </label>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-        <button class="btn" onclick="ticketDlg.close()">Cancel</button>
-        <button class="btn primary" id="saveTicketBtn">Save ticket</button>
-      </div>
-    </div>
-  </dialog>
+<!-- DEFAULT tickets & constants (must be before app code) -->
+<script>
+  function uid(){ return Math.random().toString(36).slice(2,9); }
 
-  <!-- Rubric Dialog (trainer-only sliders) -->
-  <dialog id="rubricDlg">
-    <div class="dlg-head"><div style="font-weight:600">Scoring Controls (Trainer)</div><button class="btn" onclick="rubricDlg.close()">✕</button></div>
-    <div class="dlg-body">
-      <div class="small muted" style="margin-bottom:8px">Adjust the weights and passing threshold. Trainees can't see or change these.</div>
-      <div class="slider-row"><label class="small">Keywords weight</label><input type="range" min="0" max="100" step="5" id="wKeywords"><span id="wKeywordsVal" class="small"></span></div>
-      <div class="slider-row"><label class="small">Sections weight</label><input type="range" min="0" max="100" step="5" id="wSections"><span id="wSectionsVal" class="small"></span></div>
-      <div class="slider-row"><label class="small">Submit As weight</label><input type="range" min="0" max="100" step="5" id="wStatus"><span id="wStatusVal" class="small"></span></div>
-      <div class="slider-row"><label class="small">Assignee weight</label><input type="range" min="0" max="100" step="5" id="wAssignee"><span id="wAssigneeVal" class="small"></span></div>
-      <hr style="margin:10px 0;border:none;border-top:1px solid var(--line)"/>
-      <div class="slider-row"><label class="small">Pass threshold</label><input type="range" min="0" max="100" step="1" id="wPass"><span id="wPassVal" class="small"></span></div>
-      <div class="hint" style="margin-top:8px">Weights are normalized automatically to 100% for scoring.</div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-        <button class="btn" onclick="rubricDlg.close()">Close</button>
-      </div>
-    </div>
-  </dialog>
+  const STORE = "sop_sim_state_v10";
+  const now   = Date.now();
 
-  <input type="file" id="fileInput" accept="application/json" class="hidden"/>
+  const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
-  <!-- DEFAULT tickets & constants (must be before app code) -->
-  <script>
-    // Unique ID generator for tickets/messages
-    function uid(){ return Math.random().toString(36).slice(2,9); }
-
-    // Storage keys
-    const STORE = "sop_sim_state_v10";
-    const PASS  = "sop_sim_pass_v2";
-    const now   = Date.now();
-
-    // Allowed assignees for dropdown
-    const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
-
-    // Default dataset
-    const DEFAULT = {
-      weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
-      tickets: [
-        {
-          id: uid(),
-          subject: "Can't log in after password reset",
-          requester: "sara@brand.co",
-          channel: "Email",
-          createdAt: now - 4 * 3600e3,
-          status: "Open",
-          assignee: "Myself",
-          assigneeOptions: ALLOWED_ASSIGNEES,
-          messages: [
-            { id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3,
-              body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
-          ],
-          expected: {
-            requiredStatus: "Pending",
-            requiredAssignee: "Myself",
-            keywords: [],
-            sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
-          },
-          attempts: [],
-          grade: null
+  const DEFAULT = {
+    weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
+    tickets: [
+      {
+        id: uid(),
+        subject: "Can't log in after password reset",
+        requester: "sara@brand.co",
+        channel: "Email",
+        createdAt: now - 4 * 3600e3,
+        status: "Open",
+        assignee: "Myself",
+        assigneeOptions: ALLOWED_ASSIGNEES,
+        messages: [
+          { id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3,
+            body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
+        ],
+        expected: {
+          requiredStatus: "Pending",
+          requiredAssignee: "Myself",
+          keywords: [],
+          sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
         },
-        {
-          id: uid(),
-          subject: "Refund for duplicate charge",
-          requester: "customer@example.com",
-          channel: "Email",
-          createdAt: now - 30 * 3600e3,
-          status: "Open",
-          assignee: "Myself",
-          assigneeOptions: ALLOWED_ASSIGNEES,
-          messages: [
-            { id: uid(), author: "customer@example.com", ts: now - 30 * 3600e3,
-              body: "I was double-charged this month. Can you refund the duplicate? Thanks!" }
-          ],
-          expected: {
-            requiredStatus: "Pending",
-            requiredAssignee: "Payout",
-            keywords: [],
-            sections: ["Greeting","Resolution","Next steps","Sign-off"]
-          },
-          attempts: [],
-          grade: null
-        }
-      ]
-    };
-
-    // Load existing state or seed defaults once
-    let state = null;
-    try { state = JSON.parse(localStorage.getItem(STORE) || "null"); } catch {}
-    if (!state || !Array.isArray(state.tickets)) {
-      state = structuredClone(DEFAULT);
-      localStorage.setItem(STORE, JSON.stringify(state));
-    }
-  </script>
-
-  <!-- Main app script -->
-  <script>
-  (()=>{
-
-// --- storage & auth helpers ---
-function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
-
-async function sha256B64(s){
-  const enc = new TextEncoder().encode(s);
-  const buf = await crypto.subtle.digest("SHA-256", enc);
-  return btoa(String.fromCharCode(...new Uint8Array(buf)));
-}
-
-function randSalt(n=16){
-  const a = new Uint8Array(n);
-  crypto.getRandomValues(a);
-  return btoa(String.fromCharCode(...a));
-}
-
-function getPass(){
-  try { return JSON.parse(localStorage.getItem(PASS) || "null"); }
-  catch { return null; }
-}
-
-function setPass(rec){
-  localStorage.setItem(PASS, JSON.stringify(rec));
-}
-
-const TRAINER_PWD = "adminapex01";
-
-/** Seed password ONLY if missing */
-async function initTrainerPass(){
-  if (getPass()) return;
-  const salt = randSalt();
-  const hashB64 = await sha256B64(salt + TRAINER_PWD);
-  setPass({ salt, hashB64 });
-}
-
-/** Prompt + verify */
-async function requireTrainer(){
-  await initTrainerPass();
-  const rec = getPass();
-  const input = prompt("Enter trainer password:");
-  if (input === null) return false;
-  const ok = (await sha256B64(rec.salt + input)) === rec.hashB64;
-  if (!ok) alert("Incorrect password.");
-  return ok;
-}
-
-    // --- state (already defined in previous script) ---
-    let trainer = false;
-    let currentId = null;
-
-    // --- elements ---
-    const roleLbl = document.getElementById("roleLbl");
-    const unlockBtn = document.getElementById("unlockBtn");
-    const exportBtn = document.getElementById("exportBtn");
-    const importBtn = document.getElementById("importBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const newTicketBtn = document.getElementById("newTicketBtn");
-    const editRubricBtn = document.getElementById("editRubricBtn");
-    const fileInput = document.getElementById("fileInput");
-
-    const list = document.getElementById("list");
-    const detail = document.getElementById("detail");
-    const countLbl = document.getElementById("countLbl");
-    const fStatus = document.getElementById("fStatus");
-    const fChannel = document.getElementById("fChannel");
-    const searchBox = document.getElementById("searchBox");
-
-    const backBtn = document.getElementById("backBtn");
-    const editTicketBtn = document.getElementById("editTicketBtn");
-    const deleteBtn = document.getElementById("deleteBtn");
-    const dSubject = document.getElementById("dSubject");
-    const dRequester = document.getElementById("dRequester");
-    const dCreated = document.getElementById("dCreated");
-    const dExpected = document.getElementById("dExpected");
-    const trainerHint = document.getElementById("trainerHint");
-    const dStatus = document.getElementById("dStatus");
-    const dAssignee = document.getElementById("dAssignee");
-    const thread = document.getElementById("thread");
-    const replyBox = document.getElementById("replyBox");
-    const macroBtn = document.getElementById("macroBtn");
-    const submitBtn = document.getElementById("submitBtn");
-
-    const gradeTable = document.querySelector("#gradeTable tbody");
-    const scoreLbl = document.getElementById("scoreLbl");
-    const passLbl  = document.getElementById("passLbl");
-
-    const kSolved = document.getElementById("kSolved");
-    const kOpen = document.getElementById("kOpen");
-    const kAvg = document.getElementById("kAvg");
-
-    const ticketDlg = document.getElementById("ticketDlg");
-    const tSub = document.getElementById("tSub");
-    const tReq = document.getElementById("tReq");
-    const tChan = document.getElementById("tChan");
-    const tAssignees = document.getElementById("tAssignees");
-    const tMsg = document.getElementById("tMsg");
-    const tReqStatus = document.getElementById("tReqStatus");
-    const tReqAssignee = document.getElementById("tReqAssignee");
-    const tKeywords = document.getElementById("tKeywords");
-    const tSections = document.getElementById("tSections");
-    const saveTicketBtn = document.getElementById("saveTicketBtn");
-
-    const rubricDlg = document.getElementById("rubricDlg");
-    const wKeywords = document.getElementById("wKeywords");
-    const wSections = document.getElementById("wSections");
-    const wStatus   = document.getElementById("wStatus");
-    const wAssignee = document.getElementById("wAssignee");
-    const wPass     = document.getElementById("wPass");
-    const wKeywordsVal = document.getElementById("wKeywordsVal");
-    const wSectionsVal = document.getElementById("wSectionsVal");
-    const wStatusVal   = document.getElementById("wStatusVal");
-    const wAssigneeVal = document.getElementById("wAssigneeVal");
-    const wPassVal     = document.getElementById("wPassVal");
-
-    // --- events ---
-unlockBtn.onclick = async () => {
-  const ok = await requireTrainer();
-  if (!ok) return;
-  trainer = true;
-  refreshRole();
-};
-    exportBtn.onclick = ()=>{
-      const blob = new Blob([JSON.stringify(state, null, 2)],{type:"application/json"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sop_scenarios.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-    };
-    importBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      fileInput.click();
-    };
-    fileInput.onchange = (e)=>{
-      const f=e.target.files[0]; if(!f) return;
-      const r=new FileReader();
-      r.onload=()=>{ try{
-        const data=JSON.parse(r.result);
-        if(!Array.isArray(data.tickets)||!data.weights) throw new Error("bad");
-        state=data; save(); renderAll(); showList(); alert("Imported ✅");
-      }catch{ alert("Invalid JSON"); } finally { e.target.value=""; } };
-      r.readAsText(f);
-    };
-
-    // Code-protected Reset
-    const STUDENT_RESET_CODE = "apexreset01";
-    resetBtn.onclick = async () => {
-      const code = prompt("Enter reset code (provided by your trainer):");
-      if (code === null) return;
-      if (code.trim() !== STUDENT_RESET_CODE) { alert("Invalid code."); return; }
-      state = structuredClone(DEFAULT);
-      save();
-      renderAll();
-      showList();
-      alert("Reset complete.");
-    };
-
-    newTicketBtn.onclick = async ()=>{
-      if(!trainer){ alert("Trainer only"); return; }
-      const id=uid();
-      const editing = {
-        id, subject:"New scenario", requester:"user@example.com", channel:"Email", createdAt:Date.now(),
-        status:"Open", assignee:"Myself",
-        assigneeOptions:[...ALLOWED_ASSIGNEES],
-        messages: [{ id: uid(), author: "user@example.com", ts: Date.now(), body: "Customer message here..." }],
-        expected:{ requiredStatus:"Open", requiredAssignee:"Myself", keywords:[], sections:[] },
-        attempts:[], grade:null
-      };
-      openTicketEditor(editing, true);
-    };
-    editRubricBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      openRubricEditor();
-    };
-
-    fStatus.onchange = renderList;
-    fChannel.onchange = renderList;
-    searchBox.oninput = renderList;
-
-    backBtn.onclick = showList;
-    editTicketBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      const t = getCurrent(); openTicketEditor(t, false);
-    };
-    deleteBtn.onclick = async ()=>{
-      if(!(trainer && await requireTrainer())) return;
-      const t=getCurrent(); if(!t) return;
-      if(!confirm("Delete this ticket?")) return;
-      state.tickets = state.tickets.filter(x=>x.id!==t.id);
-      save(); showList(); renderAll();
-    };
-    macroBtn.onclick = ()=>{
-      const add = "Thanks for reaching out! Could you share a screenshot and confirm your account email?";
-      replyBox.value = replyBox.value + (replyBox.value && !replyBox.value.endsWith("\n") ? "\n" : "") + add;
-    };
-
-    // Submit & grade
-    submitBtn.onclick = async () => {
-      const t = getCurrent();
-      if (!t) return;
-
-      if (typeof window.gradeAttempt !== "function") {
-        console.error("grader not loaded");
-        alert('Grader is not loaded. Make sure the grader script is included at the end of the page.');
-        return;
+        attempts: [],
+        grade: null
+      },
+      {
+        id: uid(),
+        subject: "Refund for duplicate charge",
+        requester: "customer@example.com",
+        channel: "Email",
+        createdAt: now - 30 * 3600e3,
+        status: "Open",
+        assignee: "Myself",
+        assigneeOptions: ALLOWED_ASSIGNEES,
+        messages: [
+          { id: uid(), author: "customer@example.com", ts: now - 30 * 3600e3,
+            body: "I was double-charged this month. Can you refund the duplicate? Thanks!" }
+        ],
+        expected: {
+          requiredStatus: "Pending",
+          requiredAssignee: "Payout",
+          keywords: [],
+          sections: ["Greeting","Resolution","Next steps","Sign-off"]
+        },
+        attempts: [],
+        grade: null
       }
-      if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
-        console.error("Ticket missing expected.requiredStatus/requiredAssignee", t);
-        alert("This ticket is missing grading rules. Open it in Trainer → Edit and set Required Submit As and Required Assignee.");
-        return;
-      }
+    ]
+  };
 
-      const chosenStatus = dStatus.value;
-      const chosenAssignee = dAssignee.value;
-      const text = (replyBox.value || "").trim();
-      if (!text) { alert("Please write a reply before submitting."); return; }
+  // seed or load state
+  let state = null;
+  try { state = JSON.parse(localStorage.getItem(STORE) || "null"); } catch {}
+  if (!state || !Array.isArray(state.tickets)) {
+    state = structuredClone(DEFAULT);
+    localStorage.setItem(STORE, JSON.stringify(state));
+  }
+</script>
 
-      try {
-        const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
-        t.messages.push(msg);
+<!-- Main app script -->
+<script>
+(() => {
+  // --- helpers / storage ---
+  function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+  function fmt(d){ return d.toLocaleString(); }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
 
-        t.status = chosenStatus;
-        t.assignee = chosenAssignee;
+  // --- elements ---
+  const list = document.getElementById("list");
+  const detail = document.getElementById("detail");
+  const countLbl = document.getElementById("countLbl");
+  const fStatus = document.getElementById("fStatus");
+  const fChannel = document.getElementById("fChannel");
+  const searchBox = document.getElementById("searchBox");
 
-        const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
-        t.attempts.push(attempt);
+  const backBtn = document.getElementById("backBtn");
+  const dSubject = document.getElementById("dSubject");
+  const dRequester = document.getElementById("dRequester");
+  const dCreated = document.getElementById("dCreated");
+  const dExpected = document.getElementById("dExpected");
+  const dStatus = document.getElementById("dStatus");
+  const dAssignee = document.getElementById("dAssignee");
+  const thread = document.getElementById("thread");
+  const replyBox = document.getElementById("replyBox");
+  const submitBtn = document.getElementById("submitBtn");
 
-        const report = await window.gradeAttempt(t, attempt, state.weights);
-        if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
-        t.grade = report;
+  const gradeTable = document.querySelector("#gradeTable tbody");
+  const scoreLbl = document.getElementById("scoreLbl");
+  const passLbl  = document.getElementById("passLbl");
 
-        save();
-        renderGrade(report);
-        renderStats();
-        renderList();
-        openDetail(t.id);
+  const kSolved = document.getElementById("kSolved");
+  const kOpen = document.getElementById("kOpen");
+  const kAvg = document.getElementById("kAvg");
+  const resetBtn = document.getElementById("resetBtn");
 
-        replyBox.value = "";
-      } catch (err) {
-        console.error("Submit/grade failed:", err);
-        alert("Grading failed. Check the browser console for details.");
-      }
-    };
+  let currentId = null;
 
-    // --- rendering ---
-function renderStats(){
-  const weekAgo = Date.now() - 7 * 24 * 3600e3;
+  // --- stats (define before renderAll) ---
+  function renderStats(){
+    const weekAgo = Date.now() - 7*24*3600e3;
+    const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
+    const open = state.tickets.filter(t=>t.status!=="Solved").length;
+    kSolved.textContent = solved;
+    kOpen.textContent = open;
+    const graded = state.tickets.map(t=>t.grade?.score).filter(x=>typeof x==="number");
+    kAvg.textContent = graded.length? (graded.reduce((a,b)=>a+b,0)/graded.length).toFixed(0): "—";
+  }
 
-  // count solved in last 7d
-  const solved = state.tickets.filter(t => t.status === "Solved" && t.createdAt >= weekAgo).length;
-  kSolved.textContent = solved;
+  // --- filters / list ---
+  function filtered(){
+    const q=(searchBox.value||"").toLowerCase();
+    return state.tickets.filter(t=>{
+      const okS = fStatus.value==="All"||t.status===fStatus.value;
+      const okC = fChannel.value==="All"||t.channel===fChannel.value;
+      const text = (t.subject+" "+t.requester+" "+t.messages.map(m=>m.body).join(" ")+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
+      const okQ = !q || text.includes(q);
+      return okS && okC && okQ;
+    });
+  }
 
-  // count currently open (not Solved)
-  const open = state.tickets.filter(t => t.status !== "Solved").length;
-  kOpen.textContent = open;
-
-  // average score from graded tickets
-  const graded = state.tickets.map(t => t.grade?.score).filter(x => typeof x === "number");
-  kAvg.textContent = graded.length ? (graded.reduce((a,b) => a + b, 0) / graded.length).toFixed(0) : "—";
-}
-    function renderAll(){ renderList(); renderStats(); refreshRole(); passLbl.textContent = state.weights.pass + "/100"; }
-    function refreshRole(){
-      roleLbl.textContent = trainer ? "Trainer mode" : "Trainee mode";
-      document.getElementById("editRubricBtn").disabled = !trainer;
-      document.getElementById("newTicketBtn").disabled = !trainer;
-      trainerHint.style.display = trainer ? "block" : "none";
-      document.querySelectorAll("#editTicketBtn,#deleteBtn").forEach(btn=>btn.disabled=!trainer);
-    }
-    function filtered(){
-      const q=(searchBox.value||"").toLowerCase();
-      return state.tickets.filter(t=>{
-        const okS = fStatus.value==="All"||t.status===fStatus.value;
-        const okC = fChannel.value==="All"||t.channel===fChannel.value;
-        const text = (t.subject+" "+t.requester+" "+t.messages.map(m=>m.body).join(" ")+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
-        const okQ = !q || text.includes(q);
-        return okS && okC && okQ;
-      });
-    }
-    function renderList(){
-      const items = filtered();
-      countLbl.textContent = `${items.length} tickets`;
-      list.innerHTML = items.map(t=>`
-        <div class="row" data-id="${t.id}">
-          <div class="avatar">📨</div>
-          <div style="flex:1;min-width:0">
-            <div class="small" style="display:flex;align-items:center;gap:8px">
-              <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
-              <span class="pill">${esc(t.channel)}</span>
-              ${t.grade?`<span class="badge">${t.grade.score.toFixed(0)}/100</span>`:""}
-            </div>
-            <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
+  function renderList(){
+    const items = filtered();
+    countLbl.textContent = `${items.length} tickets`;
+    list.innerHTML = items.map(t=>`
+      <div class="row" data-id="${t.id}">
+        <div class="avatar">📨</div>
+        <div style="flex:1;min-width:0">
+          <div class="small" style="display:flex;align-items:center;gap:8px">
+            <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
+            <span class="pill">${esc(t.channel)}</span>
+            ${t.grade?`<span class="badge">${t.grade.score.toFixed(0)}/100</span>`:""}
           </div>
-          <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
+          <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
         </div>
-      `).join("");
-      [...list.querySelectorAll(".row")].forEach(el=>el.onclick=()=>openDetail(el.dataset.id));
-      if(items.length===0){
-        list.innerHTML = `<div style="padding:48px;text-align:center;color:var(--muted)">
-          <div style="font-size:48px;margin-bottom:8px">👨‍✈️</div>
-          <div style="font-weight:700">No tickets</div><div class="small">Work you're assigned will appear here.</div></div>`;
-      }
+        <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
+      </div>
+    `).join("");
+
+    [...list.querySelectorAll(".row")].forEach(el=>el.onclick=()=>openDetail(el.dataset.id));
+
+    if(items.length===0){
+      list.innerHTML = `<div style="padding:48px;text-align:center;color:var(--muted)">
+        <div style="font-size:48px;margin-bottom:8px">👨‍✈️</div>
+        <div style="font-weight:700">No tickets</div>
+        <div class="small">Work you're assigned will appear here.</div></div>`;
     }
-    function openDetail(id){
-      currentId=id;
-      const t=state.tickets.find(x=>x.id===id); if(!t) return;
-      document.getElementById("list").classList.add("hidden");
-      detail.classList.remove("hidden");
-      dSubject.textContent = t.subject;
-      dRequester.textContent = t.requester||"—";
-      dCreated.textContent = fmt(new Date(t.createdAt));
-      dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
-      renderAssigneeOptions(t);
-      if (![...dAssignee.options].some(o=>o.value===t.assignee)) {
-        dAssignee.value = ALLOWED_ASSIGNEES[0];
-      } else {
-        dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
-      }
-      dExpected.textContent = trainer ? expectedPreview(t) : "—";
-      replyBox.value = "";
-      thread.innerHTML = "";
-      t.messages.forEach(m=>{
-        const d=document.createElement("div"); d.className="bubble";
-        d.innerHTML = `<div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
-          <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>`;
-        thread.appendChild(d);
-      });
-      renderGrade(t.grade || null);
-    }
-    function renderAssigneeOptions(t){
-      const opts=(t.assigneeOptions&&t.assigneeOptions.length)?t.assigneeOptions:ALLOWED_ASSIGNEES;
-      dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
-    }
-    function showList(){ detail.classList.add("hidden"); document.getElementById("list").classList.remove("hidden"); renderList(); }
-    function renderGrade(report){
-      gradeTable.innerHTML = ""; scoreLbl.textContent = "0/100";
-      if(!report){ return; }
-      for(const c of report.checks){
-        const tr=document.createElement("tr");
-        tr.innerHTML = `<td class="small">${esc(c.label)}<div class="muted small">${esc(c.detail||"")}</div></td>
-                        <td class="small ${c.ok?"ok":"fail"}">${c.ok?"✅ Pass":"❌ Fail"}</td>`;
-        gradeTable.appendChild(tr);
-      }
-      scoreLbl.textContent = `${report.score.toFixed(0)}/100 ${report.pass?"• ✅ Pass":"• ❌ Fail"}`;
-    }
-    function expectedPreview(t){
-      const k = (t.expected.keywords||[]).join(", ");
-      const s = (t.expected.sections||[]).join(" > ");
-      return `Required Submit As: ${t.expected.requiredStatus}
+  }
+
+  function renderAssigneeOptions(t){
+    const opts=(t.assigneeOptions&&t.assigneeOptions.length)?t.assigneeOptions:ALLOWED_ASSIGNEES;
+    dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
+  }
+
+  function openDetail(id){
+    currentId=id;
+    const t=state.tickets.find(x=>x.id===id); if(!t) return;
+    document.getElementById("list").classList.add("hidden");
+    detail.classList.remove("hidden");
+    dSubject.textContent = t.subject;
+    dRequester.textContent = t.requester||"—";
+    dCreated.textContent = fmt(new Date(t.createdAt));
+    dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
+    renderAssigneeOptions(t);
+    dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
+
+    // trainer preview hidden, but keep content for code debugging
+    dExpected.textContent = `Required Submit As: ${t.expected.requiredStatus}
 Required Assignee: ${t.expected.requiredAssignee}
-Keywords: ${k || "—"}
-Sections: ${s || "—"}`;
+Keywords: ${(t.expected.keywords||[]).join(", ") || "—"}
+Sections: ${(t.expected.sections||[]).join(" > ") || "—"}`;
+
+    replyBox.value = "";
+    thread.innerHTML = "";
+    t.messages.forEach(m=>{
+      const d=document.createElement("div"); d.className="bubble";
+      d.innerHTML = `<div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
+        <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>`;
+      thread.appendChild(d);
+    });
+    renderGrade(t.grade || null);
+  }
+
+  function showList(){ detail.classList.add("hidden"); document.getElementById("list").classList.remove("hidden"); renderList(); }
+
+  function renderGrade(report){
+    gradeTable.innerHTML = ""; scoreLbl.textContent = "0/100"; passLbl.textContent = state.weights.pass + "/100";
+    if(!report){ return; }
+    for(const c of report.checks){
+      const tr=document.createElement("tr");
+      tr.innerHTML = `<td class="small">${esc(c.label)}<div class="muted small">${esc(c.detail||"")}</div></td>
+                      <td class="small ${c.ok?"ok":"fail"}">${c.ok?"✅ Pass":"❌ Fail"}</td>`;
+      gradeTable.appendChild(tr);
+    }
+    scoreLbl.textContent = `${report.score.toFixed(0)}/100 ${report.pass?"• ✅ Pass":"• ❌ Fail"}`;
+  }
+
+  function renderAll(){ renderList(); renderStats(); passLbl.textContent = state.weights.pass + "/100"; }
+
+  // --- events ---
+  fStatus.onchange = renderList;
+  fChannel.onchange = renderList;
+  searchBox.oninput = renderList;
+  backBtn.onclick = showList;
+
+  // Submit & grade
+  submitBtn.onclick = async () => {
+    const t = state.tickets.find(x=>x.id===currentId);
+    if (!t) return;
+
+    if (typeof window.gradeAttempt !== "function") {
+      alert('Grader is not loaded.');
+      return;
+    }
+    if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
+      alert("This ticket is missing grading rules.");
+      return;
     }
 
-    // helpers
-    function fmt(d){ return d.toLocaleString(); }
-    function esc(s){
-      return String(s).replace(/[&<>"']/g, c => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-      }[c]));
+    const chosenStatus = dStatus.value;
+    const chosenAssignee = dAssignee.value;
+    const text = (replyBox.value || "").trim();
+    if (!text) { alert("Please write a reply before submitting."); return; }
+
+    try {
+      const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
+      t.messages.push(msg);
+      t.status = chosenStatus;
+      t.assignee = chosenAssignee;
+
+      const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
+      t.attempts.push(attempt);
+
+      const report = await window.gradeAttempt(t, attempt, state.weights);
+      if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
+      t.grade = report;
+
+      save();
+      renderGrade(report);
+      renderStats();
+      renderList();
+      openDetail(t.id);
+      replyBox.value = "";
+    } catch (err) {
+      console.error("Submit/grade failed:", err);
+      alert("Grading failed. Check the browser console for details.");
     }
-    function getCurrent(){ return state.tickets.find(x=>x.id===currentId); }
+  };
 
-    // boot
-    refreshRole(); renderAll(); showList();
+  // Reset (code-protected)
+  const STUDENT_RESET_CODE = "apexreset01";
+  resetBtn.onclick = async () => {
+    const code = prompt("Enter reset code (provided by your trainer):");
+    if (code === null) return;
+    if (code.trim() !== STUDENT_RESET_CODE) { alert("Invalid code."); return; }
+    state = structuredClone(DEFAULT);
+    save();
+    renderAll();
+    showList();
+    alert("Reset complete.");
+  };
 
-  })();
-  </script>
+  // boot
+  renderAll();
+  showList();
+})();
+</script>
 
-  <script>
-  (() => {
-    // GPT-powered grader client
-    window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-      const w = Object.assign({ sections: 60, status: 25, assignee: 15, pass: 80 }, weights || {});
-      const reply = String(attempt.reply || "");
+<!-- Grader (unchanged) -->
+<script>
+(() => {
+  window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
+    const w = Object.assign({ sections: 60, status: 25, assignee: 15, pass: 80 }, weights || {});
+    const reply = String(attempt.reply || "");
 
-      let ai;
-      try {
-        const resp = await fetch("/api/grade", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            reply,
-            expectedStatus: ticket.expected?.requiredStatus,
-            expectedAssignee: ticket.expected?.requiredAssignee
-          })
-        });
-        ai = await resp.json();
-        if (!ai || !Array.isArray(ai.checks)) throw new Error("Bad AI JSON");
-      } catch (err) {
-        console.error("AI grading failed, falling back:", err);
-        const statusOk = String(attempt.status) === String(ticket.expected?.requiredStatus);
-        const assigneeOk = String(attempt.assignee) === String(ticket.expected?.requiredAssignee);
-        const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
-        const sStructure = 0;
-        const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
-        const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
-        const score = sStructure + sStatus + sAssignee;
-
-        return {
-          checks: [
-            { label: "AI grading unavailable", ok: false, detail: "Fallback scoring used" },
-            { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status}` },
-            { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
-          ],
-          score,
-          pass: score >= (w.pass || 0)
-        };
-      }
-
-      const [greet, ack, sol, offer, close, cStatus, cAssignee] = ai.checks;
-      const statusOk   = !!(cStatus && cStatus.ok);
-      const assigneeOk = !!(cAssignee && cAssignee.ok);
-      const structurePct = Math.max(0, Math.min(100, Number(ai.structurePct || 0)));
-
+    let ai;
+    try {
+      const resp = await fetch("/api/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reply,
+          expectedStatus: ticket.expected?.requiredStatus,
+          expectedAssignee: ticket.expected?.requiredAssignee
+        })
+      });
+      ai = await resp.json();
+      if (!ai || !Array.isArray(ai.checks)) throw new Error("Bad AI JSON");
+    } catch (err) {
+      console.error("AI grading failed, falling back:", err);
+      const statusOk = String(attempt.status) === String(ticket.expected?.requiredStatus);
+      const assigneeOk = String(attempt.assignee) === String(ticket.expected?.requiredAssignee);
       const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
-      const sStructure = structurePct * (w.sections||0) / sum;
+      const sStructure = 0;
       const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
       const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
       const score = sStructure + sStatus + sAssignee;
 
       return {
         checks: [
-          { label: "1) Greeting",      ok: !!greet?.ok,  detail: greet?.detail || "" },
-          { label: "2) Acknowledge",   ok: !!ack?.ok,    detail: ack?.detail || "" },
-          { label: "3) Solution",      ok: !!sol?.ok,    detail: sol?.detail || "" },
-          { label: "4) Offer Support", ok: !!offer?.ok,  detail: offer?.detail || "" },
-          { label: "5) Closing",       ok: !!close?.ok,  detail: close?.detail || "" },
-          { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status}` },
+          { label: "AI grading unavailable", ok: false, detail: "Fallback scoring used" },
+          { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status}` },
           { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
         ],
         score,
         pass: score >= (w.pass || 0)
       };
+    }
+
+    const [greet, ack, sol, offer, close, cStatus, cAssignee] = ai.checks;
+    const statusOk   = !!(cStatus && cStatus.ok);
+    const assigneeOk = !!(cAssignee && cAssignee.ok);
+    const structurePct = Math.max(0, Math.min(100, Number(ai.structurePct || 0)));
+
+    const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
+    const sStructure = structurePct * (w.sections||0) / sum;
+    const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+    const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+    const score = sStructure + sStatus + sAssignee;
+
+    return {
+      checks: [
+        { label: "1) Greeting",      ok: !!greet?.ok,  detail: greet?.detail || "" },
+        { label: "2) Acknowledge",   ok: !!ack?.ok,    detail: ack?.detail || "" },
+        { label: "3) Solution",      ok: !!sol?.ok,    detail: sol?.detail || "" },
+        { label: "4) Offer Support", ok: !!offer?.ok,  detail: offer?.detail || "" },
+        { label: "5) Closing",       ok: !!close?.ok,  detail: close?.detail || "" },
+        { label: `Submit As is "${ticket.expected?.requiredStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status}` },
+        { label: `Assignee is "${ticket.expected?.requiredAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee}` }
+      ],
+      score,
+      pass: score >= (w.pass || 0)
     };
-  })();
-  </script>
+  };
+})();
+</script>
 </body>
 </html>
