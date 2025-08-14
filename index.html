@@ -232,35 +232,6 @@ attachments: [
 ],
 attempts: [],
 grade: null
-},
-{
-id: uid(),
-subject: "Refund for duplicate charge",
-requester: "customer@example.com",
-channel: "Email",
-createdAt: now - 30 * 3600e3,
-status: "Open",
-assignee: "Myself",
-assigneeOptions: ALLOWED_ASSIGNEES,
-messages: [
-{ id: uid(), author: "customer@example.com", ts: now - 30 * 3600e3,
-body: "I was double-charged this month. Can you refund the duplicate? Thanks!" }
-],
-expected: {
-requiredStatus: "Pending",
-requiredAssignee: "Payout",
-keywords: ["apologize","refund","duplicate","confirm","timeline"],
-sections: ["Greeting","Resolution","Next steps","Sign-off"]
-},
-tags: ["billing","intent_confidence_high"],
-category: "Billing",
-intent: "Refund - Duplicate",
-accountId: "APEX-92161-283",
-attachments: [
-{ type:"link", url:"https://apextraderfunding.com/faq/billing#duplicate-charge", title:"FAQ: Duplicate Charge" }
-],
-attempts: [],
-grade: null
 }
 ]
 };
