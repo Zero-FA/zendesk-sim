@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>SOP Simulator — Trainee</title>
 <style>
+/* Zendesk-ish detail layout */
+.z-layout{display:grid;grid-template-columns:260px 1fr 300px;gap:16px;padding:12px}
+.z-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+.z-left,.z-right{padding:12px}
+.z-field{margin:8px 0}
+.z-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.z-value{font-size:12px}
+.z-tags{display:flex;flex-wrap:wrap;gap:6px}
+.z-tag{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:#f8fafc}
+.z-main-head{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+.z-main-body{padding:12px}
+.z-snap{border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:12px;color:var(--muted)}
+.composer{border-top:1px solid var(--line);padding:8px 12px}
+#replyBox{resize:vertical} /* only vertical resizing */
   :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
@@ -65,92 +79,71 @@
     </div>
   </div>
 
-  <div class="layout">
-    <!-- LEFT RAIL -->
-    <aside class="rail card">
-      <div class="nav-label">Your work</div>
-      <div class="nav-item active"><span>📄</span><span>Tickets</span></div>
-      <div class="nav-label">Completed</div>
-      <div class="nav-item"><span>🗓️</span><span>Last 30 days</span></div>
-    </aside>
+<div class="z-layout">
+  <!-- LEFT: fields -->
+  <aside class="z-left z-card">
+    <div class="z-field">
+      <div class="z-label">Assignee</div>
+      <select class="select" id="dAssignee"></select>
+    </div>
+    <div class="z-field">
+      <div class="z-label">Submit As</div>
+      <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
+    </div>
+    <div class="z-field">
+      <div class="z-label">Tags</div>
+      <div id="dTags" class="z-tags"></div>
+    </div>
+    <div class="z-field">
+      <div class="z-label">Category</div>
+      <div id="dCategory" class="z-value">—</div>
+    </div>
+    <div class="z-field">
+      <div class="z-label">Intent</div>
+      <div id="dIntent" class="z-value">—</div>
+    </div>
+    <div class="z-field">
+      <div class="z-label">Apex Account ID</div>
+      <div id="dAccount" class="z-value">—</div>
+    </div>
+  </aside>
 
-    <!-- CENTER -->
-    <main class="card">
-      <div class="filters">
-        <strong id="countLbl">0 tickets</strong>
-        <label class="small muted">Submit As
-          <select class="select" id="fStatus">
-            <option>All</option><option>Open</option><option>Pending</option><option>Solved</option>
-          </select>
-        </label>
-        <label class="small muted">Channel
-          <select class="select" id="fChannel">
-            <option>All</option><option>Email</option><option>Web</option><option>Chat</option>
-          </select>
-        </label>
-        <input id="searchBox" class="input" placeholder="Search subject or text"/>
+  <!-- CENTER: message thread + composer -->
+  <section class="z-card">
+    <div class="z-main-head">
+      <strong id="dSubject" style="font-weight:600"></strong>
+      <div style="margin-left:auto" class="small muted">Requester: <span id="dRequester">—</span> • <span id="dCreated">—</span></div>
+    </div>
+    <div class="z-main-body">
+      <div id="thread"></div>
+      <div id="snapshots" class="z-snap hidden">No attachments</div>
+    </div>
+    <div class="composer">
+      <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+        <button class="btn primary" id="submitBtn">Submit As</button>
       </div>
+    </div>
+  </section>
 
-      <div id="list"></div>
-
-      <div id="detail" class="hidden">
-        <div class="head">
-          <button class="btn" id="backBtn">← Back</button>
-          <div id="dSubject" style="font-weight:600"></div>
-          <div style="margin-left:auto"></div>
-          <label class="small muted">Submit As
-            <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
-          </label>
-          <label class="small muted">Assignee
-            <select class="select" id="dAssignee"><option>Myself</option><option>Support Tier 2</option><option>Support Tier 3</option><option>Fraud General</option><option>Payout</option></select>
-          </label>
-        </div>
-        <div class="grid">
-          <aside>
-            <div class="small muted">Requester</div><div id="dRequester" class="small">—</div>
-            <div class="small muted" style="margin-top:6px">Created</div><div id="dCreated" class="small">—</div>
-            <!-- Trainer preview hidden for trainees -->
-            <div class="small muted" style="margin-top:6px;display:none">Expected (Trainer)</div>
-            <div id="dExpected" class="bubble small mono" style="display:none">—</div>
-          </aside>
-
-          <section>
-            <div id="thread"></div>
-            <div style="border-top:1px solid var(--line);padding-top:8px">
-              <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
-              <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
-                <button class="btn primary" id="submitBtn">Submit As</button>
-              </div>
-            </div>
-          </section>
-
-          <aside class="pad card">
-            <div class="small" style="font-weight:600">Auto-Grade</div>
-            <table class="table" id="gradeTable">
-              <thead><tr><th>Check</th><th>Result</th></tr></thead>
-              <tbody></tbody>
-            </table>
-            <div class="small" style="margin-top:8px">Score: <strong id="scoreLbl">0/100</strong></div>
-            <div class="small" style="margin-top:4px">Pass threshold: <strong id="passLbl"></strong></div>
-          </aside>
-        </div>
-      </div>
-    </main>
-
-    <!-- RIGHT RAIL -->
-    <aside class="rail right card">
-      <div class="pad">
-        <div style="font-weight:600">Ticket statistics</div>
-        <div class="kpi"><span class="muted small">Solved (7d)</span><span id="kSolved">0</span></div>
-        <div class="kpi"><span class="muted small">Open now</span><span id="kOpen">0</span></div>
-      </div>
-      <div class="pad">
-        <div style="font-weight:600">QA average grade</div>
-        <div class="muted small">(auto-graded)</div>
-        <div style="font-size:24px;font-weight:800" id="kAvg">—</div>
-      </div>
-    </aside>
-  </div>
+  <!-- RIGHT: auto-grade / KPIs -->
+  <aside class="z-right z-card">
+    <div class="small" style="font-weight:600">Auto-Grade</div>
+    <table class="table" id="gradeTable">
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="small" style="margin-top:8px">Score: <strong id="scoreLbl">0/100</strong></div>
+    <div class="small" style="margin-top:4px">Pass threshold: <strong id="passLbl"></strong></div>
+    <hr style="margin:12px 0;border:none;border-top:1px solid var(--line)"/>
+    <div class="small" style="font-weight:600">Ticket statistics</div>
+    <div class="kpi"><span class="muted small">Solved (7d)</span><span id="kSolved">0</span></div>
+    <div class="kpi"><span class="muted small">Open now</span><span id="kOpen">0</span></div>
+    <div class="small" style="font-weight:600;margin-top:8px">QA average grade</div>
+    <div class="muted small">(auto-graded)</div>
+    <div style="font-size:24px;font-weight:800" id="kAvg">—</div>
+  </aside>
+</div>
 
 <!-- DEFAULT tickets & constants (must be before app code) -->
 <script>
