@@ -108,12 +108,73 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 .btn.primary.loading .spinner{display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .btn.primary.loading{opacity:.9;cursor:default}
+
+/* ===== Dark mode palette (toggle by adding .dark to <body>) ===== */
+body.dark{
+  --bg:#0b1220;
+  --card:#0f172a;
+  --ink:#e5e7eb;
+  --muted:#94a3b8;
+  --line:#1f2937;
+  --accent:#10b981;
+  --accent2:#059669;
+  --warn:#f87171;
+}
+
+/* component tweaks for dark */
+body.dark .top{ background:var(--card); border-bottom:1px solid var(--line); }
+body.dark .card{ background:var(--card); border-color:var(--line); }
+body.dark .nav-item.active{ background:rgba(255,255,255,.06); }
+body.dark .nav-item:hover{ background:rgba(255,255,255,.04); }
+
+body.dark .btn{ background:#0b1324; color:var(--ink); border-color:var(--line); }
+body.dark .btn:hover{ background:#0f172a; }
+body.dark .btn.primary{ background:var(--accent); border-color:var(--accent); color:#001010; }
+body.dark .btn.primary:hover{ background:var(--accent2); }
+body.dark .btn.danger{ color:var(--warn); border-color:#7f1d1d; }
+body.dark .btn.danger:hover{ background:#2b0b0b; }
+
+body.dark .select,
+body.dark .input,
+body.dark textarea{ background:#0b1324; color:var(--ink); border-color:#263143; }
+body.dark .input::placeholder,
+body.dark textarea::placeholder{ color:#6b7280; }
+
+body.dark .filters{ border-bottom-color:var(--line); }
+body.dark .row{ border-bottom-color:var(--line); }
+body.dark .row:hover{ background:rgba(255,255,255,.03); }
+body.dark .avatar{ background:#172132; }
+
+body.dark .pill{ background:rgba(255,255,255,.06); border-color:var(--line); color:var(--ink); }
+body.dark .bubble{ background:#0b1324; border-color:var(--line); }
+body.dark .badge{ background:rgba(16,185,129,.12); color:#34d399; border-color:rgba(16,185,129,.35); }
+body.dark .z-snap{ color:var(--muted); border-color:var(--line); }
+
+body.dark .z-card{ background:var(--card); border-color:var(--line); }
+body.dark .z-main-head{ border-bottom-color:var(--line); }
+body.dark .composer{ border-top-color:var(--line); }
+body.dark .menu{ background:var(--card); border-color:var(--line); box-shadow:0 8px 24px rgba(0,0,0,.45); }
+body.dark .menu-item:hover{ background:rgba(255,255,255,.06); }
+
+body.dark .table th,
+body.dark .table td{ border-bottom-color:var(--line); }
+
+body.dark .toast{ background:#0b1324; color:var(--ink); }
+
+/* optional dark scrollbars */
+@media (pointer:fine){
+  body.dark *{ scrollbar-color:#334155 transparent; }
+  body.dark *::-webkit-scrollbar{ height:10px; width:10px; }
+  body.dark *::-webkit-scrollbar-thumb{ background:#334155; border-radius:8px; }
+  body.dark *::-webkit-scrollbar-track{ background:transparent; }
+}
 </style>
 </head>
 <body>
 <div class="top">
   <div class="brand"><div class="logo">Z</div><div class="small muted">Simulation (Trainee)</div></div>
   <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <button class="btn" id="themeBtn" title="Toggle dark mode">Dark mode</button>
     <button class="btn" id="resetBtn">Reset</button>
   </div>
 </div>
@@ -949,6 +1010,32 @@ showList();
       structurePct: structurePctWeighted
     };
   };
+})();
+
+(function(){
+  const THEME_KEY="sim_theme";
+  const btn=document.getElementById("themeBtn");
+
+  function apply(mode){
+    const dark = mode === "dark";
+    document.body.classList.toggle("dark", dark);
+    if (btn){
+      btn.textContent = dark ? "Light mode" : "Dark mode";
+      btn.setAttribute("aria-pressed", String(dark));
+    }
+  }
+
+  const saved = localStorage.getItem(THEME_KEY);
+  const initial = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  apply(initial);
+
+  if (btn){
+    btn.onclick = () => {
+      const next = document.body.classList.contains("dark") ? "light" : "dark";
+      localStorage.setItem(THEME_KEY, next);
+      apply(next);
+    };
+  }
 })();
 </script>
 </body>
