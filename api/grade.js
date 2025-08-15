@@ -4,11 +4,9 @@ import OpenAI from "openai";
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const MAX_REPLY_CHARS = 8000;
 
-// Single source of truth for the 5 structure labels (order matters)
-const STRUCTURE_LABELS = ["Greeting", "Acknowledge", "Solution", "Offer Support", "Closing"];
+// New fixed structure
+const STRUCTURE_LABELS = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
 
-// Strict JSON schema: 5 checks + overall structurePct.
-// Each check may include a numeric `score` (0–100).
 const schema = {
   type: "object",
   properties: {
@@ -20,13 +18,13 @@ const schema = {
           label:  { type: "string" },
           ok:     { type: "boolean" },
           detail: { type: "string" },
-          score:  { type: "number" } // optional 0–100; client will default from ok if missing
+          score:  { type: "number" }
         },
         required: ["label", "ok", "detail"],
         additionalProperties: false
       }
     },
-    structurePct: { type: "number" } // 0–100 (client may show but doesn't depend on it)
+    structurePct: { type: "number" }
   },
   required: ["checks", "structurePct"],
   additionalProperties: false
@@ -36,24 +34,29 @@ const STYLE_GUIDE = `
 Support Ticket Style Guide (Apex Training)
 
 1) Greeting
-- Use customer's first name; brief & warm; no corporate fluff.
+- Use customer's first name; brief & warm.
+- Examples: "Hello Sara,", "Hi John,"
 
-2) Acknowledge
-- One-line awareness; at most one short "sorry"; do NOT restate the whole issue.
+2) Opener
+- One short opening sentence, polite and professional.
+- Examples: "Thank you for reaching out to Apex Trader Funding Support! I hope you're having a great day."
+- Avoid fluff or over-explaining.
 
 3) Solution
-- Give a clear cause/explanation AND a specific, actionable step the user can do now.
-- Include an exact link only if directly helpful.
-- Avoid long background/filler.
+- Most important part.
+- Give a clear cause/explanation and a specific, actionable step the user can take.
+- Follow ticket-specific requirements exactly.
+- Include a link only if directly helpful.
 
-4) Offer Support
-- One short invite for follow-ups; no unrelated resources.
+4) Closer
+- Simple, professional close to invite further contact or confirm resolution.
+- Examples: "If you have any further questions, please do not hesitate to reach out."
+- Keep it short.
 
-5) Closing
-- Standard sign-off (e.g., "Best regards,") + agent name; no dramatic closings.
-
-Return exactly 5 checks in the above order. Do not include Submit As or Assignee checks.
-For each check, also return a numeric "score" from 0–100 reflecting quality for that item (100 = fully met).
+5) Sign-Off
+- Standard sign-off and agent first name on its own line.
+- Examples: "Best regards,", "Kind regards,"
+- Leave a blank line before the agent's name.
 `.trim();
 
 export default async function handler(req, res) {
@@ -102,7 +105,6 @@ Also return "structurePct" (0–100) as your overall structure score.
       ]
     });
 
-    // Safe parse + sanitize
     const content = r.choices?.[0]?.message?.content || "{}";
     let parsed;
     try { parsed = JSON.parse(content); } catch { parsed = {}; }
