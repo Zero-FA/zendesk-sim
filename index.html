@@ -381,10 +381,30 @@ const DEFAULT = {
           title: "Account status banner"
         }
       ]
-    })
+    }),
+    // Ticket Test from ticketmaker
+makeTicket({
+  subject: "what?",
+  requester: "jomomma@gmail.com",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
+  sections: [],
+  requirements:
+    "Use the specified macro; no additional prose is required.",
+  category: "Support",
+  intent: "Drawdown",
+  accountId: "APEX-183914",
+  tags: ["account_question"],
+  body:
+    "Hey where is my account? I was up 10k and only lost 4k and my accounts gone. I didnt even get close to the drawdown at 47,500???",
+  attachments: []
+})
   ]
 };
-
 
 // seed or load state
 let state = null;
