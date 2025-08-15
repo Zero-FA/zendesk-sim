@@ -3,7 +3,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Order matters — keep in sync with the client UI
+// Keep this in sync with the client UI and weights
 const STRUCTURE_LABELS = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
 
 // Strict JSON schema for the model to follow
@@ -40,7 +40,7 @@ Support Ticket Style Guide (Apex Training)
 
 2) Opener
 - One short opening sentence, polite and professional.
-- No hard length or punctuation rule: do NOT fail purely for length or for using an exclamation mark if it reads naturally.
+- Do NOT fail purely for sentence length or for using an exclamation mark if it reads naturally.
 - Examples: "Thank you for reaching out to Apex Trader Funding Support! I hope you're having a great day."
 - Keep it concise and on-tone (no fluff).
 
@@ -48,7 +48,7 @@ Support Ticket Style Guide (Apex Training)
 - Most important part.
 - Provide a clear cause/explanation AND a specific, actionable step the user can take now.
 - If a direct solution is not possible, follow the ticket-specific requirements exactly.
-- Include a link only if it is required by the SOP or directly needed.
+- Include a link only if required by the SOP or directly needed.
 
 4) Closer
 - A single short, professional line that suits the context. It may be ANY ONE of:
