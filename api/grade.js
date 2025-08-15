@@ -4,9 +4,11 @@ import OpenAI from "openai";
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const MAX_REPLY_CHARS = 8000;
 
-// New fixed structure
+// New fixed structure (order matters)
 const STRUCTURE_LABELS = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
 
+// Strict JSON schema: 5 checks + overall structurePct.
+// Each check may include a numeric `score` (0–100).
 const schema = {
   type: "object",
   properties: {
@@ -18,13 +20,13 @@ const schema = {
           label:  { type: "string" },
           ok:     { type: "boolean" },
           detail: { type: "string" },
-          score:  { type: "number" }
+          score:  { type: "number" } // optional 0–100; client will default from ok if missing
         },
         required: ["label", "ok", "detail"],
         additionalProperties: false
       }
     },
-    structurePct: { type: "number" }
+    structurePct: { type: "number" } // 0–100 (client may show but doesn't depend on it)
   },
   required: ["checks", "structurePct"],
   additionalProperties: false
@@ -35,24 +37,32 @@ Support Ticket Style Guide (Apex Training)
 
 1) Greeting
 - Use customer's first name; brief & warm.
-- Examples: "Hello Sara,", "Hi John,"
-
+- Examples: "Hello Sara,", "Hi John," Hello again, John,"
+(space between)
 2) Opener
 - One short opening sentence, polite and professional.
 - Examples: "Thank you for reaching out to Apex Trader Funding Support! I hope you're having a great day."
 - Avoid fluff or over-explaining.
-
+(space between)
 3) Solution
 - Most important part.
-- Give a clear cause/explanation and a specific, actionable step the user can take.
+- Give a clear cause/explanation and/or solution to their issue. Sometimes a solution cannot be given but that is why the requirements must be followed.
 - Follow ticket-specific requirements exactly.
-- Include a link only if directly helpful.
-
+- Include a link only if it is a required link.
+(space between)
 4) Closer
-- Simple, professional close to invite further contact or confirm resolution.
-- Examples: "If you have any further questions, please do not hesitate to reach out."
-- Keep it short.
-
+- A single short, professional line that suits the context. It may be ANY ONE of:
+  • an invitation to reach out again, OR
+  • an empathetic acknowledgement (esp. if user is upset), OR
+  • a brief confirmation/encouragement that the path forward is clear, OR
+  • a simple gratitude sentence.
+- Do NOT require all of the above; one is sufficient if concise and professional.
+- Examples (all valid):
+  "If you have any other questions, please don’t hesitate to reach out."
+  "I understand this isn’t the outcome you hoped for and appreciate your understanding."
+  "Thanks for your patience on this."
+  "Glad I could help—reach out if anything else comes up."
+(space between)
 5) Sign-Off
 - Standard sign-off and agent first name on its own line.
 - Examples: "Best regards,", "Kind regards,"
@@ -76,9 +86,19 @@ export default async function handler(req, res) {
       });
     }
 
-    const system = "You are a strict, fair QA grader for support tickets. Judge ONLY by the style guide and the ticket-specific requirements. Be concise and deterministic.";
+    const system =
+      "You are a strict, fair QA grader for support tickets. Judge ONLY by the style guide and the ticket-specific requirements. Be concise and deterministic.";
+
+    const labelsList = STRUCTURE_LABELS.map((l, i) => `${i + 1}. ${l}`).join("\n  ");
 
     const user = `
+You are grading a customer support reply for structure and style.
+
+Structure labels to check, in order:
+${STRUCTURE_LABELS.join(", ")}
+
+Treat a concise empathy or gratitude line as a valid Closer even without an explicit invitation to reply.
+
 STYLE GUIDE:
 ${STYLE_GUIDE}
 
@@ -90,7 +110,7 @@ TRAINEE REPLY:
 
 Return JSON matching the schema:
 - "checks": exactly these 5 in order and with these exact labels:
-  ${STRUCTURE_LABELS.map((l,i)=>`${i+1}. ${l}`).join("\n  ")}
+  ${labelsList}
 Each item needs { label, ok, detail, score } where score is 0–100.
 Also return "structurePct" (0–100) as your overall structure score.
 `.trim();
@@ -105,6 +125,7 @@ Also return "structurePct" (0–100) as your overall structure score.
       ]
     });
 
+    // Safe parse + sanitize
     const content = r.choices?.[0]?.message?.content || "{}";
     let parsed;
     try { parsed = JSON.parse(content); } catch { parsed = {}; }
@@ -113,10 +134,9 @@ Also return "structurePct" (0–100) as your overall structure score.
     const checks = STRUCTURE_LABELS.map((label, i) => {
       const c = given[i];
       const ok = typeof c?.ok === "boolean" ? c.ok : false;
-      const detail = typeof c?.detail === "string" && c.detail ? c.detail : (given[i] ? "Not met" : "AI unavailable");
-      const score = clamp0to100(
-        typeof c?.score === "number" ? c.score : (ok ? 100 : 0)
-      );
+      const detail =
+        typeof c?.detail === "string" && c.detail ? c.detail : (given[i] ? "Not met" : "AI unavailable");
+      const score = clamp0to100(typeof c?.score === "number" ? c.score : (ok ? 100 : 0));
       return { label, ok, detail, score };
     });
 
