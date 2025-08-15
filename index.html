@@ -97,6 +97,15 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 .diffblock{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .diffcol{font:12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;border:1px dashed var(--line);border-radius:8px;background:#fff;padding:8px;white-space:pre-wrap}
 .difflabel{font-size:11px;color:var(--muted);margin-bottom:4px}
+
+/* ===== Submit spinner ===== */
+.spinner{
+  width:14px;height:14px;border:2px solid rgba(255,255,255,.45);
+  border-top-color:#fff;border-radius:50%;display:inline-block;
+  margin-right:8px;animation:spin .8s linear infinite
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn.primary.loading{opacity:.9;cursor:default}
 </style>
 </head>
 <body>
@@ -145,7 +154,7 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
             <select class="select" id="dAssignee"></select>
           </div>
 
-          <!-- Hidden Submit As (kept for logic sync) -->
+          <!-- Keep hidden for logic sync -->
           <div class="z-field" id="dStatusField" style="display:none">
             <div class="z-label">Submit As</div>
             <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
@@ -193,6 +202,7 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 
               <div class="split">
                 <button class="btn primary" id="submitMainBtn">
+                  <span class="spinner hidden" id="submitSpinner" aria-hidden="true"></span>
                   <span class="status-dot dot-open" id="submitDot" aria-hidden="true"></span>
                   Submit as <span id="submitStatusLbl">Open</span>
                 </button>
@@ -265,7 +275,7 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 <script>
 function uid(){ return Math.random().toString(36).slice(2,9); }
 
-const STORE = "sop_sim_state_v13"; // bump to reseed
+const STORE = "sop_sim_state_v14"; // bump to reseed
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
@@ -366,6 +376,7 @@ const submitToggleBtn = document.getElementById("submitToggleBtn");
 const submitMenu      = document.getElementById("submitMenu");
 const submitStatusLbl = document.getElementById("submitStatusLbl");
 const submitDot       = document.getElementById("submitDot");
+const submitSpinner   = document.getElementById("submitSpinner");
 
 // Grammar UI
 const grammarBtn = document.getElementById("grammarBtn");
@@ -400,6 +411,16 @@ function toast(msg){
 
 let currentId = null;
 let submitAs = "Open"; // current dropdown selection
+
+// spinner toggle
+function setSubmitting(on){
+  submitMainBtn.classList.toggle("loading", on);
+  submitSpinner.classList.toggle("hidden", !on);
+  submitMainBtn.disabled = on;
+  submitToggleBtn.disabled = on;
+  submitMainBtn.setAttribute("aria-busy", on ? "true" : "false");
+  submitToggleBtn.setAttribute("aria-disabled", on ? "true" : "false");
+}
 
 // --- stats ---
 function renderStats(){
@@ -644,6 +665,7 @@ submitMainBtn.onclick = async () => {
   const text = (replyBox.value || "").trim();
   if (!text) { alert("Please write a reply before submitting."); return; }
 
+  setSubmitting(true); // spinner on
   try {
     const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
     t.messages.push(msg);
@@ -668,6 +690,8 @@ submitMainBtn.onclick = async () => {
   } catch (err) {
     console.error("Submit/grade failed:", err);
     alert("Grading failed. Check the browser console for details.");
+  } finally {
+    setSubmitting(false); // spinner off
   }
 };
 
