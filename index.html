@@ -283,6 +283,43 @@ const STORE = "sop_sim_state_v15"; // bump to reseed
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
+// Ticket template function
+function makeTicket({ subject, requester, channel, hoursAgo, requiredStatus, requiredAssignee, macroOnly, macroCommand, sections, requirements, category, intent, accountId, tags, body, attachments }) {
+  return {
+    id: uid(),
+    subject,
+    requester,
+    channel,
+    createdAt: now - (hoursAgo * 3600e3),
+    status: "Open",
+    assignee: "Myself",
+    assigneeOptions: ALLOWED_ASSIGNEES,
+    messages: [
+      {
+        id: uid(),
+        author: requester,
+        ts: now - (hoursAgo * 3600e3),
+        body
+      }
+    ],
+    expected: {
+      requiredStatus,
+      requiredAssignee,
+      macroOnly,
+      macroCommand: macroCommand || "",
+      sections: sections || ["Greeting","Opener","Solution","Closer","Sign-Off"],
+      requirements
+    },
+    tags,
+    category,
+    intent,
+    accountId,
+    attachments: attachments || [],
+    attempts: [],
+    grade: null
+  };
+}
+
 const DEFAULT = {
   weights: {
     sections: 60,
@@ -293,41 +330,57 @@ const DEFAULT = {
     sectionWeights: {
       "Greeting": 8,
       "Opener": 8,
-      "Solution": 67,      /* ≈40% overall */
+      "Solution": 67,
       "Closer": 8,
       "Sign-Off": 9
     }
   },
   tickets: [
-    {
-      id: uid(),
+    // 1) Normal ticket (macroOnly: false)
+    makeTicket({
       subject: "Can't log in after password reset",
       requester: "sara@brand.co",
       channel: "Email",
-      createdAt: now - 4 * 3600e3,
-      status: "Open",
-      assignee: "Myself",
-      assigneeOptions: ALLOWED_ASSIGNEES,
-      messages: [
-        { id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3,
-          body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
-      ],
-      expected: {
-        requiredStatus: "Open",
-        requiredAssignee: "Fraud General",
-        keywords: [],
-        sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-        requirements:
-          "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset."
-      },
-      tags: ["account_questions","language_en","sentiment_neutral"],
+      hoursAgo: 4,
+      requiredStatus: "Open",
+      requiredAssignee: "Fraud General",
+      macroOnly: false, // 👈 normal grading
+      macroCommand: "",
+      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+      requirements: "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
       category: "Support",
       intent: "Login Issue",
       accountId: "APEX-00001",
-      attachments: [],
-      attempts: [],
-      grade: null
-    }
+      tags: ["account_questions","language_en","sentiment_neutral"],
+      body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara",
+      attachments: [
+        {
+          type: "image",
+          url: "/img/login-error.png", // place in /public/img or use full URL
+          title: "Login error message"
+        }
+      ]
+    }),
+
+    // 2) Macro-only ticket (macroOnly: true)
+    makeTicket({
+      subject: "What happened to my account?",
+      requester: "mike@trader.co",
+      channel: "Email",
+      hoursAgo: 2,
+      requiredStatus: "Solved",
+      requiredAssignee: "Myself",
+      macroOnly: true, // 👈 macro grading mode
+      macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
+      sections: [], // unused for macro grading
+      requirements: "Use the /Drawdown Threshold macro; no additional prose is required.",
+      category: "Account",
+      intent: "Drawdown Info",
+      accountId: "APEX-00420",
+      tags: ["account_questions","language_en","sentiment_neutral"],
+      body: "Hi team, can you tell me why my account was removed? I made 4k on my 50k account and then lost it all but I never went below $47,500? Why is my account saying liquidated?.",
+      attachments: []
+    })
   ]
 };
 
@@ -720,7 +773,7 @@ showList();
 <script>
 (() => {
   window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    // Default + incoming weights (Solution ~40% overall)
+    // Merge weights (Solution ~40% overall by default)
     const w = Object.assign(
       {
         sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
@@ -733,7 +786,42 @@ showList();
     const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
     const eq = (a,b)=>String(a??'').trim().toLowerCase()===String(b??'').trim().toLowerCase();
 
-    // 1) Ask API for the structure checks, passing the ticket's rubric
+    const expectedStatus   = ticket.expected?.requiredStatus ?? "";
+    const expectedAssignee = ticket.expected?.requiredAssignee ?? "";
+    const statusOk   = eq(attempt.status,   expectedStatus);
+    const assigneeOk = eq(attempt.assignee, expectedAssignee);
+
+    // ===== Branch 1: Macro-only tickets =====
+    if (ticket.expected?.macroOnly) {
+      const target = String(ticket.expected?.macroCommand || "").trim();
+      const macroOk = target ? reply.trim() === target : reply.trim().startsWith("/");
+
+      // Score macro using the same "sections" weight bucket so total weighting still sums nicely.
+      const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.keywords||0));
+      const sMacro    = (macroOk    ? 100 : 0) * (w.sections || 0) / sum;
+      const sStatus   = (statusOk   ? 100 : 0) * (w.status   || 0) / sum;
+      const sAssignee = (assigneeOk ? 100 : 0) * (w.assignee || 0) / sum;
+      const sKw       = 0;
+
+      const score = sMacro + sStatus + sAssignee + sKw;
+
+      const checks = [
+        { label: "Macro command is correct", ok: macroOk, detail: `Typed: ${reply || "—"}` },
+        { label: `Submit As is "${expectedStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status ?? "—"}` },
+        { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` }
+      ];
+
+      return {
+        checks,
+        score,
+        pass: score >= (w.pass || 0),
+        // For macro tickets, treat structure as "met" when macro is correct
+        structurePct: macroOk ? 100 : 0
+      };
+    }
+
+    // ===== Branch 2: Normal structured tickets =====
+    // 1) Ask API for structure checks, passing the ticket-specific rubric
     let ai = null;
     try {
       const rubric =
@@ -751,7 +839,6 @@ showList();
     }
 
     const structureLabels = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
-
     const structureChecks = structureLabels.map((label, i) => {
       const c = Array.isArray(ai?.checks) ? ai.checks[i] : null;
       return {
@@ -772,19 +859,12 @@ showList();
       const pct = clamp(Number(c?.score ?? 0), 0, 100);
       structurePctWeighted += pct * (sw[lab] || 0) / swTotal;
     });
-    structurePctWeighted = Math.max(0, Math.min(100, structurePctWeighted));
-
-    // 2) Deterministic checks
-    const expectedStatus   = ticket.expected?.requiredStatus ?? "";
-    const expectedAssignee = ticket.expected?.requiredAssignee ?? "";
-
-    const statusOk   = eq(attempt.status,   expectedStatus);
-    const assigneeOk = eq(attempt.assignee, expectedAssignee);
+    structurePctWeighted = clamp(structurePctWeighted, 0, 100);
 
     const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
     const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
 
-    // 3) Scoring
+    // Scoring buckets (unchanged for normal tickets)
     const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.keywords||0));
     const sStructure = structurePctWeighted * (w.sections||0) / sum;
     const sStatus    = (statusOk   ? 100 : 0) * (w.status   ||0) / sum;
