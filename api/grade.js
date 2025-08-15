@@ -37,19 +37,21 @@ Support Ticket Style Guide (Apex Training)
 
 1) Greeting
 - Use customer's first name; brief & warm.
-- Examples: "Hello Sara,", "Hi John," Hello again, John,"
-(space between)
+- Examples: "Hello Sara,", "Hi John,", "Hello again, John,"
+- Leave one blank line after the greeting.
+
 2) Opener
-- One short opening sentence, polite and professional.
+- One short opening sentence, polite and professional (≤ 25 words).
 - Examples: "Thank you for reaching out to Apex Trader Funding Support! I hope you're having a great day."
 - Avoid fluff or over-explaining.
-(space between)
+- Leave one blank line after the opener.
+
 3) Solution
 - Most important part.
-- Give a clear cause/explanation and/or solution to their issue. Sometimes a solution cannot be given but that is why the requirements must be followed.
-- Follow ticket-specific requirements exactly.
-- Include a link only if it is a required link.
-(space between)
+- Provide a clear cause/explanation AND a specific, actionable step the user can take now.
+- If a direct solution is not possible, follow the ticket-specific requirements exactly.
+- Include a link only if it is required by the SOP or directly needed.
+
 4) Closer
 - A single short, professional line that suits the context. It may be ANY ONE of:
   • an invitation to reach out again, OR
@@ -62,7 +64,7 @@ Support Ticket Style Guide (Apex Training)
   "I understand this isn’t the outcome you hoped for and appreciate your understanding."
   "Thanks for your patience on this."
   "Glad I could help—reach out if anything else comes up."
-(space between)
+
 5) Sign-Off
 - Standard sign-off and agent first name on its own line.
 - Examples: "Best regards,", "Kind regards,"
