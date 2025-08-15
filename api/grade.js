@@ -4,7 +4,10 @@ import OpenAI from "openai";
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const MAX_REPLY_CHARS = 8000;
 
-// Strict schema: 5 structure checks only
+// The 5 labels, single source of truth
+const STRUCTURE_LABELS = ["Greeting", "Acknowledge", "Solution", "Offer Support", "Closing"];
+
+// Strict JSON schema (now allows an optional numeric `score` per check)
 const schema = {
   type: "object",
   properties: {
@@ -15,12 +18,14 @@ const schema = {
         properties: {
           label:  { type: "string" },
           ok:     { type: "boolean" },
-          detail: { type: "string" }
+          detail: { type: "string" },
+          score:  { type: "number" } // 0–100 per check (optional)
         },
-        required: ["label", "ok", "detail"]
+        required: ["label", "ok", "detail"],
+        additionalProperties: false
       }
     },
-    structurePct: { type: "number" } // 0–100
+    structurePct: { type: "number" } // 0–100 overall (client ignores this for scoring)
   },
   required: ["checks", "structurePct"],
   additionalProperties: false
@@ -35,7 +40,8 @@ Support Ticket Style Guide (Apex Training)
 5) Closing: standard sign-off (e.g., "Best regards,") + agent name; no dramatic closings.
 
 Return exactly 5 checks in the above order. Do not include Submit As or Assignee checks.
-`;
+For each check, also return a numeric "score" from 0–100 reflecting quality for that item, where 100 means fully met and 0 not met.
+`.trim();
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -63,14 +69,10 @@ TRAINEE REPLY:
 """${text}"""
 
 Return JSON matching the schema:
-- "checks": exactly these 5 in order:
-  1. Greeting
-  2. Acknowledge
-  3. Solution
-  4. Offer Support
-  5. Closing
-Each item needs { label, ok, detail }.
-Also return "structurePct" (0–100) as your overall structure score for the 5 checks.
+- "checks": exactly these 5 in order and with these exact labels:
+  ${STRUCTURE_LABELS.map((l,i)=>`${i+1}. ${l}`).join("\n  ")}
+Each item needs { label, ok, detail, score } where score is 0–100 (use whole numbers).
+Also return "structurePct" (0–100) as your overall structure score (the client may show it but not rely on it for grading).
 `.trim();
 
     const r = await client.chat.completions.create({
@@ -88,16 +90,17 @@ Also return "structurePct" (0–100) as your overall structure score for the 5 c
     let parsed;
     try { parsed = JSON.parse(content); } catch { parsed = {}; }
 
-    const labels = ["Greeting", "Acknowledge", "Solution", "Offer Support", "Closing"];
     const given = Array.isArray(parsed.checks) ? parsed.checks : [];
-    const checks = labels.map((label, i) => {
+    const checks = STRUCTURE_LABELS.map((label, i) => {
       const c = given[i];
-      return {
-        label,
-        ok: typeof c?.ok === "boolean" ? c.ok : false,
-        detail: typeof c?.detail === "string" && c.detail ? c.detail : (given[i] ? "Not met" : "AI unavailable")
-      };
+      const ok = typeof c?.ok === "boolean" ? c.ok : false;
+      const detail = typeof c?.detail === "string" && c.detail ? c.detail : (given[i] ? "Not met" : "AI unavailable");
+      const score = Math.max(0, Math.min(100, Number(
+        typeof c?.score === "number" ? c.score : (ok ? 100 : 0)
+      )));
+      return { label, ok, detail, score };
     });
+
     const structurePct = Math.max(0, Math.min(100, Number(parsed.structurePct ?? 0)));
 
     return res.status(200).json({ checks, structurePct });
