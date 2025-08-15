@@ -496,10 +496,18 @@ showList();
 <script>
 (() => {
   window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    // Default + incoming weights
+    // Default + incoming weights (Solution ~40% overall)
     const w = Object.assign(
-      { sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
-        sectionWeights: { Greeting: 8, Acknowledge: 8, Solution: 67, "Offer Support": 8, Closing: 9 } },
+      {
+        sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
+        sectionWeights: {
+          Greeting: 8,
+          Opener: 8,
+          Solution: 67,
+          Closer: 8,
+          "Sign-Off": 9
+        }
+      },
       weights || {}
     );
 
@@ -510,10 +518,14 @@ showList();
     // ---- 1) Ask API for the 5 structure checks (each with ok/detail/score) ----
     let ai = null;
     try {
+      const rubric =
+        typeof ticket?.expected?.requirements === "string"
+          ? ticket.expected.requirements
+          : (ticket?.expected?.requirements?.guidance || "");
       const resp = await fetch("/api/grade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reply })
+        body: JSON.stringify({ reply, rubric })
       });
       if (resp.ok) ai = await resp.json();
     } catch (err) {
@@ -521,7 +533,7 @@ showList();
     }
 
     // Must match the server’s labels & order:
-    const structureLabels = ["Greeting", "Acknowledge", "Solution", "Offer Support", "Closing"];
+    const structureLabels = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
 
     // Build table rows from AI response (or placeholders if missing)
     const structureChecks = structureLabels.map((label, i) => {
@@ -529,7 +541,6 @@ showList();
       return {
         label,
         ok: !!c?.ok,
-        // if server sends score per check, show it; else rely on ok/fail
         detail: c?.detail || (ai ? "Not met" : "AI unavailable"),
         score: typeof c?.score === "number" ? clamp(c.score, 0, 100) : (c?.ok ? 100 : 0)
       };
@@ -537,7 +548,7 @@ showList();
 
     // Weighted structure percent (0–100) from the five checks
     const sw = Object.assign(
-      { Greeting: 8, Acknowledge: 8, Solution: 67, "Offer Support": 8, Closing: 9 },
+      { Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 },
       w.sectionWeights || {}
     );
     const swTotal = structureLabels.reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
