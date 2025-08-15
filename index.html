@@ -160,6 +160,35 @@ body.dark .table th,
 body.dark .table td{ border-bottom-color:var(--line); }
 
 body.dark .toast{ background:#0b1324; color:var(--ink); }
+/* --- Fix tag pills in dark mode --- */
+body.dark .z-tags { gap: 6px; }
+
+body.dark .z-tag{
+  background: rgba(148, 163, 184, 0.12);  /* soft slate tint */
+  border-color: #334155;                  /* slate-700 border */
+  color: #e5e7eb;                         /* text-slate-200 */
+  box-shadow: inset 0 0 0 1px rgba(51,65,85,.25);
+}
+
+body.dark .z-tag:hover{
+  background: rgba(148, 163, 184, 0.18);
+  border-color: #3b475b;
+}
+
+/* if you show “disabled” or non-interactive tags, keep them subtle */
+body.dark .z-tag[aria-disabled="true"],
+body.dark .z-tag.is-disabled{
+  color: #94a3b8;
+  background: rgba(148,163,184,0.10);
+  border-color: #2b3647;
+}
+
+/* optional: make generic .pill chips match too */
+body.dark .pill{
+  background: rgba(148,163,184,0.12);
+  border-color: #334155;
+  color: #e5e7eb;
+}
 
 /* optional dark scrollbars */
 @media (pointer:fine){
