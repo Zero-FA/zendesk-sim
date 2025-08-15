@@ -352,7 +352,6 @@ const DEFAULT = {
         }
       ]
     }),
-
     // 2) Macro-only ticket (macroOnly: true) — now with image option too
     makeTicket({
       subject: "What happened to my account?",
@@ -422,8 +421,33 @@ makeTicket({
   tags: ["banned_countries"],
   body:
     "Hi, I am from India. I was wondering if I could trade with you.",
+  attachments: []
+}),
+// Ticket
+makeTicket({
+  subject: "Missing Passed Email",
+  requester: "JasonPurraz@gmail.com",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: false,
+  macroCommand: "",
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements:
+    "Write a professional reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off).",
+  category: "Support",
+  intent: "Passed Evaluation",
+  accountId: "APEX-183914",
+  tags: ["passed_eval"],
+  body:
+    "I passed my evaluation, but I do not see any passed email yet. I just hit the profit goal today at 9 AM EST, but I haven't gotten any email and the balances in my Apex Dashboard haven't updated. Could you please help me out?",
   attachments: [
-
+    {
+      type: "image",
+      url: "https://i.imgur.com/u35QmA3.png",
+      title: "Attachment"
+    }
   ]
 })
   ]
