@@ -1,58 +1,928 @@
-<!-- === BEGIN index.html === -->
-const dDone        = document.getElementById("dDone");
-const dAvg         = document.getElementById("dAvg");
-const dPasses      = document.getElementById("dPasses");
-const dFails       = document.getElementById("dFails");
-const submitLmsBtn = document.getElementById("submitLmsBtn");
-const submitHint   = document.getElementById("submitHint");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Simulation — Trainee</title>
+<style>
+:root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
 
-function hideDashboard(){ dashboard?.classList.add("hidden"); }
-function showDashboard(){ document.getElementById("list").classList.add("hidden"); detail.classList.add("hidden"); dashboard.classList.remove("hidden"); navDashboard?.classList.add("active"); navTickets?.classList.remove("active"); renderDashboard(); }
-navDashboard?.addEventListener('click', showDashboard);
-navTickets?.addEventListener('click', showList);
+/* top bar */
+.top{height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;background:#fff;border-bottom:1px solid var(--line)}
+.brand{display:flex;gap:8px;align-items:center}
+.logo{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
 
-function allGraded(){ return state.tickets.every(t => t.grade && typeof t.grade.score === "number"); }
-function renderDashboard(){
-  const done = state.tickets.filter(t => t.grade);
-  const passes = done.filter(t => !!t.grade.pass).length;
-  const fails  = done.length - passes;
-  const avg = done.length ? (done.reduce((a,t)=>a+(t.grade.score||0),0) / done.length) : 0;
-  dDone.textContent = `${done.length} / ${state.tickets.length}`;
-  dAvg.textContent = done.length ? `${avg.toFixed(0)}/100` : "—";
-  dPasses.textContent = passes;
-  dFails.textContent = fails;
-  dashTable.innerHTML = state.tickets.map(t => `
-    <tr>
-      <td class=\"small\">${esc(t.subject)}</td>
-      <td class=\"small\">${esc(t.status)}</td>
-      <td class=\"small\">${esc(t.assignee||"—")}</td>
-      <td class=\"small\">${t.grade ? t.grade.score.toFixed(0) : "—"}</td>
-      <td class=\"small\">${t.grade ? (t.grade.pass ? "✅" : "❌") : "—"}</td>
-    </tr>`).join("");
-  const ready = allGraded();
-  submitLmsBtn.disabled = !ready;
-  submitHint.textContent = ready ? "All tickets graded. You can submit your results to TalentLMS." : "Finish all tickets and grading to enable submission.";
+/* shell layout */
+.layout{display:grid;gap:16px;grid-template-columns:220px 1fr;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.rail{padding:12px;display:flex;flex-direction:column}
+.nav-label{font-size:12px;color:var(--muted);font-weight:600;margin:8px 0 6px}
+.nav-item{padding:8px;border-radius:12px;display:flex;gap:8px;align-items:center}
+.nav-item.active{background:#eef2f7;font-weight:600}
+
+/* controls */
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:13px;cursor:pointer}
+.btn:hover{background:#f8fafc}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent2)}
+.btn.danger{color:var(--warn);border-color:#fecaca}
+.btn.danger:hover{background:#fef2f2}
+.select,.input{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;background:#fff}
+
+/* list */
+.filters{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
+.row{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:hover{background:#f8fafc}
+.avatar{width:36px;height:36px;border-radius:999px;background:#e5e7eb;display:grid;place-items:center;flex-shrink:0}
+.pill{background:#eef2f7;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:11px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.bubble{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+.badge{font-size:11px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:999px}
+.hidden{display:none}
+
+/* reply box */
+textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;resize:vertical}
+
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border-bottom:1px solid var(--line);padding:6px;text-align:left;font-size:12px}
+.ok{color:#065f46}.fail{color:#991b1b}
+
+/* responsive shell */
+@media (max-width:1100px){.layout{grid-template-columns:1fr}}
+
+/* ---------- Zendesk-ish detail layout ---------- */
+.z-layout{display:grid;grid-template-columns:260px 1fr 300px;gap:16px;padding:12px}
+.z-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+.z-left,.z-right{padding:12px}
+.z-field{margin:8px 0}
+.z-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.z-value{font-size:12px}
+.z-tags{display:flex;flex-wrap:wrap;gap:6px}
+.z-tag{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:#f8fafc}
+.z-main-head{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+.z-main-body{padding:12px}
+.z-snap{border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:12px;color:var(--muted);margin-top:8px}
+.composer{border-top:1px solid var(--line);padding:8px 12px}
+
+/* ===== Split submit + menu + dots + toast ===== */
+.split{position:relative;display:inline-flex}
+.split .btn{border-radius:10px 0 0 10px}
+.split .split-toggle{border-left:none;border-radius:0 10px 10px 0}
+.menu{position:absolute;right:0;bottom:44px;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;min-width:220px;box-shadow:0 8px 24px rgba(15,23,42,.12);padding:6px;z-index:10}
+.menu-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer}
+.menu-item:hover{background:#f8fafc}
+
+/* status dots */
+.status-dot{width:8px;height:8px;border-radius:999px;display:inline-block;margin-right:8px;vertical-align:middle}
+.dot-open{background:#ef4444}    /* red */
+.dot-pending{background:#2563eb} /* blue */
+.dot-solved{background:#6b7280}  /* gray */
+
+/* toast */
+.toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;
+  padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.18);
+  font-size:13px;opacity:0;transform:translateY(8px);transition:.25s}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ===== Grammar panel ===== */
+.grammar{border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:10px;margin-top:8px}
+.grammar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.grammar-list{display:flex;flex-direction:column;gap:8px}
+.grammar-note{font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px}
+.grammar-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.diffblock{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.diffcol{font:12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;border:1px dashed var(--line);border-radius:8px;background:#fff;padding:8px;white-space:pre-wrap}
+.difflabel{font-size:11px;color:var(--muted);margin-bottom:4px}
+
+/* ===== Submit spinner (show only when .loading on button) ===== */
+.spinner{
+  width:14px;height:14px;border:2px solid rgba(255,255,255,.45);
+  border-top-color:#fff;border-radius:50%;
+  margin-right:8px;animation:spin .8s linear infinite;
+  display:none;
+}
+.btn.primary.loading .spinner{display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn.primary.loading{opacity:.9;cursor:default}
+
+/* ===== Dark mode palette (toggle by adding .dark to <body>) ===== */
+body.dark{
+  --bg:#0b1220;
+  --card:#0f172a;
+  --ink:#e5e7eb;
+  --muted:#94a3b8;
+  --line:#1f2937;
+  --accent:#10b981;
+  --accent2:#059669;
+  --warn:#f87171;
 }
 
-submitLmsBtn?.addEventListener('click', async () => {
-  const graded = state.tickets.filter(t=>t.grade);
-  const averageScore = graded.length ? Math.round(graded.reduce((a,t)=>a+(t.grade.score||0),0)/graded.length) : 0;
-  const payload = {
-    totalTickets: state.tickets.length,
-    graded: graded.length,
-    averageScore,
-    passCount: graded.filter(t=>t.grade.pass).length,
-    tickets: state.tickets.map(t => ({ id: t.id, subject: t.subject, status: t.status, assignee: t.assignee, score: t.grade?.score ?? null, pass: !!t.grade?.pass })),
-    // optional: if you set window.SIM_USER_EMAIL in the hosting page, we'll pass it through
-    userEmail: window.SIM_USER_EMAIL || undefined
+/* component tweaks for dark */
+body.dark .top{ background:var(--card); border-bottom:1px solid var(--line); }
+body.dark .card{ background:var(--card); border-color:var(--line); }
+body.dark .nav-item.active{ background:rgba(255,255,255,.06); }
+body.dark .nav-item:hover{ background:rgba(255,255,255,.04); }
+
+body.dark .btn{ background:#0b1324; color:var(--ink); border-color:var(--line); }
+body.dark .btn:hover{ background:#0f172a; }
+body.dark .btn.primary{ background:var(--accent); border-color:var(--accent); color:#001010; }
+body.dark .btn.primary:hover{ background:var(--accent2); }
+body.dark .btn.danger{ color:var(--warn); border-color:#7f1d1d; }
+body.dark .btn.danger:hover{ background:#2b0b0b; }
+
+body.dark .select,
+body.dark .input,
+body.dark textarea{ background:#0b1324; color:var(--ink); border-color:#263143; }
+body.dark .input::placeholder,
+body.dark textarea::placeholder{ color:#6b7280; }
+
+body.dark .filters{ border-bottom-color:var(--line); }
+body.dark .row{ border-bottom-color:var(--line); }
+body.dark .row:hover{ background:rgba(255,255,255,.03); }
+body.dark .avatar{ background:#172132; }
+
+body.dark .pill{ background:rgba(255,255,255,.06); border-color:var(--line); color:var(--ink); }
+body.dark .bubble{ background:#0b1324; border-color:var(--line); }
+body.dark .badge{ background:rgba(16,185,129,.12); color:#34d399; border-color:rgba(16,185,129,.35); }
+body.dark .z-snap{ color:var(--muted); border-color:var(--line); }
+
+body.dark .z-card{ background:var(--card); border-color:var(--line); }
+body.dark .z-main-head{ border-bottom-color:var(--line); }
+body.dark .composer{ border-top-color:var(--line); }
+body.dark .menu{ background:var(--card); border-color:var(--line); box-shadow:0 8px 24px rgba(0,0,0,.45); }
+body.dark .menu-item:hover{ background:rgba(255,255,255,.06); }
+
+body.dark .table th,
+body.dark .table td{ border-bottom-color:var(--line); }
+
+body.dark .toast{ background:#0b1324; color:var(--ink); }
+/* --- Fix tag pills in dark mode --- */
+body.dark .z-tags { gap: 6px; }
+
+body.dark .z-tag{
+  background: rgba(148, 163, 184, 0.12);  /* soft slate tint */
+  border-color: #334155;                  /* slate-700 border */
+  color: #e5e7eb;                         /* text-slate-200 */
+  box-shadow: inset 0 0 0 1px rgba(51,65,85,.25);
+}
+
+body.dark .z-tag:hover{
+  background: rgba(148, 163, 184, 0.18);
+  border-color: #3b475b;
+}
+
+/* if you show “disabled” or non-interactive tags, keep them subtle */
+body.dark .z-tag[aria-disabled="true"],
+body.dark .z-tag.is-disabled{
+  color: #94a3b8;
+  background: rgba(148,163,184,0.10);
+  border-color: #2b3647;
+}
+
+/* optional: make generic .pill chips match too */
+body.dark .pill{
+  background: rgba(148,163,184,0.12);
+  border-color: #334155;
+  color: #e5e7eb;
+}
+
+/* optional dark scrollbars */
+@media (pointer:fine){
+  body.dark *{ scrollbar-color:#334155 transparent; }
+  body.dark *::-webkit-scrollbar{ height:10px; width:10px; }
+  body.dark *::-webkit-scrollbar-thumb{ background:#334155; border-radius:8px; }
+  body.dark *::-webkit-scrollbar-track{ background:transparent; }
+}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><div class="logo">Z</div><div class="small muted">Simulation (Trainee)</div></div>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <button class="btn" id="themeBtn" title="Toggle dark mode">Dark mode</button>
+    <button class="btn" id="resetBtn">Reset</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- LEFT RAIL -->
+  <aside class="rail card">
+    <div class="nav-label">Your work</div>
+    <div class="nav-item active"><span>📄</span><span>Tickets</span></div>
+    <div class="nav-label">Completed</div>
+    <div class="nav-item"><span>🗓️</span><span>Last 30 days</span></div>
+  </aside>
+
+  <!-- CENTER -->
+  <main class="card">
+    <div class="filters">
+      <strong id="countLbl">0 tickets</strong>
+      <label class="small muted">Submit As
+        <select class="select" id="fStatus">
+          <option>All</option><option>Open</option><option>Pending</option><option>Solved</option>
+        </select>
+      </label>
+      <label class="small muted">Channel
+        <select class="select" id="fChannel">
+          <option>All</option><option>Email</option><option>Web</option><option>Chat</option>
+        </select>
+      </label>
+      <input id="searchBox" class="input" placeholder="Search subject or text"/>
+    </div>
+
+    <div id="list"></div>
+
+    <!-- DETAIL (Zendesk-ish) -->
+    <div id="detail" class="hidden">
+      <div class="z-layout">
+        <!-- LEFT: fields -->
+        <aside class="z-left z-card">
+          <div class="z-field">
+            <div class="z-label">Assignee</div>
+            <select class="select" id="dAssignee"></select>
+          </div>
+
+          <!-- Keep hidden for logic sync -->
+          <div class="z-field" id="dStatusField" style="display:none">
+            <div class="z-label">Submit As</div>
+            <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
+          </div>
+
+          <div class="z-field">
+            <div class="z-label">Tags</div>
+            <div id="dTags" class="z-tags"></div>
+          </div>
+          <div class="z-field">
+            <div class="z-label">Category</div>
+            <div id="dCategory" class="z-value">—</div>
+          </div>
+          <div class="z-field">
+            <div class="z-label">Intent</div>
+            <div id="dIntent" class="z-value">—</div>
+          </div>
+          <div class="z-field">
+            <div class="z-label">Apex Account ID</div>
+            <div id="dAccount" class="z-value">—</div>
+          </div>
+          <div class="z-field">
+            <button class="btn" id="backBtn">← Back to list</button>
+          </div>
+        </aside>
+
+        <!-- CENTER: thread + composer -->
+        <section class="z-card">
+          <div class="z-main-head">
+            <strong id="dSubject" style="font-weight:600"></strong>
+            <div style="margin-left:auto" class="small muted">
+              <span id="dRequester">—</span> • <span id="dCreated">—</span>
+            </div>
+          </div>
+          <div class="z-main-body">
+            <div id="thread"></div>
+            <div id="snapshots" class="z-snap hidden">No attachments</div>
+          </div>
+          <div class="composer">
+            <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
+
+            <!-- Top row: Grammar on left, Submit split on right -->
+            <div style="display:flex;gap:8px;justify-content:space-between;margin-top:6px;align-items:center">
+              <button class="btn" id="grammarBtn" title="Ctrl/Cmd+Shift+G">Check grammar</button>
+
+              <div class="split">
+                <button class="btn primary" id="submitMainBtn">
+                  <span class="spinner" id="submitSpinner" aria-hidden="true"></span>
+                  <span class="status-dot dot-open" id="submitDot" aria-hidden="true"></span>
+                  Submit as <span id="submitStatusLbl">Open</span>
+                </button>
+                <button class="btn primary split-toggle" id="submitToggleBtn" aria-haspopup="menu" aria-expanded="false">▾</button>
+                <div class="menu hidden" id="submitMenu" role="menu" aria-label="Submit as">
+                  <div class="menu-item" role="menuitem" data-value="Open">
+                    <span class="status-dot dot-open" aria-hidden="true"></span> Submit as Open
+                  </div>
+                  <div class="menu-item" role="menuitem" data-value="Pending">
+                    <span class="status-dot dot-pending" aria-hidden="true"></span> Submit as Pending
+                  </div>
+                  <div class="menu-item" role="menuitem" data-value="Solved">
+                    <span class="status-dot dot-solved" aria-hidden="true"></span> Submit as Solved
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grammar results panel -->
+            <div id="grammarPanel" class="grammar hidden">
+              <div class="grammar-head">
+                <strong>Grammar suggestions</strong>
+                <div class="small muted" id="grammarMeta">—</div>
+              </div>
+              <div class="diffblock">
+                <div class="diffcol">
+                  <div class="difflabel">Original</div>
+                  <div id="grammarOrig" class="small"></div>
+                </div>
+                <div class="diffcol">
+                  <div class="difflabel">Suggested</div>
+                  <div id="grammarFix" class="small"></div>
+                </div>
+              </div>
+              <div class="grammar-list" id="grammarList"></div>
+              <div class="grammar-actions">
+                <button class="btn" id="dismissGrammarBtn">Dismiss</button>
+                <button class="btn primary" id="applyGrammarBtn">Replace text with fixes</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT: grader + stats -->
+        <aside class="z-right z-card">
+          <div class="small" style="font-weight:600">Auto-Grade</div>
+          <table class="table" id="gradeTable">
+            <thead><tr><th>Check</th><th>Result</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="small" style="margin-top:8px">Score: <strong id="scoreLbl">0/100</strong></div>
+          <div class="small" style="margin-top:4px">Pass threshold: <strong id="passLbl"></strong></div>
+          <hr style="margin:12px 0;border:none;border-top:1px solid var(--line)"/>
+          <div class="small" style="font-weight:600">Ticket statistics</div>
+          <div class="kpi"><span class="muted small">Solved (7d): </span><span id="kSolved">0</span></div>
+          <div class="kpi"><span class="muted small">Open now: </span><span id="kOpen">0</span></div>
+          <div class="small" style="font-weight:600;margin-top:8px">QA average grade</div>
+          <div class="muted small">(auto-graded)</div>
+          <div style="font-size:24px;font-weight:800" id="kAvg">—</div>
+        </aside>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast element (must exist before scripts) -->
+<div id="toast" class="toast" aria-live="polite"></div>
+
+<!-- DEFAULT tickets & constants -->
+<script>
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+const STORE = "sop_sim_state_v15"; // bump to reseed
+const now   = Date.now();
+const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
+
+// Ticket template helper (unchanged)
+function makeTicket({
+  subject, requester, channel, hoursAgo,
+  requiredStatus, requiredAssignee,
+  macroOnly, macroCommand,
+  sections, requirements,
+  category, intent, accountId, tags, body, attachments
+}) {
+  return {
+    id: uid(),
+    subject,
+    requester,
+    channel,
+    createdAt: now - (hoursAgo * 3600e3),
+    status: "Open",
+    assignee: "Myself",
+    assigneeOptions: ALLOWED_ASSIGNEES,
+    messages: [
+      { id: uid(), author: requester, ts: now - (hoursAgo * 3600e3), body }
+    ],
+    expected: {
+      requiredStatus,
+      requiredAssignee,
+      macroOnly,
+      macroCommand: macroCommand || "",
+      sections: sections || ["Greeting","Opener","Solution","Closer","Sign-Off"],
+      requirements
+    },
+    tags,
+    category,
+    intent,
+    accountId,
+    attachments: attachments || [],
+    attempts: [],
+    grade: null
   };
+}
+
+const DEFAULT = {
+  weights: {
+    sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
+    sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
+  },
+  tickets: [
+    // 1) Normal ticket (macroOnly: false)
+    makeTicket({
+      subject: "Can't log in after password reset",
+      requester: "sara@brand.co",
+      channel: "Email",
+      hoursAgo: 4,
+      requiredStatus: "Open",
+      requiredAssignee: "Fraud General",
+      macroOnly: false,
+      macroCommand: "",
+      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+      requirements:
+        "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
+      category: "Support",
+      intent: "Login Issue",
+      accountId: "APEX-00001",
+      tags: ["account_questions","language_en","sentiment_neutral"],
+      body:
+        "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara",
+      attachments: [
+        {
+          type: "image",
+          url: "https://i.imgur.com/0SxOMjH.png",
+          title: "Login error message"
+        }
+      ]
+    }),
+    // 2) Macro-only ticket (macroOnly: true) — now with image option too
+    makeTicket({
+      subject: "What happened to my account?",
+      requester: "mike@trader.co",
+      channel: "Email",
+      hoursAgo: 2,
+      requiredStatus: "Solved",
+      requiredAssignee: "Myself",
+      macroOnly: true,
+      // Note: this includes the leading slash and uses an EN DASH in the middle.
+      // The norm() in gradeAttempt makes this robust.
+      macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
+      sections: [], // unused in macro mode
+      requirements:
+        "Use the /Drawdown Threshold macro; no additional prose is required.",
+      category: "Account",
+      intent: "Drawdown Info",
+      accountId: "APEX-00420",
+      tags: ["account_questions","language_en","sentiment_neutral"],
+      body:
+        "Hi team, can you tell me why my account was removed? I made 4k on my 50k account and then lost it all but I never went below $47,500? Why is my account saying liquidated?.",
+      attachments: [
+        {
+          type: "image",
+          url: "",
+          title: "Account status banner"
+        }
+      ]
+    }),
+    // Ticket Test from ticketmaker
+makeTicket({
+  subject: "what?",
+  requester: "jomomma@gmail.com",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
+  sections: [],
+  requirements:
+    "Use the specified macro; no additional prose is required.",
+  category: "Support",
+  intent: "Drawdown",
+  accountId: "APEX-183914",
+  tags: ["account_question"],
+  body:
+    "Hey where is my account? I was up 10k and only lost 4k and my accounts gone. I didnt even get close to the drawdown at 47,500???",
+  attachments: []
+}),
+// Ticket
+makeTicket({
+  subject: "Banned Countries",
+  requester: "clockedout@gmail.com",
+  channel: "Email",
+  hoursAgo: 5,
+  requiredStatus: "Open",
+  requiredAssignee: "Fraud General",
+  macroOnly: true,
+  macroCommand: "/Gen - Banned Countries",
+  sections: [],
+  requirements:
+    "Use the specified macro; no additional prose is required.",
+  category: "Support",
+  intent: "Countries",
+  accountId: "APEX-183914",
+  tags: ["banned_countries"],
+  body:
+    "Hi, I am from India. I was wondering if I could trade with you.",
+  attachments: []
+}),
+// Ticket
+makeTicket({
+  subject: "Missing Passed Email",
+  requester: "JasonPurraz@gmail.com",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: false,
+  macroCommand: "",
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements:
+    "Write a professional reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off).",
+  category: "Support",
+  intent: "Passed Evaluation",
+  accountId: "APEX-183914",
+  tags: ["passed_eval"],
+  body:
+    "I passed my evaluation, but I do not see any passed email yet. I just hit the profit goal today at 9 AM EST, but I haven't gotten any email and the balances in my Apex Dashboard haven't updated. Could you please help me out?",
+  attachments: [
+    {
+      type: "image",
+      url: "https://i.imgur.com/u35QmA3.png",
+      title: "Attachment"
+    }
+  ]
+})
+  ]
+};
+
+// seed or load state
+let state = null;
+try { state = JSON.parse(localStorage.getItem(STORE) || "null"); } catch {}
+if (!state || !Array.isArray(state.tickets)) {
+  state = structuredClone(DEFAULT);
+  localStorage.setItem(STORE, JSON.stringify(state));
+}
+</script>
+
+<!-- Main app script -->
+<script>
+(() => {
+// --- helpers / storage ---
+function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+function fmt(d){ return d.toLocaleString(); }
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+// --- elements ---
+const list = document.getElementById("list");
+const detail = document.getElementById("detail");
+const countLbl = document.getElementById("countLbl");
+const fStatus = document.getElementById("fStatus");
+const fChannel = document.getElementById("fChannel");
+const searchBox = document.getElementById("searchBox");
+
+const backBtn = document.getElementById("backBtn");
+const dSubject = document.getElementById("dSubject");
+const dRequester = document.getElementById("dRequester");
+const dCreated = document.getElementById("dCreated");
+const dStatus = document.getElementById("dStatus");
+const dAssignee = document.getElementById("dAssignee");
+const dTags = document.getElementById("dTags");
+const dCategory = document.getElementById("dCategory");
+const dIntent = document.getElementById("dIntent");
+const dAccount = document.getElementById("dAccount");
+const thread = document.getElementById("thread");
+const snapshots = document.getElementById("snapshots");
+const replyBox = document.getElementById("replyBox");
+
+// split submit refs
+const submitMainBtn   = document.getElementById("submitMainBtn");
+const submitToggleBtn = document.getElementById("submitToggleBtn");
+const submitMenu      = document.getElementById("submitMenu");
+const submitStatusLbl = document.getElementById("submitStatusLbl");
+const submitDot       = document.getElementById("submitDot");
+
+// Grammar UI
+const grammarBtn = document.getElementById("grammarBtn");
+const grammarPanel = document.getElementById("grammarPanel");
+const grammarMeta = document.getElementById("grammarMeta");
+const grammarOrig = document.getElementById("grammarOrig");
+const grammarFix  = document.getElementById("grammarFix");
+const grammarList = document.getElementById("grammarList");
+const applyGrammarBtn = document.getElementById("applyGrammarBtn");
+const dismissGrammarBtn = document.getElementById("dismissGrammarBtn");
+
+// grader/stats UI
+const gradeTable = document.querySelector("#gradeTable tbody");
+const scoreLbl = document.getElementById("scoreLbl");
+const passLbl  = document.getElementById("passLbl");
+
+const kSolved = document.getElementById("kSolved");
+const kOpen = document.getElementById("kOpen");
+const kAvg = document.getElementById("kAvg");
+
+const resetBtn = document.getElementById("resetBtn");
+
+// toast
+const toastEl = document.getElementById("toast");
+let toastT=null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>toastEl.classList.remove("show"), 1800);
+}
+
+let currentId = null;
+let submitAs = "Open"; // current dropdown selection
+
+// spinner toggle — only class controls visibility
+function setSubmitting(on){
+  submitMainBtn.classList.toggle("loading", on);
+  submitMainBtn.disabled = on;
+  submitToggleBtn.disabled = on;
+  submitMainBtn.setAttribute("aria-busy", on ? "true" : "false");
+  submitToggleBtn.setAttribute("aria-disabled", on ? "true" : "false");
+}
+
+// --- stats ---
+function renderStats(){
+  const weekAgo = Date.now() - 7*24*3600e3;
+  const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
+  const open = state.tickets.filter(t=>t.status!=="Solved").length;
+  kSolved.textContent = solved;
+  kOpen.textContent = open;
+  const graded = state.tickets.map(t=>t.grade?.score).filter(x=>typeof x==="number");
+  kAvg.textContent = graded.length? (graded.reduce((a,b)=>a+b,0)/graded.length).toFixed(0): "—";
+}
+
+// --- filters / list ---
+function filtered(){
+  const q=(searchBox.value||"").toLowerCase();
+  return state.tickets.filter(t=>{
+    const okS = fStatus.value==="All"||t.status===fStatus.value;
+    const okC = fChannel.value==="All"||t.channel===fChannel.value;
+    const text = (t.subject+" "+t.requester+" "+t.messages.map(m=>m.body).join(" ")+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
+    const okQ = !q || text.includes(q);
+    return okS && okC && okQ;
+  });
+}
+
+function renderList(){
+  const items = filtered();
+  countLbl.textContent = `${items.length} tickets`;
+  list.innerHTML = items.map(t=>`
+     <div class="row" data-id="${t.id}">
+       <div class="avatar">📨</div>
+       <div style="flex:1;min-width:0">
+         <div class="small" style="display:flex;align-items:center;gap:8px">
+           <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
+           <span class="pill">${esc(t.channel)}</span>
+           ${t.grade?`<span class="badge">${t.grade.score.toFixed(0)}/100</span>`:""}
+         </div>
+         <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
+       </div>
+       <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
+     </div>
+   `).join("");
+
+  [...list.querySelectorAll(".row")].forEach(el=>el.onclick=()=>openDetail(el.dataset.id));
+
+  if(items.length===0){
+    list.innerHTML = `<div style="padding:48px;text-align:center;color:var(--muted)">
+       <div style="font-size:48px;margin-bottom:8px">👨‍✈️</div>
+       <div style="font-weight:700">No tickets</div>
+       <div class="small">Work you're assigned will appear here.</div></div>`;
+  }
+}
+
+function renderAssigneeOptions(t){
+  const opts=(t.assigneeOptions&&t.assigneeOptions.length)?t.assigneeOptions:ALLOWED_ASSIGNEES;
+  dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
+}
+
+function setSubmitUI(value){
+  submitAs = value;
+  dStatus.value = value;                  // keep hidden select in sync
+  submitStatusLbl.textContent = value;    // label text
+  submitDot.className =
+    "status-dot " + (value==="Open" ? "dot-open" : value==="Pending" ? "dot-pending" : "dot-solved");
+}
+
+function openDetail(id){
+  currentId=id;
+  const t=state.tickets.find(x=>x.id===id); if(!t) return;
+
+  document.getElementById("list").classList.add("hidden");
+  detail.classList.remove("hidden");
+
+  dSubject.textContent = t.subject;
+  dRequester.textContent = t.requester||"—";
+  dCreated.textContent = fmt(new Date(t.createdAt));
+
+  // init submit control from ticket status
+  dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
+  setSubmitUI(dStatus.value);
+
+  renderAssigneeOptions(t);
+  dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
+
+  const tags = (t.tags || []);
+  dTags.innerHTML = tags.length ? tags.map(x=>`<span class="z-tag">${esc(x)}</span>`).join("") : `<span class="z-value muted">—</span>`;
+  dCategory.textContent = t.category || "—";
+  dIntent.textContent = t.intent || "—";
+  dAccount.textContent = t.accountId || "—";
+
+  replyBox.value = "";
+  thread.innerHTML = "";
+  t.messages.forEach(m=>{
+    const d=document.createElement("div"); d.className="bubble";
+    d.innerHTML = `<div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
+       <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>`;
+    thread.appendChild(d);
+  });
+
+  if (t.attachments && t.attachments.length) {
+    snapshots.classList.remove("hidden");
+    snapshots.innerHTML = t.attachments.map(a=>{
+      if (a.type==="image") return `<div style="margin-bottom:8px"><img src="${esc(a.url)}" alt="" style="max-width:100%;border-radius:8px"/></div>`;
+      return `<div class="small"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`;
+    }).join("");
+  } else {
+    snapshots.classList.add("hidden");
+    snapshots.textContent = "No attachments";
+  }
+
+  renderGrade(t.grade || null);
+  renderStats();
+}
+
+function showList(){
+  detail.classList.add("hidden");
+  document.getElementById("list").classList.remove("hidden");
+  renderList();
+  renderStats();
+}
+
+function renderGrade(report){
+  gradeTable.innerHTML = ""; scoreLbl.textContent = "0/100"; passLbl.textContent = state.weights.pass + "/100";
+  if(!report){ return; }
+  for(const c of report.checks){
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td class="small">${esc(c.label)}<div class="muted small">${esc(c.detail||"")}</div></td>
+                     <td class="small ${c.ok?"ok":"fail"}">${c.ok?"✅ Pass":"❌ Fail"}</td>`;
+    gradeTable.appendChild(tr);
+  }
+  scoreLbl.textContent = `${report.score.toFixed(0)}/100 ${report.pass?"• ✅ Pass":"• ❌ Fail"}`;
+}
+
+function renderAll(){ renderList(); renderStats(); passLbl.textContent = state.weights.pass + "/100"; }
+
+/* ===== Grammar helpers ===== */
+function showGrammarPanel(show){ grammarPanel.classList.toggle("hidden", !show); }
+let lastGrammar = null;
+
+async function runGrammar(){
+  const text = (replyBox.value||"").trim();
+  if(!text){ alert("Write a reply first."); return; }
+  showGrammarPanel(true);
+  grammarMeta.textContent = "Checking…";
+  grammarOrig.textContent = text;
+  grammarFix.textContent = "";
+  grammarList.innerHTML = "";
+
   try{
-    const resp = await fetch('/api/lms-submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if(!resp.ok) throw new Error('Submit failed');
-    toast('Results submitted to LMS');
-  }catch(e){ console.error(e); alert('Could not submit to LMS. Ask your trainer to check server logs.'); }
+    const resp = await fetch("/api/grammar", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ text })
+    });
+    if(!resp.ok){ throw new Error("Grammar API failed"); }
+    const data = await resp.json();
+    lastGrammar = data;
+
+    grammarFix.textContent = data.corrected || text;
+
+    const notes = [];
+    (data.changes||[]).forEach(ch=>{
+      notes.push(`<div class="grammar-note"><div class="small"><strong>Change:</strong> <code>${esc(ch.before)}</code> → <code>${esc(ch.after)}</code></div><div class="small muted">${esc(ch.reason||"")}</div></div>`);
+    });
+    (data.warnings||[]).forEach(w=>{
+      notes.push(`<div class="grammar-note"><div class="small">${esc(w)}</div></div>`);
+    });
+    grammarList.innerHTML = notes.join("") || `<div class="small muted">No specific notes — only minor polish applied.</div>`;
+
+    const count = (data.changes||[]).length;
+    grammarMeta.textContent = count ? `${count} suggestion${count===1?"":"s"}` : "No issues found";
+    toast("Grammar check complete");
+  }catch(e){
+    console.error(e);
+    grammarMeta.textContent = "Check failed";
+    toast("Grammar check failed");
+  }
+}
+
+// --- events ---
+fStatus.onchange = renderList;
+fChannel.onchange = renderList;
+searchBox.oninput = renderList;
+backBtn.onclick = showList;
+
+grammarBtn.onclick = runGrammar;
+applyGrammarBtn.onclick = ()=>{
+  if(lastGrammar?.corrected){
+    replyBox.value = lastGrammar.corrected;
+    toast("Applied grammar fixes");
+  }
+  showGrammarPanel(false);
+};
+dismissGrammarBtn.onclick = ()=> showGrammarPanel(false);
+
+// Split menu toggle
+submitToggleBtn.onclick = (e) => {
+  e.stopPropagation();
+  submitMenu.classList.toggle("hidden");
+  submitToggleBtn.setAttribute("aria-expanded", String(!submitMenu.classList.contains("hidden")));
+};
+
+// Choose a submit-as option (does NOT submit yet)
+[...submitMenu.querySelectorAll(".menu-item")].forEach(item=>{
+  item.onclick = () => {
+    setSubmitUI(item.dataset.value);
+    submitMenu.classList.add("hidden");
+    submitToggleBtn.setAttribute("aria-expanded","false");
+    toast(`Submit as ${submitAs} selected`);
+  };
 });
 
+// Close the menu when clicking outside or on ESC
+document.addEventListener("click", ()=>submitMenu.classList.add("hidden"));
+document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") submitMenu.classList.add("hidden"); });
+
+// Shortcuts: Ctrl/Cmd+Enter submits; Ctrl/Cmd+Shift+S open status; Ctrl/Cmd+Shift+G grammar
+document.addEventListener("keydown",(e)=>{
+  const mod = e.ctrlKey || e.metaKey;
+  if(mod && e.key==="Enter"){ submitMainBtn.click(); }
+  if(mod && e.shiftKey && (e.key.toLowerCase()==="s")){
+    e.preventDefault();
+    submitToggleBtn.click();
+  }
+  if(mod && e.shiftKey && (e.key.toLowerCase()==="g")){
+    e.preventDefault();
+    runGrammar();
+  }
+});
+
+// Submit using the chosen status
+submitMainBtn.onclick = async () => {
+  const t = state.tickets.find(x=>x.id===currentId);
+  if (!t) return;
+
+  if (typeof window.gradeAttempt !== "function") { alert('Grader is not loaded.'); return; }
+  if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
+    alert("This ticket is missing grading rules."); return;
+  }
+
+  const chosenStatus = submitAs;
+  const chosenAssignee = dAssignee.value;
+  const text = (replyBox.value || "").trim();
+  if (!text) { alert("Please write a reply before submitting."); return; }
+
+  setSubmitting(true); // spinner on
+  try {
+    const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
+    t.messages.push(msg);
+    t.status = chosenStatus;
+    t.assignee = chosenAssignee;
+
+    const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
+    t.attempts.push(attempt);
+
+    const report = await window.gradeAttempt(t, attempt, state.weights);
+    if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
+    t.grade = report;
+
+    save();
+    renderGrade(report);
+    renderStats();
+    renderList();
+    openDetail(t.id);
+    replyBox.value = "";
+
+    toast(`Submitted as ${chosenStatus}`);
+  } catch (err) {
+    console.error("Submit/grade failed:", err);
+    alert("Grading failed. Check the browser console for details.");
+  } finally {
+    setSubmitting(false); // spinner off
+  }
+};
+
+// Reset (code-protected)
+const STUDENT_RESET_CODE = "apexreset01";
+resetBtn.onclick = async () => {
+  const code = prompt("Enter reset code (provided by your trainer):");
+  if (code === null) return;
+  if (code.trim() !== STUDENT_RESET_CODE) { alert("Invalid code."); return; }
+  state = structuredClone(DEFAULT);
+  save();
+  renderAll();
+  showList();
+  alert("Reset complete.");
+};
+
+// boot
 renderAll();
 showList();
 })();
@@ -62,7 +932,7 @@ showList();
 <script>
 (() => {
   window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    // Merge weights
+    // Merge weights (Solution ~40% overall by default)
     const w = Object.assign(
       {
         sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
@@ -85,12 +955,14 @@ showList();
       const target = String(ticket.expected?.macroCommand || "").trim();
       const macroOk = target ? reply.trim() === target : reply.trim().startsWith("/");
 
-      // Score macro using the same "sections" bucket so totals stay balanced
+      // Score macro using the same "sections" weight bucket so total weighting still sums nicely.
       const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.keywords||0));
       const sMacro    = (macroOk    ? 100 : 0) * (w.sections || 0) / sum;
       const sStatus   = (statusOk   ? 100 : 0) * (w.status   || 0) / sum;
       const sAssignee = (assigneeOk ? 100 : 0) * (w.assignee || 0) / sum;
-      const score = sMacro + sStatus + sAssignee;
+      const sKw       = 0;
+
+      const score = sMacro + sStatus + sAssignee + sKw;
 
       const checks = [
         { label: "Macro command is correct", ok: macroOk, detail: `Typed: ${reply || "—"}` },
@@ -102,6 +974,7 @@ showList();
         checks,
         score,
         pass: score >= (w.pass || 0),
+        // For macro tickets, treat structure as "met" when macro is correct
         structurePct: macroOk ? 100 : 0
       };
     }
@@ -110,10 +983,10 @@ showList();
     // 1) Ask API for structure checks, passing the ticket-specific rubric
     let ai = null;
     try {
-      const rubric = typeof ticket?.expected?.requirements === "string"
-        ? ticket.expected.requirements
-        : (ticket?.expected?.requirements?.guidance || "");
-
+      const rubric =
+        typeof ticket?.expected?.requirements === "string"
+          ? ticket.expected.requirements
+          : (ticket?.expected?.requirements?.guidance || "");
       const resp = await fetch("/api/grade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -131,7 +1004,7 @@ showList();
         label,
         ok: !!c?.ok,
         detail: c?.detail || (ai ? "Not met" : "AI unavailable"),
-        score: clamp(typeof c?.score === "number" ? c.score : (c?.ok ? 100 : 0), 0, 100)
+        score: typeof c?.score === "number" ? clamp(c.score, 0, 100) : (c?.ok ? 100 : 0)
       };
     });
 
@@ -150,12 +1023,14 @@ showList();
     const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
     const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
 
-    // Scoring buckets
+    // Scoring buckets (unchanged for normal tickets)
     const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.keywords||0));
     const sStructure = structurePctWeighted * (w.sections||0) / sum;
     const sStatus    = (statusOk   ? 100 : 0) * (w.status   ||0) / sum;
     const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee ||0) / sum;
-    const score = sStructure + sStatus + sAssignee;
+    const sKw        = 0;
+
+    const score = sStructure + sStatus + sAssignee + sKw;
 
     return {
       checks: [...structureChecks, statusCheck, assigneeCheck],
@@ -165,13 +1040,11 @@ showList();
     };
   };
 })();
-</script>
 
-<!-- Theme toggle (unchanged) -->
-<script>
 (function(){
   const THEME_KEY="sim_theme";
   const btn=document.getElementById("themeBtn");
+
   function apply(mode){
     const dark = mode === "dark";
     document.body.classList.toggle("dark", dark);
@@ -180,9 +1053,11 @@ showList();
       btn.setAttribute("aria-pressed", String(dark));
     }
   }
+
   const saved = localStorage.getItem(THEME_KEY);
   const initial = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   apply(initial);
+
   if (btn){
     btn.onclick = () => {
       const next = document.body.classList.contains("dark") ? "light" : "dark";
@@ -192,7 +1067,5 @@ showList();
   }
 })();
 </script>
-
 </body>
 </html>
-<!-- === END index.html === -->
