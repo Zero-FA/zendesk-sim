@@ -205,10 +205,10 @@ const DEFAULT = {
     pass: 80,
     sectionWeights: {
       "Greeting": 8,
-      "Acknowledge": 8,
+      "Opener": 8,
       "Solution": 67,      /* ≈40% overall */
-      "Offer Support": 8,
-      "Closing": 9
+      "Closer": 8,
+      "Sign-Off": 9
     }
   },
   tickets: [
@@ -222,16 +222,19 @@ const DEFAULT = {
       assignee: "Myself",
       assigneeOptions: ALLOWED_ASSIGNEES,
       messages: [
-        { id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3,
-          body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
+        {
+          id: uid(),
+          author: "sara@brand.co",
+          ts: now - 4 * 3600e3,
+          body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara"
+        }
       ],
       expected: {
         requiredStatus: "Open",
         requiredAssignee: "Fraud General",
-        keywords: [
-          // "https://apextraderfunding.com/faq/password-reset"
-        ],
-        sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
+        keywords: [],
+        sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+        requirements: "The response must clearly state that the user will be sent to the Fraud department for security purposes to reset their password, as this is sensitive information."
       },
       tags: ["account_questions","language_en","sentiment_neutral"],
       category: "Support",
