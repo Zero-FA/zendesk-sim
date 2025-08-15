@@ -402,6 +402,29 @@ makeTicket({
   body:
     "Hey where is my account? I was up 10k and only lost 4k and my accounts gone. I didnt even get close to the drawdown at 47,500???",
   attachments: []
+}),
+// Ticket
+makeTicket({
+  subject: "Banned Countries",
+  requester: "clockedout@gmail.com",
+  channel: "Email",
+  hoursAgo: 5,
+  requiredStatus: "Open",
+  requiredAssignee: "Fraud General",
+  macroOnly: true,
+  macroCommand: "/Gen - Banned Countries",
+  sections: [],
+  requirements:
+    "Use the specified macro; no additional prose is required.",
+  category: "Support",
+  intent: "Countries",
+  accountId: "APEX-183914",
+  tags: ["banned_countries"],
+  body:
+    "/Gen - Banned Countries",
+  attachments: [
+
+  ]
 })
   ]
 };
