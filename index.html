@@ -197,44 +197,60 @@ const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
 const DEFAULT = {
-weights: { keywords: 40, sections: 20, status: 25, assignee: 15, pass: 80 },
-tickets: [
-{
-id: uid(),
-subject: "Can't log in after password reset",
-requester: "sara@brand.co",
-channel: "Email",
-createdAt: now - 4 * 3600e3,
-status: "Open",
-assignee: "Myself",
-assigneeOptions: ALLOWED_ASSIGNEES,
-messages: [
-{ id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3,
-body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
-],
-expected: {
-requiredStatus: "Open",
-requiredAssignee: "Fraud General",
-keywords: [
-// you can put full URLs here if you want them to paste the exact link:
-// "https://apextraderfunding.com/faq/password-reset"
-],
-sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
-},
-/* optional Zendesk-ish fields */
-tags: ["account_questions","language_en","sentiment_neutral"],
-category: "Support",
-intent: "Login Issue",
-accountId: "APEX-00001",
-attachments: [
-// { type:"image", url:"/assets/2fa-disabled.png" },
-// { type:"link",  url:"https://example.com/faq/login", title:"Login Troubleshooting" }
-],
-attempts: [],
-grade: null
-}
-]
+  weights: {
+    // Outer buckets (must total ~100)
+    sections: 60,   // structure bucket
+    status: 25,     // "Submit As"
+    assignee: 15,   // Assignee
+    keywords: 0,    // leave at 0 unless you want keyword scoring
+    pass: 80,       // pass threshold
+
+    // Inner breakdown of the sections bucket (must total ~100)
+    // 67% of 60% ≈ 40% of overall grade
+    sectionWeights: {
+      "Greeting": 8,
+      "Acknowledge": 8,
+      "Solution": 67,
+      "Offer Support": 8,
+      "Closing": 9
+    }
+  },
+  tickets: [
+    {
+      id: uid(),
+      subject: "Can't log in after password reset",
+      requester: "sara@brand.co",
+      channel: "Email",
+      createdAt: now - 4 * 3600e3,
+      status: "Open",
+      assignee: "Myself",
+      assigneeOptions: ALLOWED_ASSIGNEES,
+      messages: [
+        { id: uid(), author: "sara@brand.co", ts: now - 4 * 3600e3,
+          body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara" }
+      ],
+      expected: {
+        requiredStatus: "Open",
+        requiredAssignee: "Fraud General",
+        keywords: [
+          // "https://apextraderfunding.com/faq/password-reset"
+        ],
+        sections: ["Greeting","Diagnosis","Resolution","Next steps","Sign-off"]
+      },
+      tags: ["account_questions","language_en","sentiment_neutral"],
+      category: "Support",
+      intent: "Login Issue",
+      accountId: "APEX-00001",
+      attachments: [
+        // { type:"image", url:"/assets/2fa-disabled.png" },
+        // { type:"link",  url:"https://example.com/faq/login", title:"Login Troubleshooting" }
+      ],
+      attempts: [],
+      grade: null
+    }
+  ]
 };
+</script>
 
 // seed or load state
 let state = null;
@@ -483,13 +499,18 @@ showList();
 <script>
 (() => {
   window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    // Default weights if not provided
-    const w = Object.assign({ sections: 60, status: 25, assignee: 15, pass: 80 }, weights || {});
+    // Default + incoming weights
+    const w = Object.assign(
+      { sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
+        sectionWeights: { Greeting: 8, Acknowledge: 8, Solution: 67, "Offer Support": 8, Closing: 9 } },
+      weights || {}
+    );
+
     const reply = String(attempt.reply || "");
     const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
     const eq = (a,b)=>String(a??'').trim().toLowerCase()===String(b??'').trim().toLowerCase();
 
-    // 1) Ask API for the 5 structure checks (safe to fail)
+    // ---- 1) Ask API for the 5 structure checks (each with ok/detail/score) ----
     let ai = null;
     try {
       const resp = await fetch("/api/grade", {
@@ -502,18 +523,37 @@ showList();
       console.warn("AI grading unavailable, using deterministic checks only.", err);
     }
 
+    // Must match the server’s labels & order:
     const structureLabels = ["Greeting", "Acknowledge", "Solution", "Offer Support", "Closing"];
+
+    // Build table rows from AI response (or placeholders if missing)
     const structureChecks = structureLabels.map((label, i) => {
       const c = Array.isArray(ai?.checks) ? ai.checks[i] : null;
       return {
         label,
         ok: !!c?.ok,
-        detail: c?.detail || (ai ? "Not met" : "AI unavailable")
+        // if server sends score per check, show it; else rely on ok/fail
+        detail: c?.detail || (ai ? "Not met" : "AI unavailable"),
+        score: typeof c?.score === "number" ? clamp(c.score, 0, 100) : (c?.ok ? 100 : 0)
       };
     });
-    const structurePct = clamp(Number(ai?.structurePct ?? 0), 0, 100);
 
-    // 2) Deterministic checks from the TICKET (single source of truth)
+    // Weighted structure percent (0–100) from the five checks
+    const sw = Object.assign(
+      { Greeting: 8, Acknowledge: 8, Solution: 67, "Offer Support": 8, Closing: 9 },
+      w.sectionWeights || {}
+    );
+    const swTotal = structureLabels.reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
+
+    let structurePctWeighted = 0;
+    structureLabels.forEach((lab, i) => {
+      const c = structureChecks[i];
+      const pct = clamp(Number(c?.score ?? 0), 0, 100);
+      structurePctWeighted += pct * (sw[lab] || 0) / swTotal;
+    });
+    structurePctWeighted = clamp(structurePctWeighted, 0, 100);
+
+    // ---- 2) Deterministic checks from ticket ----
     const expectedStatus   = ticket.expected?.requiredStatus ?? "";
     const expectedAssignee = ticket.expected?.requiredAssignee ?? "";
 
@@ -531,18 +571,41 @@ showList();
       detail: `Selected: ${attempt.assignee ?? "—"}`
     };
 
-    // 3) Scoring
-    const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0));
-    const sStructure = structurePct * (w.sections||0) / sum;
+    // (Optional) Keywords slice (kept at 0 unless you want to use it)
+    let kwPct = 0, kwHits = 0, kwTotal = 0;
+    if ((w.keywords || 0) > 0) {
+      const kwList = Array.isArray(ticket.expected?.keywords) ? ticket.expected.keywords : [];
+      kwTotal = kwList.length;
+      if (kwTotal) {
+        const replyL = reply.toLowerCase();
+        for (const kw of kwList) {
+          const needle = String(kw || "").toLowerCase().trim();
+          if (needle && replyL.includes(needle)) kwHits++;
+        }
+        kwPct = 100 * kwHits / kwTotal;
+      }
+    }
+    const kwCheck = {
+      label: kwTotal ? `Keywords referenced (${kwHits}/${kwTotal})` : "Keywords referenced",
+      ok: kwTotal ? (kwHits === kwTotal) : true,
+      detail: kwTotal ? `Matched ${kwHits} of ${kwTotal}` : "No keywords defined"
+    };
+
+    // ---- 3) Scoring (buckets sum to ~100) ----
+    const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.keywords||0));
+
+    const sStructure = structurePctWeighted * (w.sections||0) / sum;
     const sStatus    = (statusOk   ? 100 : 0) * (w.status   ||0) / sum;
     const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee ||0) / sum;
-    const score = sStructure + sStatus + sAssignee;
+    const sKw        = kwPct * (w.keywords||0) / sum;
+
+    const score = sStructure + sStatus + sAssignee + sKw;
 
     return {
-      checks: [...structureChecks, statusCheck, assigneeCheck],
+      checks: [...structureChecks, ...(w.keywords? [kwCheck] : []), statusCheck, assigneeCheck],
       score,
       pass: score >= (w.pass || 0),
-      structurePct
+      structurePct: structurePctWeighted
     };
   };
 })();
