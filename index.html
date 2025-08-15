@@ -75,14 +75,26 @@ textarea{
 .z-snap{border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:12px;color:var(--muted);margin-top:8px}
 .composer{border-top:1px solid var(--line);padding:8px 12px}
 
-/* ===== Split submit control (new) ===== */
+/* ===== Split submit + menu + dots + toast ===== */
 .split{position:relative;display:inline-flex}
 .split .btn{border-radius:10px 0 0 10px}
 .split .split-toggle{border-left:none;border-radius:0 10px 10px 0}
 .menu{position:absolute;right:0;bottom:44px;background:var(--card);border:1px solid var(--line);
   border-radius:12px;min-width:220px;box-shadow:0 8px 24px rgba(15,23,42,.12);padding:6px;z-index:10}
-.menu-item{padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer}
+.menu-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer}
 .menu-item:hover{background:#f8fafc}
+
+/* status dots */
+.status-dot{width:8px;height:8px;border-radius:999px;display:inline-block;margin-right:8px;vertical-align:middle}
+.dot-open{background:#ef4444}    /* red */
+.dot-pending{background:#2563eb} /* blue */
+.dot-solved{background:#6b7280}  /* gray */
+
+/* toast */
+.toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;
+  padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.18);
+  font-size:13px;opacity:0;transform:translateY(8px);transition:.25s}
+.toast.show{opacity:1;transform:translateY(0)}
 </style>
 </head>
 <body>
@@ -131,7 +143,7 @@ textarea{
             <select class="select" id="dAssignee"></select>
           </div>
 
-          <!-- Submit As in left rail is now hidden (we still keep the select to reuse existing logic) -->
+          <!-- Submit As in left rail is now hidden (kept for logic sync) -->
           <div class="z-field" id="dStatusField" style="display:none">
             <div class="z-label">Submit As</div>
             <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
@@ -173,15 +185,24 @@ textarea{
           <div class="composer">
             <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
 
-            <!-- NEW: bottom-right split submit -->
+            <!-- bottom-right split submit -->
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
               <div class="split">
-                <button class="btn primary" id="submitMainBtn">Submit as <span id="submitStatusLbl">Open</span></button>
+                <button class="btn primary" id="submitMainBtn">
+                  <span class="status-dot dot-open" id="submitDot" aria-hidden="true"></span>
+                  Submit as <span id="submitStatusLbl">Open</span>
+                </button>
                 <button class="btn primary split-toggle" id="submitToggleBtn" aria-haspopup="menu" aria-expanded="false">▾</button>
                 <div class="menu hidden" id="submitMenu" role="menu" aria-label="Submit as">
-                  <div class="menu-item" role="menuitem" data-value="Open">Submit as Open</div>
-                  <div class="menu-item" role="menuitem" data-value="Pending">Submit as Pending</div>
-                  <div class="menu-item" role="menuitem" data-value="Solved">Submit as Solved</div>
+                  <div class="menu-item" role="menuitem" data-value="Open">
+                    <span class="status-dot dot-open" aria-hidden="true"></span> Submit as Open
+                  </div>
+                  <div class="menu-item" role="menuitem" data-value="Pending">
+                    <span class="status-dot dot-pending" aria-hidden="true"></span> Submit as Pending
+                  </div>
+                  <div class="menu-item" role="menuitem" data-value="Solved">
+                    <span class="status-dot dot-solved" aria-hidden="true"></span> Submit as Solved
+                  </div>
                 </div>
               </div>
             </div>
@@ -214,7 +235,7 @@ textarea{
 <script>
 function uid(){ return Math.random().toString(36).slice(2,9); }
 
-const STORE = "sop_sim_state_v11"; // bumped to avoid stale localStorage
+const STORE = "sop_sim_state_v12"; // bump to reseed
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
@@ -309,12 +330,14 @@ const thread = document.getElementById("thread");
 const snapshots = document.getElementById("snapshots");
 const replyBox = document.getElementById("replyBox");
 
-// NEW: split submit refs
-const submitMainBtn = document.getElementById("submitMainBtn");
+// split submit refs
+const submitMainBtn   = document.getElementById("submitMainBtn");
 const submitToggleBtn = document.getElementById("submitToggleBtn");
-const submitMenu = document.getElementById("submitMenu");
+const submitMenu      = document.getElementById("submitMenu");
 const submitStatusLbl = document.getElementById("submitStatusLbl");
+const submitDot       = document.getElementById("submitDot");
 
+// grader/stats UI
 const gradeTable = document.querySelector("#gradeTable tbody");
 const scoreLbl = document.getElementById("scoreLbl");
 const passLbl  = document.getElementById("passLbl");
@@ -324,6 +347,16 @@ const kOpen = document.getElementById("kOpen");
 const kAvg = document.getElementById("kAvg");
 
 const resetBtn = document.getElementById("resetBtn");
+
+// toast
+const toastEl = document.getElementById("toast");
+let toastT=null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>toastEl.classList.remove("show"), 1800);
+}
 
 let currentId = null;
 let submitAs = "Open"; // current dropdown selection
@@ -384,6 +417,14 @@ function renderAssigneeOptions(t){
   dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
 }
 
+function setSubmitUI(value){
+  submitAs = value;
+  dStatus.value = value;                  // keep hidden select in sync
+  submitStatusLbl.textContent = value;    // label text
+  submitDot.className =
+    "status-dot " + (value==="Open" ? "dot-open" : value==="Pending" ? "dot-pending" : "dot-solved");
+}
+
 function openDetail(id){
   currentId=id;
   const t=state.tickets.find(x=>x.id===id); if(!t) return;
@@ -394,21 +435,20 @@ function openDetail(id){
   dSubject.textContent = t.subject;
   dRequester.textContent = t.requester||"—";
   dCreated.textContent = fmt(new Date(t.createdAt));
+
+  // init submit control from ticket status
   dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
-  submitAs = dStatus.value;
-  submitStatusLbl.textContent = submitAs;
+  setSubmitUI(dStatus.value);
 
   renderAssigneeOptions(t);
   dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
 
-  // fields left rail
   const tags = (t.tags || []);
   dTags.innerHTML = tags.length ? tags.map(x=>`<span class="z-tag">${esc(x)}</span>`).join("") : `<span class="z-value muted">—</span>`;
   dCategory.textContent = t.category || "—";
   dIntent.textContent = t.intent || "—";
   dAccount.textContent = t.accountId || "—";
 
-  // thread
   replyBox.value = "";
   thread.innerHTML = "";
   t.messages.forEach(m=>{
@@ -418,7 +458,6 @@ function openDetail(id){
     thread.appendChild(d);
   });
 
-  // attachments
   if (t.attachments && t.attachments.length) {
     snapshots.classList.remove("hidden");
     snapshots.innerHTML = t.attachments.map(a=>{
@@ -461,25 +500,38 @@ fChannel.onchange = renderList;
 searchBox.oninput = renderList;
 backBtn.onclick = showList;
 
-// NEW: split menu behavior
+// Split menu toggle
 submitToggleBtn.onclick = (e) => {
   e.stopPropagation();
   submitMenu.classList.toggle("hidden");
   submitToggleBtn.setAttribute("aria-expanded", String(!submitMenu.classList.contains("hidden")));
 };
+
+// Choose a submit-as option (does NOT submit yet)
 [...submitMenu.querySelectorAll(".menu-item")].forEach(item=>{
   item.onclick = () => {
-    submitAs = item.dataset.value;
-    dStatus.value = submitAs;
-    submitStatusLbl.textContent = submitAs;
+    setSubmitUI(item.dataset.value);
     submitMenu.classList.add("hidden");
     submitToggleBtn.setAttribute("aria-expanded","false");
+    toast(`Submit as ${submitAs} selected`);
   };
 });
+
+// Close the menu when clicking outside or on ESC
 document.addEventListener("click", ()=>submitMenu.classList.add("hidden"));
 document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") submitMenu.classList.add("hidden"); });
 
-// NEW: submit using the chosen status
+// Shortcuts: Ctrl/Cmd+Enter submits; Ctrl/Cmd+Shift+S opens the status menu
+document.addEventListener("keydown",(e)=>{
+  const mod = e.ctrlKey || e.metaKey;
+  if(mod && e.key==="Enter"){ submitMainBtn.click(); }
+  if(mod && e.shiftKey && (e.key.toLowerCase()==="s")){
+    e.preventDefault();
+    submitToggleBtn.click();
+  }
+});
+
+// Submit using the chosen status
 submitMainBtn.onclick = async () => {
   const t = state.tickets.find(x=>x.id===currentId);
   if (!t) return;
@@ -513,6 +565,8 @@ submitMainBtn.onclick = async () => {
     renderList();
     openDetail(t.id);
     replyBox.value = "";
+
+    toast(`Submitted as ${chosenStatus}`);
   } catch (err) {
     console.error("Submit/grade failed:", err);
     alert("Grading failed. Check the browser console for details.");
@@ -604,7 +658,7 @@ showList();
     const statusOk   = eq(attempt.status,   expectedStatus);
     const assigneeOk = eq(attempt.assignee, expectedAssignee);
 
-    const statusCheck = { label: `Submit As is "${expectedStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status ?? "—"}` };
+    const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
     const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
 
     // 3) Scoring
@@ -625,5 +679,8 @@ showList();
   };
 })();
 </script>
+
+<!-- Toast element (after scripts so it's present for JS refs) -->
+<div id="toast" class="toast" aria-live="polite"></div>
 </body>
 </html>
