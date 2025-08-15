@@ -2,6 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
+<script>
+  // Code required to access the page
+  const ACCESS_CODE = "trainerpass01"; // change this to your code
+  // Ask for code on load
+  (function(){
+    const entered = prompt("Enter access code:");
+    if (entered === null || entered.trim() !== ACCESS_CODE) {
+      document.body.innerHTML = "<div style='font-family:sans-serif;padding:40px;text-align:center'>Access Denied</div>";
+      throw new Error("Access denied"); // stop script execution
+    }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Simulation — Trainee</title>
 <style>
