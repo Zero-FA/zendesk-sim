@@ -281,8 +281,14 @@ const STORE = "sop_sim_state_v15"; // bump to reseed
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
-// Ticket template function
-function makeTicket({ subject, requester, channel, hoursAgo, requiredStatus, requiredAssignee, macroOnly, macroCommand, sections, requirements, category, intent, accountId, tags, body, attachments }) {
+// Ticket template helper (unchanged)
+function makeTicket({
+  subject, requester, channel, hoursAgo,
+  requiredStatus, requiredAssignee,
+  macroOnly, macroCommand,
+  sections, requirements,
+  category, intent, accountId, tags, body, attachments
+}) {
   return {
     id: uid(),
     subject,
@@ -293,12 +299,7 @@ function makeTicket({ subject, requester, channel, hoursAgo, requiredStatus, req
     assignee: "Myself",
     assigneeOptions: ALLOWED_ASSIGNEES,
     messages: [
-      {
-        id: uid(),
-        author: requester,
-        ts: now - (hoursAgo * 3600e3),
-        body
-      }
+      { id: uid(), author: requester, ts: now - (hoursAgo * 3600e3), body }
     ],
     expected: {
       requiredStatus,
@@ -320,18 +321,8 @@ function makeTicket({ subject, requester, channel, hoursAgo, requiredStatus, req
 
 const DEFAULT = {
   weights: {
-    sections: 60,
-    status: 25,
-    assignee: 15,
-    keywords: 0,
-    pass: 80,
-    sectionWeights: {
-      "Greeting": 8,
-      "Opener": 8,
-      "Solution": 67,
-      "Closer": 8,
-      "Sign-Off": 9
-    }
+    sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
+    sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
   },
   tickets: [
     // 1) Normal ticket (macroOnly: false)
@@ -342,25 +333,27 @@ const DEFAULT = {
       hoursAgo: 4,
       requiredStatus: "Open",
       requiredAssignee: "Fraud General",
-      macroOnly: false, // 👈 normal grading
+      macroOnly: false,
       macroCommand: "",
       sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-      requirements: "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
+      requirements:
+        "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
       category: "Support",
       intent: "Login Issue",
       accountId: "APEX-00001",
       tags: ["account_questions","language_en","sentiment_neutral"],
-      body: "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara",
+      body:
+        "Hi, I reset my password but still can’t log in. The reset email worked. Browser: Chrome on Windows. — Sara",
       attachments: [
         {
           type: "image",
-          url: "/img/login-error.png", // place in /public/img or use full URL
+          url: "https://your-image-host.com/login-error.png",
           title: "Login error message"
         }
       ]
     }),
 
-    // 2) Macro-only ticket (macroOnly: true)
+    // 2) Macro-only ticket (macroOnly: true) — now with image option too
     makeTicket({
       subject: "What happened to my account?",
       requester: "mike@trader.co",
@@ -368,19 +361,30 @@ const DEFAULT = {
       hoursAgo: 2,
       requiredStatus: "Solved",
       requiredAssignee: "Myself",
-      macroOnly: true, // 👈 macro grading mode
+      macroOnly: true,
+      // Note: this includes the leading slash and uses an EN DASH in the middle.
+      // The norm() in gradeAttempt makes this robust.
       macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
-      sections: [], // unused for macro grading
-      requirements: "Use the /Drawdown Threshold macro; no additional prose is required.",
+      sections: [], // unused in macro mode
+      requirements:
+        "Use the /Drawdown Threshold macro; no additional prose is required.",
       category: "Account",
       intent: "Drawdown Info",
       accountId: "APEX-00420",
       tags: ["account_questions","language_en","sentiment_neutral"],
-      body: "Hi team, can you tell me why my account was removed? I made 4k on my 50k account and then lost it all but I never went below $47,500? Why is my account saying liquidated?.",
-      attachments: []
+      body:
+        "Hi team, can you tell me why my account was removed? I made 4k on my 50k account and then lost it all but I never went below $47,500? Why is my account saying liquidated?.",
+      attachments: [
+        {
+          type: "image",
+          url: "https://your-image-host.com/drawdown-flag.png",
+          title: "Account status banner"
+        }
+      ]
     })
   ]
 };
+
 
 // seed or load state
 let state = null;
