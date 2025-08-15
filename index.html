@@ -43,16 +43,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Seg
 .badge{font-size:11px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:999px}
 .hidden{display:none}
 
-/* reply box – vertical resize only */
-textarea{
-  width:100%;
-  min-height:120px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:10px;
-  font:inherit;
-  resize:vertical;
-}
+/* reply box */
+textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;resize:vertical}
 
 .table{width:100%;border-collapse:collapse}
 .table th,.table td{border-bottom:1px solid var(--line);padding:6px;text-align:left;font-size:12px}
@@ -95,6 +87,16 @@ textarea{
   padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.18);
   font-size:13px;opacity:0;transform:translateY(8px);transition:.25s}
 .toast.show{opacity:1;transform:translateY(0)}
+
+/* ===== Grammar panel ===== */
+.grammar{border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:10px;margin-top:8px}
+.grammar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.grammar-list{display:flex;flex-direction:column;gap:8px}
+.grammar-note{font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px}
+.grammar-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.diffblock{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.diffcol{font:12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;border:1px dashed var(--line);border-radius:8px;background:#fff;padding:8px;white-space:pre-wrap}
+.difflabel{font-size:11px;color:var(--muted);margin-bottom:4px}
 </style>
 </head>
 <body>
@@ -143,7 +145,7 @@ textarea{
             <select class="select" id="dAssignee"></select>
           </div>
 
-          <!-- Submit As in left rail is now hidden (kept for logic sync) -->
+          <!-- Hidden Submit As (kept for logic sync) -->
           <div class="z-field" id="dStatusField" style="display:none">
             <div class="z-label">Submit As</div>
             <select class="select" id="dStatus"><option>Open</option><option>Pending</option><option>Solved</option></select>
@@ -185,8 +187,10 @@ textarea{
           <div class="composer">
             <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
 
-            <!-- bottom-right split submit -->
-            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+            <!-- Top row: Grammar on left, Submit split on right -->
+            <div style="display:flex;gap:8px;justify-content:space-between;margin-top:6px;align-items:center">
+              <button class="btn" id="grammarBtn" title="Ctrl/Cmd+Shift+G">Check grammar</button>
+
               <div class="split">
                 <button class="btn primary" id="submitMainBtn">
                   <span class="status-dot dot-open" id="submitDot" aria-hidden="true"></span>
@@ -204,6 +208,29 @@ textarea{
                     <span class="status-dot dot-solved" aria-hidden="true"></span> Submit as Solved
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Grammar results panel -->
+            <div id="grammarPanel" class="grammar hidden">
+              <div class="grammar-head">
+                <strong>Grammar suggestions</strong>
+                <div class="small muted" id="grammarMeta">—</div>
+              </div>
+              <div class="diffblock">
+                <div class="diffcol">
+                  <div class="difflabel">Original</div>
+                  <div id="grammarOrig" class="small"></div>
+                </div>
+                <div class="diffcol">
+                  <div class="difflabel">Suggested</div>
+                  <div id="grammarFix" class="small"></div>
+                </div>
+              </div>
+              <div class="grammar-list" id="grammarList"></div>
+              <div class="grammar-actions">
+                <button class="btn" id="dismissGrammarBtn">Dismiss</button>
+                <button class="btn primary" id="applyGrammarBtn">Replace text with fixes</button>
               </div>
             </div>
           </div>
@@ -231,14 +258,14 @@ textarea{
   </main>
 </div>
 
-<!-- ▼ Toast element (must exist before scripts) -->
+<!-- Toast element (must exist before scripts) -->
 <div id="toast" class="toast" aria-live="polite"></div>
 
 <!-- DEFAULT tickets & constants -->
 <script>
 function uid(){ return Math.random().toString(36).slice(2,9); }
 
-const STORE = "sop_sim_state_v12"; // bump to reseed
+const STORE = "sop_sim_state_v13"; // bump to reseed
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
@@ -339,6 +366,16 @@ const submitToggleBtn = document.getElementById("submitToggleBtn");
 const submitMenu      = document.getElementById("submitMenu");
 const submitStatusLbl = document.getElementById("submitStatusLbl");
 const submitDot       = document.getElementById("submitDot");
+
+// Grammar UI
+const grammarBtn = document.getElementById("grammarBtn");
+const grammarPanel = document.getElementById("grammarPanel");
+const grammarMeta = document.getElementById("grammarMeta");
+const grammarOrig = document.getElementById("grammarOrig");
+const grammarFix  = document.getElementById("grammarFix");
+const grammarList = document.getElementById("grammarList");
+const applyGrammarBtn = document.getElementById("applyGrammarBtn");
+const dismissGrammarBtn = document.getElementById("dismissGrammarBtn");
 
 // grader/stats UI
 const gradeTable = document.querySelector("#gradeTable tbody");
@@ -497,11 +534,65 @@ function renderGrade(report){
 
 function renderAll(){ renderList(); renderStats(); passLbl.textContent = state.weights.pass + "/100"; }
 
+/* ===== Grammar helpers ===== */
+function showGrammarPanel(show){ grammarPanel.classList.toggle("hidden", !show); }
+let lastGrammar = null;
+
+async function runGrammar(){
+  const text = (replyBox.value||"").trim();
+  if(!text){ alert("Write a reply first."); return; }
+  showGrammarPanel(true);
+  grammarMeta.textContent = "Checking…";
+  grammarOrig.textContent = text;
+  grammarFix.textContent = "";
+  grammarList.innerHTML = "";
+
+  try{
+    const resp = await fetch("/api/grammar", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ text })
+    });
+    if(!resp.ok){ throw new Error("Grammar API failed"); }
+    const data = await resp.json();
+    lastGrammar = data;
+
+    grammarFix.textContent = data.corrected || text;
+
+    const notes = [];
+    (data.changes||[]).forEach(ch=>{
+      notes.push(`<div class="grammar-note"><div class="small"><strong>Change:</strong> <code>${esc(ch.before)}</code> → <code>${esc(ch.after)}</code></div><div class="small muted">${esc(ch.reason||"")}</div></div>`);
+    });
+    (data.warnings||[]).forEach(w=>{
+      notes.push(`<div class="grammar-note"><div class="small">${esc(w)}</div></div>`);
+    });
+    grammarList.innerHTML = notes.join("") || `<div class="small muted">No specific notes — only minor polish applied.</div>`;
+
+    const count = (data.changes||[]).length;
+    grammarMeta.textContent = count ? `${count} suggestion${count===1?"":"s"}` : "No issues found";
+    toast("Grammar check complete");
+  }catch(e){
+    console.error(e);
+    grammarMeta.textContent = "Check failed";
+    toast("Grammar check failed");
+  }
+}
+
 // --- events ---
 fStatus.onchange = renderList;
 fChannel.onchange = renderList;
 searchBox.oninput = renderList;
 backBtn.onclick = showList;
+
+grammarBtn.onclick = runGrammar;
+applyGrammarBtn.onclick = ()=>{
+  if(lastGrammar?.corrected){
+    replyBox.value = lastGrammar.corrected;
+    toast("Applied grammar fixes");
+  }
+  showGrammarPanel(false);
+};
+dismissGrammarBtn.onclick = ()=> showGrammarPanel(false);
 
 // Split menu toggle
 submitToggleBtn.onclick = (e) => {
@@ -524,13 +615,17 @@ submitToggleBtn.onclick = (e) => {
 document.addEventListener("click", ()=>submitMenu.classList.add("hidden"));
 document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") submitMenu.classList.add("hidden"); });
 
-// Shortcuts: Ctrl/Cmd+Enter submits; Ctrl/Cmd+Shift+S opens the status menu
+// Shortcuts: Ctrl/Cmd+Enter submits; Ctrl/Cmd+Shift+S open status; Ctrl/Cmd+Shift+G grammar
 document.addEventListener("keydown",(e)=>{
   const mod = e.ctrlKey || e.metaKey;
   if(mod && e.key==="Enter"){ submitMainBtn.click(); }
   if(mod && e.shiftKey && (e.key.toLowerCase()==="s")){
     e.preventDefault();
     submitToggleBtn.click();
+  }
+  if(mod && e.shiftKey && (e.key.toLowerCase()==="g")){
+    e.preventDefault();
+    runGrammar();
   }
 });
 
@@ -595,7 +690,7 @@ showList();
 })();
 </script>
 
-<!-- Grader (client-side wrapper) -->
+<!-- Client-side grading wrapper -->
 <script>
 (() => {
   window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
@@ -612,7 +707,7 @@ showList();
     const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
     const eq = (a,b)=>String(a??'').trim().toLowerCase()===String(b??'').trim().toLowerCase();
 
-    // 1) Ask API for the 5 structure checks
+    // 1) Ask API for the structure checks, passing the ticket's rubric
     let ai = null;
     try {
       const rubric =
@@ -629,7 +724,6 @@ showList();
       console.warn("AI grading unavailable, using deterministic checks only.", err);
     }
 
-    // Must match server order:
     const structureLabels = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
 
     const structureChecks = structureLabels.map((label, i) => {
@@ -642,7 +736,7 @@ showList();
       };
     });
 
-    // Weighted structure % (0–100)
+    // Weighted structure %
     const sw = Object.assign({ Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 }, w.sectionWeights || {});
     const swTotal = structureLabels.reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
 
@@ -652,7 +746,7 @@ showList();
       const pct = clamp(Number(c?.score ?? 0), 0, 100);
       structurePctWeighted += pct * (sw[lab] || 0) / swTotal;
     });
-    structurePctWeighted = clamp(structurePctWeighted, 0, 100);
+    structurePctWeighted = Math.max(0, Math.min(100, structurePctWeighted));
 
     // 2) Deterministic checks
     const expectedStatus   = ticket.expected?.requiredStatus ?? "";
@@ -682,8 +776,5 @@ showList();
   };
 })();
 </script>
-
-<!-- Toast element (after scripts so it's present for JS refs) -->
-<div id="toast" class="toast" aria-live="polite"></div>
 </body>
 </html>
