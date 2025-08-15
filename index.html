@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SOP Simulator — Trainee</title>
+<title>Simulation — Trainee</title>
 <style>
 :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
 *{box-sizing:border-box}
@@ -98,19 +98,21 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 .diffcol{font:12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;border:1px dashed var(--line);border-radius:8px;background:#fff;padding:8px;white-space:pre-wrap}
 .difflabel{font-size:11px;color:var(--muted);margin-bottom:4px}
 
-/* ===== Submit spinner ===== */
+/* ===== Submit spinner (show only when .loading on button) ===== */
 .spinner{
   width:14px;height:14px;border:2px solid rgba(255,255,255,.45);
-  border-top-color:#fff;border-radius:50%;display:inline-block;
-  margin-right:8px;animation:spin .8s linear infinite
+  border-top-color:#fff;border-radius:50%;
+  margin-right:8px;animation:spin .8s linear infinite;
+  display:none;
 }
+.btn.primary.loading .spinner{display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .btn.primary.loading{opacity:.9;cursor:default}
 </style>
 </head>
 <body>
 <div class="top">
-  <div class="brand"><div class="logo">Z</div><div class="small muted">SOP Simulator (Trainee)</div></div>
+  <div class="brand"><div class="logo">Z</div><div class="small muted">Simulation (Trainee)</div></div>
   <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
     <button class="btn" id="resetBtn">Reset</button>
   </div>
@@ -202,7 +204,7 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 
               <div class="split">
                 <button class="btn primary" id="submitMainBtn">
-                  <span class="spinner hidden" id="submitSpinner" aria-hidden="true"></span>
+                  <span class="spinner" id="submitSpinner" aria-hidden="true"></span>
                   <span class="status-dot dot-open" id="submitDot" aria-hidden="true"></span>
                   Submit as <span id="submitStatusLbl">Open</span>
                 </button>
@@ -275,7 +277,7 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 <script>
 function uid(){ return Math.random().toString(36).slice(2,9); }
 
-const STORE = "sop_sim_state_v14"; // bump to reseed
+const STORE = "sop_sim_state_v15"; // bump to reseed
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
@@ -376,7 +378,6 @@ const submitToggleBtn = document.getElementById("submitToggleBtn");
 const submitMenu      = document.getElementById("submitMenu");
 const submitStatusLbl = document.getElementById("submitStatusLbl");
 const submitDot       = document.getElementById("submitDot");
-const submitSpinner   = document.getElementById("submitSpinner");
 
 // Grammar UI
 const grammarBtn = document.getElementById("grammarBtn");
@@ -412,10 +413,9 @@ function toast(msg){
 let currentId = null;
 let submitAs = "Open"; // current dropdown selection
 
-// spinner toggle
+// spinner toggle — only class controls visibility
 function setSubmitting(on){
   submitMainBtn.classList.toggle("loading", on);
-  submitSpinner.classList.toggle("hidden", !on);
   submitMainBtn.disabled = on;
   submitToggleBtn.disabled = on;
   submitMainBtn.setAttribute("aria-busy", on ? "true" : "false");
