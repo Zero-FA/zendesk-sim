@@ -2,13 +2,11 @@
 import OpenAI from "openai";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const MAX_REPLY_CHARS = 8000;
 
-// New fixed structure (order matters)
+// Order matters — keep in sync with the client UI
 const STRUCTURE_LABELS = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
 
-// Strict JSON schema: 5 checks + overall structurePct.
-// Each check may include a numeric `score` (0–100).
+// Strict JSON schema for the model to follow
 const schema = {
   type: "object",
   properties: {
@@ -20,13 +18,13 @@ const schema = {
           label:  { type: "string" },
           ok:     { type: "boolean" },
           detail: { type: "string" },
-          score:  { type: "number" } // optional 0–100; client will default from ok if missing
+          score:  { type: "number" } // optional, 0–100
         },
         required: ["label", "ok", "detail"],
         additionalProperties: false
       }
     },
-    structurePct: { type: "number" } // 0–100 (client may show but doesn't depend on it)
+    structurePct: { type: "number" } // 0–100
   },
   required: ["checks", "structurePct"],
   additionalProperties: false
@@ -41,10 +39,10 @@ Support Ticket Style Guide (Apex Training)
 - Leave one blank line after the greeting.
 
 2) Opener
-- One short opening sentence, polite and professional (≤ 25 words).
+- One short opening sentence, polite and professional.
+- No hard length or punctuation rule: do NOT fail purely for length or for using an exclamation mark if it reads naturally.
 - Examples: "Thank you for reaching out to Apex Trader Funding Support! I hope you're having a great day."
-- Avoid fluff or over-explaining.
-- Leave one blank line after the opener.
+- Keep it concise and on-tone (no fluff).
 
 3) Solution
 - Most important part.
@@ -72,21 +70,14 @@ Support Ticket Style Guide (Apex Training)
 `.trim();
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
     const { reply, rubric = "" } = req.body || {};
     const text = String(reply || "");
     if (!text.trim()) return res.status(400).json({ error: "empty_reply" });
-
-    if (text.length > MAX_REPLY_CHARS) {
-      return res.status(413).json({
-        error: "reply_too_long",
-        max: MAX_REPLY_CHARS,
-        received: text.length,
-        message: `Reply exceeds ${MAX_REPLY_CHARS} characters. Please shorten it.`
-      });
-    }
 
     const system =
       "You are a strict, fair QA grader for support tickets. Judge ONLY by the style guide and the ticket-specific requirements. Be concise and deterministic.";
@@ -99,7 +90,7 @@ You are grading a customer support reply for structure and style.
 Structure labels to check, in order:
 ${STRUCTURE_LABELS.join(", ")}
 
-Treat a concise empathy or gratitude line as a valid Closer even without an explicit invitation to reply.
+Important: For the Opener, do NOT penalize for sentence length or the presence of an exclamation mark; judge only tone (polite, professional) and relevance.
 
 STYLE GUIDE:
 ${STYLE_GUIDE}
@@ -113,7 +104,7 @@ TRAINEE REPLY:
 Return JSON matching the schema:
 - "checks": exactly these 5 in order and with these exact labels:
   ${labelsList}
-Each item needs { label, ok, detail, score } where score is 0–100.
+Each item needs { label, ok, detail, score } where score is 0–100 (100 = fully met).
 Also return "structurePct" (0–100) as your overall structure score.
 `.trim();
 
