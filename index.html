@@ -2,24 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<script>
-  // Code required to access the page
-  const ACCESS_CODE = "apex2025"; // change this to your code
-  // Ask for code on load
-  (function(){
-    const entered = prompt("Enter access code:");
-    if (entered === null || entered.trim() !== ACCESS_CODE) {
-      document.body.innerHTML = "<div style='font-family:sans-serif;padding:40px;text-align:center'>Access Denied</div>";
-      throw new Error("Access denied"); // stop script execution
-    }
-  })();
-</script>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Simulation — Trainee</title>
 <style>
 :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+
+/* ===== Access Gate styles ===== */
+.gate{position:fixed;inset:0;display:grid;place-items:center;background:rgba(2,6,23,.8);z-index:9999}
+.gate-card{width:320px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;
+  box-shadow:0 12px 36px rgba(15,23,42,.35)}
+.gate-title{font-weight:700;margin-bottom:10px}
+.gate-input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;background:#fff}
+.gate-btn{width:100%;margin-top:10px;border:1px solid var(--line);background:#635bff;color:#fff;border-radius:10px;
+  padding:10px 12px;font-size:14px;cursor:pointer}
+.gate-btn[aria-busy="true"]{opacity:.8;cursor:default}
+.gate-err{min-height:1.25em;margin-top:8px;font-size:12px;color:var(--warn)}
+body.gated{overflow:hidden}
 
 /* top bar */
 .top{height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;background:#fff;border-bottom:1px solid var(--line)}
@@ -212,6 +212,16 @@ body.dark .pill{
 </style>
 </head>
 <body>
+<!-- Access Gate Overlay -->
+<div id="gate" class="gate">
+  <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <div id="gateTitle" class="gate-title">Enter Access Code</div>
+    <input id="gateInput" class="gate-input" type="password" placeholder="Access code" autocomplete="off" />
+    <button id="gateBtn" class="gate-btn">Enter</button>
+    <div id="gateErr" class="gate-err" role="alert"></div>
+  </div>
+</div>
+
 <div class="top">
   <div class="brand"><div class="logo">Z</div><div class="small muted">Simulation (Trainee)</div></div>
   <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
@@ -219,7 +229,6 @@ body.dark .pill{
     <button class="btn" id="resetBtn">Reset</button>
   </div>
 </div>
-
 <div class="layout">
   <!-- LEFT RAIL -->
   <aside class="rail card">
@@ -374,6 +383,50 @@ body.dark .pill{
 
 <!-- Toast element (must exist before scripts) -->
 <div id="toast" class="toast" aria-live="polite"></div>
+
+<script>
+(function(){
+  const GATE_KEY = "sim_authed_session";
+  const gate = document.getElementById("gate");
+  const input = document.getElementById("gateInput");
+  const btn = document.getElementById("gateBtn");
+  const err = document.getElementById("gateErr");
+
+  function unlock(){
+    sessionStorage.setItem(GATE_KEY, "1");
+    document.body.classList.remove("gated");
+    gate && gate.remove();
+  }
+
+  if (sessionStorage.getItem(GATE_KEY) === "1") { unlock(); return; }
+
+  document.body.classList.add("gated");
+
+  async function submit(){
+    err.textContent = "";
+    btn.disabled = true; btn.setAttribute("aria-busy","true");
+    try{
+      const code = (input.value || "").trim();
+      const resp = await fetch("/api/auth", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ code })
+      });
+      if (resp.ok){ unlock(); return; }
+      const data = await resp.json().catch(()=>({}));
+      err.textContent = data?.error || "Invalid code";
+    }catch(e){
+      err.textContent = "Network error. Try again.";
+    }finally{
+      btn.disabled = false; btn.removeAttribute("aria-busy"); input.focus();
+    }
+  }
+
+  btn.addEventListener("click", submit);
+  input.addEventListener("keydown", (e)=>{ if(e.key==="Enter") submit(); });
+  setTimeout(()=>input?.focus(), 0);
+})();
+</script>
 
 <!-- DEFAULT tickets & constants -->
 <script>
