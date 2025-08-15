@@ -198,19 +198,15 @@ const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud Gen
 
 const DEFAULT = {
   weights: {
-    // Outer buckets (must total ~100)
-    sections: 60,   // structure bucket
-    status: 25,     // "Submit As"
-    assignee: 15,   // Assignee
-    keywords: 0,    // leave at 0 unless you want keyword scoring
-    pass: 80,       // pass threshold
-
-    // Inner breakdown of the sections bucket (must total ~100)
-    // 67% of 60% ≈ 40% of overall grade
+    sections: 60,
+    status: 25,
+    assignee: 15,
+    keywords: 0,
+    pass: 80,
     sectionWeights: {
       "Greeting": 8,
       "Acknowledge": 8,
-      "Solution": 67,
+      "Solution": 67,      /* ≈40% overall */
       "Offer Support": 8,
       "Closing": 9
     }
@@ -241,10 +237,7 @@ const DEFAULT = {
       category: "Support",
       intent: "Login Issue",
       accountId: "APEX-00001",
-      attachments: [
-        // { type:"image", url:"/assets/2fa-disabled.png" },
-        // { type:"link",  url:"https://example.com/faq/login", title:"Login Troubleshooting" }
-      ],
+      attachments: [],
       attempts: [],
       grade: null
     }
@@ -252,12 +245,13 @@ const DEFAULT = {
 };
 </script>
 
-// seed or load state
+<!-- seed or load state (this needed an opening <script> tag) -->
+<script>
 let state = null;
 try { state = JSON.parse(localStorage.getItem(STORE) || "null"); } catch {}
 if (!state || !Array.isArray(state.tickets)) {
-state = structuredClone(DEFAULT);
-localStorage.setItem(STORE, JSON.stringify(state));
+  state = structuredClone(DEFAULT);
+  localStorage.setItem(STORE, JSON.stringify(state));
 }
 </script>
 
