@@ -944,18 +944,9 @@ if (t.locked) {
   submitMainBtn.setAttribute("data-locked", "true");
   submitMainBtn.title = "Locked — ask your trainer to reset";
 
-  // IMPORTANT: do not replace the whole button; only change the status label
-  submitStatusLbl.textContent = "Submit as";
+submitStatusLbl.textContent = "Submit as";
+// no inline reset button here — use the top reset only
 
-  // add an inline Reset button (password protected) if not already present
-  if (!document.getElementById("resetInlineBtn")) {
-    const resetInlineBtn = document.createElement("button");
-    resetInlineBtn.id = "resetInlineBtn";
-    resetInlineBtn.className = "btn danger";
-    resetInlineBtn.style.marginTop = "8px";
-    resetInlineBtn.textContent = "Reset this ticket";
-    resetInlineBtn.onclick = () => resetTicket(t.id);
-    document.querySelector(".composer").prepend(resetInlineBtn);
   }
 } else {
   // ensure controls are usable when not locked
