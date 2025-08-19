@@ -722,14 +722,13 @@ if (!state || !Array.isArray(state.tickets)) {
   state = structuredClone(DEFAULT);
   localStorage.setItem(STORE, JSON.stringify(state));
 }
-</script>
-
 // extra user-made history items, keyed by requester email
 // shape: { "<email>": [ {id, title, createdAt, status} ] }
 let historyExtras = JSON.parse(localStorage.getItem("sop_sim_hist_v1") || "{}");
 
 // selected history items per ticketId for "merge"
 let mergeSelectionByTicketId = JSON.parse(localStorage.getItem("sop_sim_mergeSel_v1") || "{}");
+</script>
 
 <!-- Main app script -->
 <script>
@@ -1018,19 +1017,6 @@ function renderInteractionHistory(requesterEmail, currentTicketId){
       else { set.add(id); el.classList.add("is-selected"); }
       setMergeSel(currentTicketId, set);
       updateMergeButtonUI();
-    };
-  });
-}
-
-  // click to toggle selection
-  [...histList.querySelectorAll(".hist-item")].forEach(el=>{
-    el.onclick = ()=>{
-      const id = el.getAttribute("data-id");
-      const set = getMergeSel(currentTicketId);
-      if(set.has(id)){ set.delete(id); el.classList.remove("is-selected"); }
-      else { set.add(id); el.classList.add("is-selected"); }
-      setMergeSel(currentTicketId, set);
-      updateMergeButtonUI(); // reflect selection state
     };
   });
 }
