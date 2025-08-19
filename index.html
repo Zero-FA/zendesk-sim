@@ -53,6 +53,40 @@ body.gated{overflow:hidden}
 .small{font-size:12px}
 .bubble{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
 .badge{font-size:11px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:999px}
+/* Score badge (list view) */
+.score-badge{
+  display:inline-block;
+  font-size:12px;
+  font-weight:600;
+  border-radius:999px;
+  padding:2px 8px;
+  min-width:40px;
+  text-align:center;
+}
+
+/* ≥90 */
+.score-good{
+  background: rgba(16,185,129,.14);
+  color:#22c55e;
+  border:1px solid rgba(16,185,129,.4);
+}
+
+/* 80–89 */
+.score-mid{
+  background: rgba(234,179,8,.16);
+  color:#facc15;
+  border:1px solid rgba(234,179,8,.40);
+}
+
+/* <80 */
+.score-bad{
+  background: rgba(239,68,68,.16);
+  color:#f87171;
+  border:1px solid rgba(239,68,68,.45);
+}
+
+/* optional: tiny tweak for dark to keep contrast comfy */
+body.dark .score-badge{ box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
 .hidden{display:none}
 
 /* reply box */
@@ -682,6 +716,11 @@ function esc(s){
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
+function scoreBadgeHTML(score){
+  const n = Number(score) || 0;
+  const cls = n >= 90 ? "score-good" : n >= 80 ? "score-mid" : "score-bad";
+  return `<span class="score-badge ${cls}">${n.toFixed(0)}/100</span>`;
+}
 
 function showList(){
   // hide detail view, show list
@@ -805,7 +844,7 @@ function renderList(){
          <div class="small" style="display:flex;align-items:center;gap:8px">
            <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
            <span class="pill">${esc(t.channel)}</span>
-           ${t.grade?`<span class="badge">${t.grade.score.toFixed(0)}/100</span>`:""}
+           ${t.grade ? scoreBadgeHTML(t.grade.score) : ""}
          </div>
          <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
        </div>
