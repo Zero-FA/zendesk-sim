@@ -727,17 +727,17 @@ function scoreBadgeHTML(score){
 
 // 🔑 Reset helper
 function resetTicket(ticketId){
-  const pw = prompt("Enter reset password:");
-  if (pw === "Reset1234") { // change this to your secret
+  const code = prompt("Enter reset code:");
+  if (code === "apexreset01") { // your global reset code
     const t = state.tickets.find(x => x.id === ticketId);
     if (t) {
       t.locked = false;
       save();
-      openDetail(ticketId);
-      alert("Ticket reset — submit enabled again.");
+      openDetail(ticketId); // refresh view
+      alert("Ticket unlocked — you can submit again.");
     }
   } else {
-    alert("Incorrect password.");
+    alert("Incorrect code.");
   }
 }
 
