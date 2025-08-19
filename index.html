@@ -452,11 +452,11 @@ body.dark .badge-id:hover {
 <section class="req-section">
   <div class="req-title">Interaction history</div>
 
-  <!-- add history form -->
-  <div style="display:flex; gap:6px; margin-bottom:8px">
-    <input id="histNewTitle" class="input" placeholder="Add a fake past ticket title…" style="flex:1"/>
-    <button class="btn" id="histAddBtn" title="Add to history">Add</button>
-  </div>
+<!-- add history form (admin-only; hidden by default) -->
+<div id="histAdminRow" style="display:none; gap:6px; margin-bottom:8px">
+  <input id="histNewTitle" class="input" placeholder="Add a fake past ticket title…" style="flex:1"/>
+  <button class="btn" id="histAddBtn" title="Add to history">Add</button>
+</div>
 
   <!-- tip -->
   <div class="small muted" style="margin:-4px 0 6px">Tip: click history items to select for merge.</div>
@@ -543,13 +543,14 @@ const STORE = "sop_sim_state_v15"; // bump to reseed
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
-// Ticket template helper (unchanged)
+// Ticket template helper (unchanged) 
 function makeTicket({
   subject, requester, channel, hoursAgo,
   requiredStatus, requiredAssignee,
   macroOnly, macroCommand,
   sections, requirements,
-  category, intent, accountId, tags, body, attachments
+  category, intent, accountId, tags, body, attachments,
+  seedHistory // 👈 NEW
 }) {
   return {
     id: uid(),
@@ -577,7 +578,10 @@ function makeTicket({
     accountId,
     attachments: attachments || [],
     attempts: [],
-    grade: null
+    grade: null,
+
+    // 👇 store seeds on the ticket; the seeder reads _histSeed
+    _histSeed: Array.isArray(seedHistory) ? seedHistory : []
   };
 }
 
@@ -588,32 +592,33 @@ const DEFAULT = {
   },
   tickets: [
     // 1) Normal ticket (macroOnly: false)
-    makeTicket({
-      subject: "Can't log in after password reset",
-      requester: "sara@brand.co",
-      channel: "Email",
-      hoursAgo: 4,
-      requiredStatus: "Open",
-      requiredAssignee: "Fraud General",
-      macroOnly: false,
-      macroCommand: "",
-      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-      requirements:
-        "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
-      category: "Support",
-      intent: "Login Issue",
-      accountId: "APEX-00001",
-      tags: ["account_questions","language_en","sentiment_neutral"],
-      body:
-        "Hi, I reset my password but still can’t log in. - Sara",
-      attachments: [
-        {
-          type: "image",
-          url: "https://i.imgur.com/0SxOMjH.png",
-          title: "Login error message"
-        }
-      ]
-    }),
+makeTicket({
+  subject: "Can't log in after password reset",
+  requester: "sara@brand.co",
+  channel: "Email",
+  hoursAgo: 4,
+  requiredStatus: "Open",
+  requiredAssignee: "Fraud General",
+  macroOnly: false,
+  macroCommand: "",
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements:
+    "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
+  category: "Support",
+  intent: "Login Issue",
+  accountId: "APEX-00001",
+  tags: ["account_questions","language_en","sentiment_neutral"],
+  body: "Hi, I reset my password but still can’t log in. - Sara",
+  attachments: [
+    { type: "image", url: "https://i.imgur.com/0SxOMjH.png", title: "Login error message" }
+  ],
+
+  // ✅ history seeds live here
+  seedHistory: [
+    { title: "Reset didn’t work after MFA", hoursAgo: 72, status: "Solved" },
+    { title: "Locked out after password reset", hoursAgo: 400, status: "Solved" }
+  ]
+}),
     // 2) Macro-only ticket (macroOnly: true) — now with image option too
     makeTicket({
       subject: "What happened to my account?",
@@ -722,12 +727,44 @@ if (!state || !Array.isArray(state.tickets)) {
   state = structuredClone(DEFAULT);
   localStorage.setItem(STORE, JSON.stringify(state));
 }
-// extra user-made history items, keyed by requester email
-// shape: { "<email>": [ {id, title, createdAt, status} ] }
-let historyExtras = JSON.parse(localStorage.getItem("sop_sim_hist_v1") || "{}");
+</script>
 
-// selected history items per ticketId for "merge"
+<script>
+// === Admin-seeded Interaction History (author controls here) ===
+
+// Build Interaction History from ticket-level seeds on first load
+(function seedHistoryFromTicketsIfEmpty(){
+  const KEY = "sop_sim_hist_v1";
+  if (localStorage.getItem(KEY)) return; // already seeded
+
+  const now = Date.now();
+  const out = {};
+
+  (DEFAULT.tickets || []).forEach(t => {
+    const email = t.requester;
+    (t._histSeed || []).forEach(it => {
+      (out[email] ||= []).push({
+        id: Math.random().toString(36).slice(2,9),
+        title: String(it.title || "Untitled"),
+        createdAt: now - (Number(it.hoursAgo || 0) * 3600e3),
+        status: it.status || "Solved"
+      });
+    });
+  });
+
+  localStorage.setItem(KEY, JSON.stringify(out));
+})();
+
+// globals used by app (must exist before main script runs)
+let historyExtras = JSON.parse(localStorage.getItem("sop_sim_hist_v1") || "{}");
 let mergeSelectionByTicketId = JSON.parse(localStorage.getItem("sop_sim_mergeSel_v1") || "{}");
+
+function saveExtras(){
+  localStorage.setItem("sop_sim_hist_v1", JSON.stringify(historyExtras));
+}
+function saveMergeSel(){
+  localStorage.setItem("sop_sim_mergeSel_v1", JSON.stringify(mergeSelectionByTicketId));
+}
 </script>
 
 <!-- Main app script -->
