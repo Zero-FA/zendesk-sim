@@ -543,14 +543,22 @@ const STORE = "sop_sim_state_v15"; // bump to reseed
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
-// Ticket template helper (unchanged) 
+<script>
+// Ticket template helper
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+const STORE = "sop_sim_state_v15";
+const now   = Date.now();
+const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
+
 function makeTicket({
   subject, requester, channel, hoursAgo,
   requiredStatus, requiredAssignee,
   macroOnly, macroCommand,
   sections, requirements,
   category, intent, accountId, tags, body, attachments,
-  seedHistory // 👈 NEW
+  seedHistory,
+  historyMergeable = true   // ✅ default: mergeable
 }) {
   return {
     id: uid(),
@@ -580,8 +588,10 @@ function makeTicket({
     attempts: [],
     grade: null,
 
-    // 👇 store seeds on the ticket; the seeder reads _histSeed
-    _histSeed: Array.isArray(seedHistory) ? seedHistory : []
+    // Seeds for “custom” history lines (will be persisted by the seeder)
+    _histSeed: Array.isArray(seedHistory) ? seedHistory : [],
+    // Whether this ticket itself may appear as a mergeable built-in item
+    historyMergeable
   };
 }
 
@@ -591,35 +601,34 @@ const DEFAULT = {
     sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
   },
   tickets: [
-    // 1) Normal ticket (macroOnly: false)
-makeTicket({
-  subject: "Can't log in after password reset",
-  requester: "sara@brand.co",
-  channel: "Email",
-  hoursAgo: 4,
-  requiredStatus: "Open",
-  requiredAssignee: "Fraud General",
-  macroOnly: false,
-  macroCommand: "",
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements:
-    "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
-  category: "Support",
-  intent: "Login Issue",
-  accountId: "APEX-00001",
-  tags: ["account_questions","language_en","sentiment_neutral"],
-  body: "Hi, I reset my password but still can’t log in. - Sara",
-  attachments: [
-    { type: "image", url: "https://i.imgur.com/0SxOMjH.png", title: "Login error message" }
-  ],
+    // 1) Normal ticket
+    makeTicket({
+      subject: "Can't log in after password reset",
+      requester: "sara@brand.co",
+      channel: "Email",
+      hoursAgo: 4,
+      requiredStatus: "Open",
+      requiredAssignee: "Fraud General",
+      macroOnly: false,
+      macroCommand: "",
+      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+      requirements:
+        "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
+      category: "Support",
+      intent: "Login Issue",
+      accountId: "APEX-00001",
+      tags: ["account_questions","language_en","sentiment_neutral"],
+      body: "Hi, I reset my password but still can’t log in. - Sara",
+      attachments: [
+        { type: "image", url: "https://i.imgur.com/0SxOMjH.png", title: "Login error message" }
+      ],
+      seedHistory: [
+        { title: "Reset didn’t work after MFA", hoursAgo: 72, status: "Solved" },
+        { title: "Locked out after password reset", hoursAgo: 400, status: "Solved" }
+      ]
+    }),
 
-  // ✅ history seeds live here
-  seedHistory: [
-    { title: "Reset didn’t work after MFA", hoursAgo: 72, status: "Solved" },
-    { title: "Locked out after password reset", hoursAgo: 400, status: "Solved" }
-  ]
-}),
-    // 2) Macro-only ticket (macroOnly: true) — now with image option too
+    // 2) Macro-only ticket
     makeTicket({
       subject: "What happened to my account?",
       requester: "mike@trader.co",
@@ -628,95 +637,96 @@ makeTicket({
       requiredStatus: "Solved",
       requiredAssignee: "Myself",
       macroOnly: true,
-      // Note: this includes the leading slash and uses an EN DASH in the middle.
-      // The norm() in gradeAttempt makes this robust.
       macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
-      sections: [], // unused in macro mode
-      requirements:
-        "Use the /Drawdown Threshold macro; no additional prose is required.",
+      sections: [],
+      requirements: "Use the /Drawdown Threshold macro; no additional prose is required.",
       category: "Account",
       intent: "Drawdown Info",
       accountId: "APEX-00420",
       tags: ["account_questions","language_en","sentiment_neutral"],
       body:
         "Hi team, can you tell me why my account was removed? I made 4k on my 50k account and then lost it all but I never went below $47,500? Why is my account saying liquidated?.",
-      attachments: [
-        {
-          type: "image",
-          url: "",
-          title: "Account status banner"
-        }
+      attachments: [{ type: "image", url: "", title: "Account status banner" }],
+      seedHistory: [
+        { title: "Drawdown policy clarification", hoursAgo: 240, status: "Solved" },
+        { title: "P/L discrepancy follow-up", hoursAgo: 800, status: "Solved" }
       ]
     }),
-    // Ticket Test from ticketmaker
-makeTicket({
-  subject: "what?",
-  requester: "jomomma@gmail.com",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
-  sections: [],
-  requirements:
-    "Use the specified macro; no additional prose is required.",
-  category: "Support",
-  intent: "Drawdown",
-  accountId: "APEX-183914",
-  tags: ["account_question"],
-  body:
-    "Hey where is my account? I was up 10k and only lost 4k and my accounts gone. I didnt even get close to the drawdown at 47,500???",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  subject: "Banned Countries",
-  requester: "clockedout@gmail.com",
-  channel: "Email",
-  hoursAgo: 5,
-  requiredStatus: "Open",
-  requiredAssignee: "Fraud General",
-  macroOnly: true,
-  macroCommand: "/Gen - Banned Countries",
-  sections: [],
-  requirements:
-    "Use the specified macro; no additional prose is required.",
-  category: "Support",
-  intent: "Countries",
-  accountId: "APEX-183914",
-  tags: ["banned_countries"],
-  body:
-    "Hi, I am from India. I was wondering if I could trade with you.",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  subject: "Missing Passed Email",
-  requester: "JasonPurraz@gmail.com",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements:
-    "Write a professional reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off).",
-  category: "Support",
-  intent: "Passed Evaluation",
-  accountId: "APEX-183914",
-  tags: ["passed_eval"],
-  body:
-    "I passed my evaluation, but I do not see any passed email yet. I just hit the profit goal today at 9 AM EST, but I haven't gotten any email and the balances in my Apex Dashboard haven't updated. Could you please help me out?",
-  attachments: [
-    {
-      type: "image",
-      url: "https://i.imgur.com/u35QmA3.png",
-      title: "Attachment"
-    }
-  ]
-})
+
+    // 3) Macro-only (test)
+    makeTicket({
+      subject: "what?",
+      requester: "jomomma@gmail.com",
+      channel: "Email",
+      hoursAgo: 2,
+      requiredStatus: "Solved",
+      requiredAssignee: "Myself",
+      macroOnly: true,
+      macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
+      sections: [],
+      requirements: "Use the specified macro; no additional prose is required.",
+      category: "Support",
+      intent: "Drawdown",
+      accountId: "APEX-183914",
+      tags: ["account_question"],
+      body:
+        "Hey where is my account? I was up 10k and only lost 4k and my accounts gone. I didnt even get close to the drawdown at 47,500???",
+      attachments: [],
+      seedHistory: [
+        { title: "Account removed after loss", hoursAgo: 96, status: "Solved" }
+      ]
+    }),
+
+    // 4) Banned Countries
+    makeTicket({
+      subject: "Banned Countries",
+      requester: "clockedout@gmail.com",
+      channel: "Email",
+      hoursAgo: 5,
+      requiredStatus: "Open",
+      requiredAssignee: "Fraud General",
+      macroOnly: true,
+      macroCommand: "/Gen - Banned Countries",
+      sections: [],
+      requirements: "Use the specified macro; no additional prose is required.",
+      category: "Support",
+      intent: "Countries",
+      accountId: "APEX-183914",
+      tags: ["banned_countries"],
+      body: "Hi, I am from India. I was wondering if I could trade with you.",
+      attachments: [],
+      seedHistory: [
+        { title: "Country eligibility question", hoursAgo: 48, status: "Solved" }
+      ]
+    }),
+
+    // 5) Missing Passed Email
+    makeTicket({
+      subject: "Missing Passed Email",
+      requester: "JasonPurraz@gmail.com",
+      channel: "Email",
+      hoursAgo: 2,
+      requiredStatus: "Solved",
+      requiredAssignee: "Myself",
+      macroOnly: false,
+      macroCommand: "",
+      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+      requirements:
+        "Write a professional reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off).",
+      category: "Support",
+      intent: "Passed Evaluation",
+      accountId: "APEX-183914",
+      tags: ["passed_eval"],
+      body:
+        "I passed my evaluation, but I do not see any passed email yet. I just hit the profit goal today at 9 AM EST, but I haven't gotten any email and the balances in my Apex Dashboard haven't updated. Could you please help me out?",
+      attachments: [
+        { type: "image", url: "https://i.imgur.com/u35QmA3.png", title: "Attachment" }
+      ],
+      seedHistory: [
+        { title: "Passed email delay", hoursAgo: 30, status: "Solved" },
+        { title: "Dashboard balance mismatch", hoursAgo: 300, status: "Solved" }
+      ]
+    })
   ]
 };
 
@@ -758,13 +768,6 @@ if (!state || !Array.isArray(state.tickets)) {
 // globals used by app (must exist before main script runs)
 let historyExtras = JSON.parse(localStorage.getItem("sop_sim_hist_v1") || "{}");
 let mergeSelectionByTicketId = JSON.parse(localStorage.getItem("sop_sim_mergeSel_v1") || "{}");
-
-function saveExtras(){
-  localStorage.setItem("sop_sim_hist_v1", JSON.stringify(historyExtras));
-}
-function saveMergeSel(){
-  localStorage.setItem("sop_sim_mergeSel_v1", JSON.stringify(mergeSelectionByTicketId));
-}
 </script>
 
 <!-- Main app script -->
@@ -1253,6 +1256,27 @@ histAddBtn.onclick = ()=>{
   renderInteractionHistory(t.requester, t.id); // <-- refresh list
   updateMergeButtonUI();
   toast("Added to history");
+};
+mergeBtn.onclick = () => {
+  const t = state.tickets.find(x=>x.id===currentId);
+  if(!t) return;
+
+  const sel = getMergeSel(t.id); // Set of selected history IDs
+  if(!sel.size){
+    toast("Select history items first");
+    return;
+  }
+
+  // Store lightweight record of the merge on the ticket
+  t._merge = {
+    applied: true,
+    ids: Array.from(sel),
+    titles: titlesForIds(t.requester, sel)
+  };
+
+  save();
+  updateMergeButtonUI();
+  toast("Merged selected history into ticket");
 };
 
 // Split menu toggle
