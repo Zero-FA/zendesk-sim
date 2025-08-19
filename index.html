@@ -943,9 +943,11 @@ if (t.locked) {
 
   submitMainBtn.setAttribute("data-locked", "true");
   submitMainBtn.title = "Locked — ask your trainer to reset";
-  submitMainBtn.textContent = "Submit as"; // clear label
+
+  // keep inner markup; just change the label/dot
+  submitStatusLbl.textContent = "Locked — ask trainer to reset";
+  submitDot.className = "status-dot dot-solved";
 } else {
-  // ensure controls are usable when not locked
   submitMainBtn.disabled = false;
   submitToggleBtn.disabled = false;
   replyBox.disabled = false;
@@ -953,7 +955,7 @@ if (t.locked) {
   submitMainBtn.removeAttribute("data-locked");
   submitMainBtn.title = "";
 
-  // restore the standard label/dot via your helper
+  // restore normal UI
   setSubmitUI(dStatus.value);
 }
 
