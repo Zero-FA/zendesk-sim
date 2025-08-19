@@ -9,12 +9,6 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
 
-/* selected-for-merge highlight */
-.hist-item.is-selected{
-  border-color:#10b981 !important;
-  background:rgba(16,185,129,.08);
-}
-
 /* ===== Access Gate styles ===== */
 .gate{position:fixed;inset:0;display:grid;place-items:center;background:rgba(2,6,23,.8);z-index:9999}
 .gate-card{width:320px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;
@@ -365,11 +359,7 @@ body.dark .badge-id:hover {
     <span id="dTicketId" class="badge-id">Ticket —</span>
     <span id="dChannelPill" class="pill" style="margin-left:6px">—</span>
     <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
-<div class="lang-tools small muted">
-  🌐 <span>Language</span>
-  <button class="btn" id="mergeBtn" style="margin-left:8px">Merge</button>
-  <span id="mergeState" class="badge hidden" style="margin-left:6px">Merged</span>
-</div>
+      <div class="lang-tools small muted">🌐 <span>Language/merge</span></div>
       <div class="small muted">
         <span id="dRequester">—</span> • <span id="dCreated">—</span>
       </div>
@@ -449,20 +439,11 @@ body.dark .badge-id:hover {
       </div>
     </section>
 
-<section class="req-section">
-  <div class="req-title">Interaction history</div>
-
-<!-- add history form (admin-only; hidden by default) -->
-<div id="histAdminRow" style="display:none; gap:6px; margin-bottom:8px">
-  <input id="histNewTitle" class="input" placeholder="Add a fake past ticket title…" style="flex:1"/>
-  <button class="btn" id="histAddBtn" title="Add to history">Add</button>
-</div>
-
-  <!-- tip -->
-  <div class="small muted" style="margin:-4px 0 6px">Tip: click history items to select for merge.</div>
-
-  <div id="histList" class="hist-list"></div>
-</section>
+    <!-- Interaction History -->
+    <section class="req-section">
+      <div class="req-title">Interaction history</div>
+      <div id="histList" class="hist-list"></div>
+    </section>
 
     <!-- Keep your existing Auto-Grade panel below -->
     <section class="req-section">
@@ -539,19 +520,17 @@ body.dark .badge-id:hover {
 <script>
 function uid(){ return Math.random().toString(36).slice(2,9); }
 
-const STORE = "sop_sim_state_v16"; // bump to reseed after fix
+const STORE = "sop_sim_state_v15"; // bump to reseed
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
-// Ticket template helper
+// Ticket template helper (unchanged)
 function makeTicket({
   subject, requester, channel, hoursAgo,
   requiredStatus, requiredAssignee,
   macroOnly, macroCommand,
   sections, requirements,
-  category, intent, accountId, tags, body, attachments,
-  seedHistory,
-  historyMergeable = true
+  category, intent, accountId, tags, body, attachments
 }) {
   return {
     id: uid(),
@@ -562,7 +541,9 @@ function makeTicket({
     status: "Open",
     assignee: "Myself",
     assigneeOptions: ALLOWED_ASSIGNEES,
-    messages: [{ id: uid(), author: requester, ts: now - (hoursAgo * 3600e3), body }],
+    messages: [
+      { id: uid(), author: requester, ts: now - (hoursAgo * 3600e3), body }
+    ],
     expected: {
       requiredStatus,
       requiredAssignee,
@@ -571,12 +552,13 @@ function makeTicket({
       sections: sections || ["Greeting","Opener","Solution","Closer","Sign-Off"],
       requirements
     },
-    tags, category, intent, accountId,
+    tags,
+    category,
+    intent,
+    accountId,
     attachments: attachments || [],
     attempts: [],
-    grade: null,
-    _histSeed: Array.isArray(seedHistory) ? seedHistory : [],
-    historyMergeable
+    grade: null
   };
 }
 
@@ -586,6 +568,7 @@ const DEFAULT = {
     sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
   },
   tickets: [
+    // 1) Normal ticket (macroOnly: false)
     makeTicket({
       subject: "Can't log in after password reset",
       requester: "sara@brand.co",
@@ -594,6 +577,7 @@ const DEFAULT = {
       requiredStatus: "Open",
       requiredAssignee: "Fraud General",
       macroOnly: false,
+      macroCommand: "",
       sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
       requirements:
         "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
@@ -601,15 +585,17 @@ const DEFAULT = {
       intent: "Login Issue",
       accountId: "APEX-00001",
       tags: ["account_questions","language_en","sentiment_neutral"],
-      body: "Hi, I reset my password but still can’t log in. - Sara",
-      attachments: [{ type: "image", url: "https://i.imgur.com/0SxOMjH.png", title: "Login error message" }],
-  seedHistory: [
-    { title: "Reset didn’t work after MFA", hoursAgo: 72, status: "Solved" },
-    { title: "Locked out after password reset", hoursAgo: 400, status: "Solved" },
-    { title: "Need payout", hoursAgo: 120, status: "Solved" },
-    { title: "Can’t get into my account", hoursAgo: 200, status: "Open" }
-  ]
-}),
+      body:
+        "Hi, I reset my password but still can’t log in. - Sara",
+      attachments: [
+        {
+          type: "image",
+          url: "https://i.imgur.com/0SxOMjH.png",
+          title: "Login error message"
+        }
+      ]
+    }),
+    // 2) Macro-only ticket (macroOnly: true) — now with image option too
     makeTicket({
       subject: "What happened to my account?",
       requester: "mike@trader.co",
@@ -618,114 +604,105 @@ const DEFAULT = {
       requiredStatus: "Solved",
       requiredAssignee: "Myself",
       macroOnly: true,
+      // Note: this includes the leading slash and uses an EN DASH in the middle.
+      // The norm() in gradeAttempt makes this robust.
       macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
-      sections: [],
-      requirements: "Use the /Drawdown Threshold macro; no additional prose is required.",
+      sections: [], // unused in macro mode
+      requirements:
+        "Use the /Drawdown Threshold macro; no additional prose is required.",
       category: "Account",
       intent: "Drawdown Info",
       accountId: "APEX-00420",
       tags: ["account_questions","language_en","sentiment_neutral"],
-      body: "Hi team, can you tell me why my account was removed? … 47,500?",
-      attachments: [{ type: "image", url: "", title: "Account status banner" }],
-      seedHistory: [
-        { title: "Drawdown policy clarification", hoursAgo: 240, status: "Solved" },
-        { title: "P/L discrepancy follow-up", hoursAgo: 800, status: "Solved" }
+      body:
+        "Hi team, can you tell me why my account was removed? I made 4k on my 50k account and then lost it all but I never went below $47,500? Why is my account saying liquidated?.",
+      attachments: [
+        {
+          type: "image",
+          url: "",
+          title: "Account status banner"
+        }
       ]
     }),
-    makeTicket({
-      subject: "what?",
-      requester: "jomomma@gmail.com",
-      channel: "Email",
-      hoursAgo: 2,
-      requiredStatus: "Solved",
-      requiredAssignee: "Myself",
-      macroOnly: true,
-      macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
-      sections: [],
-      requirements: "Use the specified macro; no additional prose is required.",
-      category: "Support",
-      intent: "Drawdown",
-      accountId: "APEX-183914",
-      tags: ["account_question"],
-      body: "Hey where is my account? … the drawdown at 47,500???",
-      attachments: [],
-      seedHistory: [{ title: "Account removed after loss", hoursAgo: 96, status: "Solved" }]
-    }),
-    makeTicket({
-      subject: "Banned Countries",
-      requester: "clockedout@gmail.com",
-      channel: "Email",
-      hoursAgo: 5,
-      requiredStatus: "Open",
-      requiredAssignee: "Fraud General",
-      macroOnly: true,
-      macroCommand: "/Gen - Banned Countries",
-      sections: [],
-      requirements: "Use the specified macro; no additional prose is required.",
-      category: "Support",
-      intent: "Countries",
-      accountId: "APEX-183914",
-      tags: ["banned_countries"],
-      body: "Hi, I am from India. I was wondering if I could trade with you.",
-      attachments: [],
-      seedHistory: [{ title: "Country eligibility question", hoursAgo: 48, status: "Solved" }]
-    }),
-    makeTicket({
-      subject: "Missing Passed Email",
-      requester: "JasonPurraz@gmail.com",
-      channel: "Email",
-      hoursAgo: 2,
-      requiredStatus: "Solved",
-      requiredAssignee: "Myself",
-      macroOnly: false,
-      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-      requirements:
-        "Write a professional reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off).",
-      category: "Support",
-      intent: "Passed Evaluation",
-      accountId: "APEX-183914",
-      tags: ["passed_eval"],
-      body: "I passed my evaluation, but I do not see any passed email yet…",
-      attachments: [{ type: "image", url: "https://i.imgur.com/u35QmA3.png", title: "Attachment" }],
-      seedHistory: [
-        { title: "Passed email delay", hoursAgo: 30, status: "Solved" },
-        { title: "Dashboard balance mismatch", hoursAgo: 300, status: "Solved" }
-      ]
-    })
+    // Ticket Test from ticketmaker
+makeTicket({
+  subject: "what?",
+  requester: "jomomma@gmail.com",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
+  sections: [],
+  requirements:
+    "Use the specified macro; no additional prose is required.",
+  category: "Support",
+  intent: "Drawdown",
+  accountId: "APEX-183914",
+  tags: ["account_question"],
+  body:
+    "Hey where is my account? I was up 10k and only lost 4k and my accounts gone. I didnt even get close to the drawdown at 47,500???",
+  attachments: []
+}),
+// Ticket
+makeTicket({
+  subject: "Banned Countries",
+  requester: "clockedout@gmail.com",
+  channel: "Email",
+  hoursAgo: 5,
+  requiredStatus: "Open",
+  requiredAssignee: "Fraud General",
+  macroOnly: true,
+  macroCommand: "/Gen - Banned Countries",
+  sections: [],
+  requirements:
+    "Use the specified macro; no additional prose is required.",
+  category: "Support",
+  intent: "Countries",
+  accountId: "APEX-183914",
+  tags: ["banned_countries"],
+  body:
+    "Hi, I am from India. I was wondering if I could trade with you.",
+  attachments: []
+}),
+// Ticket
+makeTicket({
+  subject: "Missing Passed Email",
+  requester: "JasonPurraz@gmail.com",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: false,
+  macroCommand: "",
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements:
+    "Write a professional reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off).",
+  category: "Support",
+  intent: "Passed Evaluation",
+  accountId: "APEX-183914",
+  tags: ["passed_eval"],
+  body:
+    "I passed my evaluation, but I do not see any passed email yet. I just hit the profit goal today at 9 AM EST, but I haven't gotten any email and the balances in my Apex Dashboard haven't updated. Could you please help me out?",
+  attachments: [
+    {
+      type: "image",
+      url: "https://i.imgur.com/u35QmA3.png",
+      title: "Attachment"
+    }
+  ]
+})
   ]
 };
 
 // seed or load state
 let state = null;
 try { state = JSON.parse(localStorage.getItem(STORE) || "null"); } catch {}
-if (!state || !Array.isArray(state.tickets) || state.tickets.length === 0) {
+if (!state || !Array.isArray(state.tickets)) {
   state = structuredClone(DEFAULT);
   localStorage.setItem(STORE, JSON.stringify(state));
 }
-
-// === Admin-seeded Interaction History ===
-(function seedHistoryFromTicketsIfEmpty(){
-  const KEY = "sop_sim_hist_v2";
-  if (localStorage.getItem(KEY)) return;
-  const now = Date.now();
-  const out = {};
-  (DEFAULT.tickets || []).forEach(t => {
-    const email = t.requester;
-    (t._histSeed || []).forEach(it => {
-      (out[email] ||= []).push({
-        id: Math.random().toString(36).slice(2,9),
-        title: String(it.title || "Untitled"),
-        createdAt: now - (Number(it.hoursAgo || 0) * 3600e3),
-        status: it.status || "Solved"
-      });
-    });
-  });
-  localStorage.setItem(KEY, JSON.stringify(out));
-})();
-
-// globals used by app
-let historyExtras = JSON.parse(localStorage.getItem("sop_sim_hist_v1") || "{}");
-let mergeSelectionByTicketId = JSON.parse(localStorage.getItem("sop_sim_mergeSel_v1") || "{}");
 </script>
 
 <!-- Main app script -->
@@ -733,54 +710,6 @@ let mergeSelectionByTicketId = JSON.parse(localStorage.getItem("sop_sim_mergeSel
 (() => {
 // --- helpers / storage ---
 function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
-function saveExtras(){
-  localStorage.setItem("sop_sim_hist_v1", JSON.stringify(historyExtras));
-}
-function saveMergeSel(){
-  localStorage.setItem("sop_sim_mergeSel_v1", JSON.stringify(mergeSelectionByTicketId));
-}
-
-// Utilities for Merge button
-function addHistoryItem(email, title){
-  if(!email) return;
-  const arr = historyExtras[email] || (historyExtras[email] = []);
-  arr.unshift({ id: uid(), title: String(title||"Untitled"), createdAt: Date.now(), status: "Solved" });
-  saveExtras();
-}
-// Merge button behavior
-function getCurrentTicket(){ return state.tickets.find(x=>x.id===currentId); }
-
-function titlesForIds(requesterEmail, ids){
-  // Gather titles from both extras + built-ins
-  const built = state.tickets
-    .filter(tt=>tt.requester===requesterEmail)
-    .map(tt=>({id:tt.id, title:tt.subject}));
-  const extra = (historyExtras[requesterEmail]||[]).map(h=>({id:h.id, title:h.title}));
-  const map = new Map([...built, ...extra].map(x=>[x.id, x.title]));
-  return Array.from(ids).map(id=>map.get(id)).filter(Boolean);
-}
-
-function updateMergeButtonUI(){
-  const t = getCurrentTicket();
-  if(!t){ return; }
-  const sel = getMergeSel(t.id);
-  const hasSel = sel.size>0;
-  // If a merge has been "set" on the ticket, show the green badge
-  const merged = !!t._merge?.applied;
-  mergeState.classList.toggle("hidden", !merged);
-  mergeBtn.classList.toggle("primary", merged); // turn green when merged
-  mergeBtn.textContent = merged ? "Merged ✓" : "Merge";
-  mergeBtn.title = hasSel ? "Merge selected history into this ticket" : "Select history items below, then click to merge";
-}
-
-function getMergeSel(ticketId){
-  const set = new Set(mergeSelectionByTicketId[ticketId] || []);
-  return set;
-}
-function setMergeSel(ticketId, ids){
-  mergeSelectionByTicketId[ticketId] = Array.from(ids||[]);
-  saveMergeSel();
-}
 
 function fmt(d){ return d.toLocaleString(); }
 
@@ -857,12 +786,6 @@ const submitToggleBtn = document.getElementById("submitToggleBtn");
 const submitMenu      = document.getElementById("submitMenu");
 const submitStatusLbl = document.getElementById("submitStatusLbl");
 const submitDot       = document.getElementById("submitDot");
-
-// Merge button
-const histAddBtn = document.getElementById("histAddBtn");
-const histNewTitle = document.getElementById("histNewTitle");
-const mergeBtn = document.getElementById("mergeBtn");
-const mergeState = document.getElementById("mergeState");
 
 // Grammar UI
 const grammarBtn = document.getElementById("grammarBtn");
@@ -972,51 +895,30 @@ function setSubmitUI(value){
 }
   
 function renderInteractionHistory(requesterEmail, currentTicketId){
-  const builtIns = state.tickets
+  const items = state.tickets
     .filter(t => t.requester === requesterEmail && t.id !== currentTicketId)
-    .map(t => ({ id: t.id, title: t.subject, createdAt: t.createdAt, status: t.status, _builtin: true }));
-
-  const extras = (historyExtras[requesterEmail] || []).map(h => ({
-    id: h.id, title: h.title, createdAt: h.createdAt, status: h.status, _builtin: false
-  }));
-
-  const items = [...extras, ...builtIns].sort((a,b)=>b.createdAt - a.createdAt).slice(0, 12);
+    .sort((a,b) => b.createdAt - a.createdAt)
+    .slice(0, 6);
 
   if (!items.length){
     histList.innerHTML = `<div class="small muted">No prior tickets</div>`;
     return;
   }
 
-  const sel = getMergeSel(currentTicketId);
-  histList.innerHTML = items.map(item => {
+  histList.innerHTML = items.map(t => {
     const dotClass =
-      item.status === "Open" ? "dot-open" :
-      item.status === "Pending" ? "dot-pending" : "dot-solved";
-    const selCls = sel.has(item.id) ? " is-selected" : "";
-    const badge = item._builtin ? "" : `<span class="pill" style="margin-left:auto">custom</span>`;
+      t.status === "Open" ? "dot-open" :
+      t.status === "Pending" ? "dot-pending" : "dot-solved";
     return `
-      <div class="hist-item${selCls}" data-id="${esc(item.id)}" title="Click to select for merge">
+      <div class="hist-item">
         <span class="hist-dot ${dotClass}"></span>
-        <div style="flex:1;min-width:0">
-          <div class="small" style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.title)}</div>
-          <div class="meta">${fmt(new Date(item.createdAt))}</div>
+        <div>
+          <div class="small" style="font-weight:600">${esc(t.subject)}</div>
+          <div class="meta">${fmt(new Date(t.createdAt))}</div>
         </div>
-        ${badge}
       </div>
     `;
   }).join("");
-
-  // click to toggle selection
-  [...histList.querySelectorAll(".hist-item")].forEach(el=>{
-    el.onclick = ()=>{
-      const id = el.getAttribute("data-id");
-      const set = getMergeSel(currentTicketId);
-      if(set.has(id)){ set.delete(id); el.classList.remove("is-selected"); }
-      else { set.add(id); el.classList.add("is-selected"); }
-      setMergeSel(currentTicketId, set);
-      updateMergeButtonUI();
-    };
-  });
 }
 
 function openDetail(id){
@@ -1024,42 +926,45 @@ function openDetail(id){
   const t = state.tickets.find(x => x.id === id); 
   if (!t) return;
 
-  // show detail, hide list
   document.getElementById("list").classList.add("hidden");
   detail.classList.remove("hidden");
 
-  // ----- Header bits
-  dSubject.textContent = t.subject || "—";
+  // Header bits
+  dSubject.textContent = t.subject;
   dRequester.textContent = t.requester || "—";
   dCreated.textContent = fmt(new Date(t.createdAt));
   dTicketId.textContent = `Ticket ${t.id}`;
   dChannelPill.textContent = t.channel || "—";
+/* --- lock gating (disable submit when ticket is locked) --- */
+if (t.locked) {
+  submitMainBtn.disabled = true;
+  submitToggleBtn.disabled = true;
+  replyBox.disabled = true;
 
-  // ----- Lock gating (prevents submit + typing, but you can still set/clear merge)
-  if (t.locked) {
-    submitMainBtn.disabled = true;
-    submitToggleBtn.disabled = true;
-    replyBox.disabled = true;
+  submitMainBtn.setAttribute("data-locked", "true");
+  submitMainBtn.title = "Locked — ask your trainer to reset";
+  submitMainBtn.textContent = "Submit as"; // clear label
+} else {
+  // ensure controls are usable when not locked
+  submitMainBtn.disabled = false;
+  submitToggleBtn.disabled = false;
+  replyBox.disabled = false;
 
-    submitMainBtn.setAttribute("data-locked", "true");
-    submitMainBtn.title = "Locked — ask your trainer to reset";
-    submitMainBtn.textContent = "Submit as";
-  } else {
-    submitMainBtn.disabled = false;
-    submitToggleBtn.disabled = false;
-    replyBox.disabled = false;
+  submitMainBtn.removeAttribute("data-locked");
+  submitMainBtn.title = "";
 
-    submitMainBtn.removeAttribute("data-locked");
-    submitMainBtn.title = "";
-  }
+  // restore the standard label/dot via your helper
+  setSubmitUI(dStatus.value);
+}
 
-  // ----- Submit-as control defaults
+  // Submit-as control (existing)
   dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
-  setSubmitUI(dStatus.value);            // sync split button label/dot
+  setSubmitUI(dStatus.value);
+
   renderAssigneeOptions(t);
   dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
 
-  // ----- Tags / meta fields
+  // Tags, fields (existing)
   const tags = (t.tags || []);
   dTags.innerHTML = tags.length 
     ? tags.map(x=>`<span class="z-tag">${esc(x)}</span>`).join("")
@@ -1068,7 +973,7 @@ function openDetail(id){
   dIntent.textContent = t.intent || "—";
   dAccount.textContent = t.accountId || "—";
 
-  // ----- Thread
+  // Thread (existing)
   replyBox.value = "";
   thread.innerHTML = "";
   t.messages.forEach(m=>{
@@ -1078,13 +983,11 @@ function openDetail(id){
     thread.appendChild(d);
   });
 
-  // ----- Attachments
+  // Attachments (existing)
   if (t.attachments && t.attachments.length) {
     snapshots.classList.remove("hidden");
     snapshots.innerHTML = t.attachments.map(a=>{
-      if (a.type==="image") {
-        return `<div style="margin-bottom:8px"><img src="${esc(a.url)}" alt="" style="max-width:100%;border-radius:8px"/></div>`;
-      }
+      if (a.type==="image") return `<div style="margin-bottom:8px"><img src="${esc(a.url)}" alt="" style="max-width:100%;border-radius:8px"/></div>`;
       return `<div class="small"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`;
     }).join("");
   } else {
@@ -1092,39 +995,28 @@ function openDetail(id){
     snapshots.textContent = "No attachments";
   }
 
-  // ----- Right column: Requester card
+  // --- Right column: Requester card + history ---
+  // name (if your requester is an email, show local-part capitalized as a friendly name)
   const email = t.requester || "";
-  const niceName = email.includes("@")
-    ? email.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase())
-    : email;
+  const niceName = email.includes("@") ? email.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase()) : email;
   rName.textContent  = niceName || "—";
   rEmail.textContent = email || "—";
+
+  // local time (simple placeholder — same timezone as browser for demo)
   rLocal.textContent = new Date().toLocaleTimeString();
+
+  // language: derive from tag like language_en if present, else "English (United States)" in screenshot style
   const langTag = (t.tags||[]).find(x => x.startsWith("language_"));
   const langMap = { language_en: "English (United States)", language_es: "Spanish", language_fr: "French" };
   rLang.textContent = langMap[langTag] || "English (United States)";
+
+  // notes: if none, show subtle "Add user notes"
   rNotes.textContent = "—";
 
-  // ----- Interaction History (built-ins + custom), clickable for merge selection
+  // Interaction history for this requester
   renderInteractionHistory(email, t.id);
 
-  // Re-apply any previously selected history items for this ticket
-  {
-    const sel = getMergeSel(t.id); // Set of selected history IDs
-    const nodes = histList ? histList.querySelectorAll(".hist-item") : [];
-    nodes.forEach(el => {
-      const hid = el.getAttribute("data-id");
-      el.classList.toggle("is-selected", sel.has(hid));
-    });
-  }
-
-  // Reflect "merged" state (turn button green, show badge, etc.)
-  updateMergeButtonUI();
-
-  // Optionally disable Merge when locked (keep or remove as you prefer)
-  // mergeBtn.disabled = !!t.locked;
-
-  // ----- Grading + stats
+  // Grading + stats (existing)
   renderGrade(t.grade || null);
   renderStats();
 }
@@ -1202,40 +1094,6 @@ applyGrammarBtn.onclick = ()=>{
   showGrammarPanel(false);
 };
 dismissGrammarBtn.onclick = ()=> showGrammarPanel(false);
-
-// Merge button
-histAddBtn.onclick = ()=>{
-  const t = state.tickets.find(x=>x.id===currentId);
-  if(!t) return;
-  const title = (histNewTitle.value||"").trim();
-  if(!title){ alert("Enter a title first."); return; }
-  addHistoryItem(t.requester, title);
-  histNewTitle.value = "";
-  renderInteractionHistory(t.requester, t.id); // <-- refresh list
-  updateMergeButtonUI();
-  toast("Added to history");
-};
-mergeBtn.onclick = () => {
-  const t = state.tickets.find(x=>x.id===currentId);
-  if(!t) return;
-
-  const sel = getMergeSel(t.id); // Set of selected history IDs
-  if(!sel.size){
-    toast("Select history items first");
-    return;
-  }
-
-  // Store lightweight record of the merge on the ticket
-  t._merge = {
-    applied: true,
-    ids: Array.from(sel),
-    titles: titlesForIds(t.requester, sel)
-  };
-
-  save();
-  updateMergeButtonUI();
-  toast("Merged selected history into ticket");
-};
 
 // Split menu toggle
 submitToggleBtn.onclick = (e) => {
