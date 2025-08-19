@@ -727,14 +727,14 @@ function scoreBadgeHTML(score){
 
 // 🔑 Reset helper
 function resetTicket(ticketId){
-  const code = prompt("Enter reset code:");
-  if (code === "apexreset01") { // your global reset code
+  const pw = prompt("Enter reset code:");
+  if (pw === "apexreset01") {
     const t = state.tickets.find(x => x.id === ticketId);
     if (t) {
       t.locked = false;
       save();
-      openDetail(ticketId); // refresh view
-      alert("Ticket unlocked — you can submit again.");
+      openDetail(ticketId); // re-render the now-unlocked ticket
+      alert("Unlocked — you can submit this ticket again.");
     }
   } else {
     alert("Incorrect code.");
@@ -935,16 +935,17 @@ function openDetail(id){
   dCreated.textContent = fmt(new Date(t.createdAt));
   dTicketId.textContent = `Ticket ${t.id}`;
   dChannelPill.textContent = t.channel || "—";
-// --- lock gating (disable submit when ticket is locked) ---
+/* --- lock gating (disable submit when ticket is locked) --- */
 if (t.locked) {
   submitMainBtn.disabled = true;
   submitToggleBtn.disabled = true;
   replyBox.disabled = true;
 
-  // keep it obvious it's locked without breaking inner markup refs
   submitMainBtn.setAttribute("data-locked", "true");
   submitMainBtn.title = "Locked — ask your trainer to reset";
-  submitMainBtn.textContent = "Locked — ask trainer to reset";
+
+  // IMPORTANT: do not replace the whole button; only change the status label
+  submitStatusLbl.textContent = "Submit as";
 
   // add an inline Reset button (password protected) if not already present
   if (!document.getElementById("resetInlineBtn")) {
