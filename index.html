@@ -1149,7 +1149,7 @@ showList();
       };
     }
 
-    // ===== Branch 2: Normal structured tickets =====
+       // ===== Branch 2: Normal structured tickets =====
     // 1) Ask API for structure checks, passing the ticket-specific rubric
     let ai = null;
     try {
@@ -1178,8 +1178,43 @@ showList();
       };
     });
 
+    /* ---------- Enforce correct first-name greeting ---------- */
+    (function enforceFirstNameGreeting(){
+      const escapeRegExp = (s) => String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const deriveNiceNameFromEmail = (em) =>
+        (String(em||"").includes("@")
+          ? String(em).split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+          : String(em || "")).trim();
+
+      const fullName = (ticket.requesterName && ticket.requesterName.trim())
+                    || deriveNiceNameFromEmail(ticket.requester);
+      const expectedFirst = (fullName.split(/\s+/)[0] || "").trim();
+
+      const pat = new RegExp(`\\b(?:hi|hello)\\s*,?\\s*${escapeRegExp(expectedFirst)}\\b`, "i");
+
+      const greetingIdx = 0; // "Greeting"
+      const g = structureChecks[greetingIdx];
+
+      if (expectedFirst) {
+        const ok = pat.test(reply);
+        if (!ok) {
+          g.ok = false;
+          g.score = 0;
+          g.detail = `Greeting must include "Hi ${expectedFirst}" or "Hello ${expectedFirst}".`;
+        } else {
+          g.ok = true;
+          g.score = 100;
+          g.detail = `Used correct first-name greeting ("Hi/Hello ${expectedFirst}").`;
+        }
+      }
+    })();
+    /* -------------------------------------------------------- */
+
     // Weighted structure %
-    const sw = Object.assign({ Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 }, w.sectionWeights || {});
+    const sw = Object.assign(
+      { Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 },
+      w.sectionWeights || {}
+    );
     const swTotal = structureLabels.reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
 
     let structurePctWeighted = 0;
@@ -1193,7 +1228,6 @@ showList();
     const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
     const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
 
-    // Scoring buckets (unchanged for normal tickets)
     const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.keywords||0));
     const sStructure = structurePctWeighted * (w.sections||0) / sum;
     const sStatus    = (statusOk   ? 100 : 0) * (w.status   ||0) / sum;
@@ -1210,7 +1244,7 @@ showList();
     };
   };
 })();
-
+ 
 (function(){
   const THEME_KEY="sim_theme";
   const btn=document.getElementById("themeBtn");
