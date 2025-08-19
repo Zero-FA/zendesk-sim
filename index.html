@@ -589,6 +589,28 @@ makeTicket({
   body:
     "I keep trying to login and its not working. I am trying to reset my password but I can't seem to!! Please help!",
   attachments: []
+}),
+// Ticket
+makeTicket({
+  subject: "Account gone?",
+  requester: "Imlost@gmail.com",
+  requesterName: "Joseph Gnar",
+  channel: "Email",
+  hoursAgo: 1.2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
+  sections: [],
+  requirements:
+    "They just need the macro.",
+  category: "Support",
+  intent: "Drawdown",
+  accountId: "APEX-183914",
+  tags: ["account_questions"],
+  body:
+    "So i was trading my account and all of the sudden i couldnt anymore... i never went below the trailing threshold at 47,500. I made 5,400 and lost it all but never went below 47,500. Why did you guys remove my account?",
+  attachments: []
 })
 ]
 };
