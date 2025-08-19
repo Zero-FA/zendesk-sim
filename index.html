@@ -9,6 +9,12 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
 
+/* selected-for-merge highlight */
+.hist-item.is-selected{
+  border-color:#10b981 !important;
+  background:rgba(16,185,129,.08);
+}
+
 /* ===== Access Gate styles ===== */
 .gate{position:fixed;inset:0;display:grid;place-items:center;background:rgba(2,6,23,.8);z-index:9999}
 .gate-card{width:320px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;
@@ -359,7 +365,11 @@ body.dark .badge-id:hover {
     <span id="dTicketId" class="badge-id">Ticket —</span>
     <span id="dChannelPill" class="pill" style="margin-left:6px">—</span>
     <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
-      <div class="lang-tools small muted">🌐 <span>Language/merge</span></div>
+<div class="lang-tools small muted">
+  🌐 <span>Language</span>
+  <button class="btn" id="mergeBtn" style="margin-left:8px">Merge</button>
+  <span id="mergeState" class="badge hidden" style="margin-left:6px">Merged</span>
+</div>
       <div class="small muted">
         <span id="dRequester">—</span> • <span id="dCreated">—</span>
       </div>
@@ -439,11 +449,20 @@ body.dark .badge-id:hover {
       </div>
     </section>
 
-    <!-- Interaction History -->
-    <section class="req-section">
-      <div class="req-title">Interaction history</div>
-      <div id="histList" class="hist-list"></div>
-    </section>
+<section class="req-section">
+  <div class="req-title">Interaction history</div>
+
+  <!-- add history form -->
+  <div style="display:flex; gap:6px; margin-bottom:8px">
+    <input id="histNewTitle" class="input" placeholder="Add a fake past ticket title…" style="flex:1"/>
+    <button class="btn" id="histAddBtn" title="Add to history">Add</button>
+  </div>
+
+  <!-- tip -->
+  <div class="small muted" style="margin:-4px 0 6px">Tip: click history items to select for merge.</div>
+
+  <div id="histList" class="hist-list"></div>
+</section>
 
     <!-- Keep your existing Auto-Grade panel below -->
     <section class="req-section">
@@ -567,6 +586,12 @@ const DEFAULT = {
     sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
     sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
   },
+// extra user-made history items, keyed by requester email
+// shape: { "<email>": [ {id, title, createdAt, status} ] }
+let historyExtras = JSON.parse(localStorage.getItem("sop_sim_hist_v1") || "{}");
+
+// selected history items per ticketId for "merge"
+let mergeSelectionByTicketId = JSON.parse(localStorage.getItem("sop_sim_mergeSel_v1") || "{}");
   tickets: [
     // 1) Normal ticket (macroOnly: false)
     makeTicket({
@@ -710,6 +735,54 @@ if (!state || !Array.isArray(state.tickets)) {
 (() => {
 // --- helpers / storage ---
 function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+function saveExtras(){
+  localStorage.setItem("sop_sim_hist_v1", JSON.stringify(historyExtras));
+}
+function saveMergeSel(){
+  localStorage.setItem("sop_sim_mergeSel_v1", JSON.stringify(mergeSelectionByTicketId));
+}
+
+// Utilities for Merge button
+function addHistoryItem(email, title){
+  if(!email) return;
+  const arr = historyExtras[email] || (historyExtras[email] = []);
+  arr.unshift({ id: uid(), title: String(title||"Untitled"), createdAt: Date.now(), status: "Solved" });
+  saveExtras();
+}
+// Merge button behavior
+function getCurrentTicket(){ return state.tickets.find(x=>x.id===currentId); }
+
+function titlesForIds(requesterEmail, ids){
+  // Gather titles from both extras + built-ins
+  const built = state.tickets
+    .filter(tt=>tt.requester===requesterEmail)
+    .map(tt=>({id:tt.id, title:tt.subject}));
+  const extra = (historyExtras[requesterEmail]||[]).map(h=>({id:h.id, title:h.title}));
+  const map = new Map([...built, ...extra].map(x=>[x.id, x.title]));
+  return Array.from(ids).map(id=>map.get(id)).filter(Boolean);
+}
+
+function updateMergeButtonUI(){
+  const t = getCurrentTicket();
+  if(!t){ return; }
+  const sel = getMergeSel(t.id);
+  const hasSel = sel.size>0;
+  // If a merge has been "set" on the ticket, show the green badge
+  const merged = !!t._merge?.applied;
+  mergeState.classList.toggle("hidden", !merged);
+  mergeBtn.classList.toggle("primary", merged); // turn green when merged
+  mergeBtn.textContent = merged ? "Merged ✓" : "Merge";
+  mergeBtn.title = hasSel ? "Merge selected history into this ticket" : "Select history items below, then click to merge";
+}
+
+function getMergeSel(ticketId){
+  const set = new Set(mergeSelectionByTicketId[ticketId] || []);
+  return set;
+}
+function setMergeSel(ticketId, ids){
+  mergeSelectionByTicketId[ticketId] = Array.from(ids||[]);
+  saveMergeSel();
+}
 
 function fmt(d){ return d.toLocaleString(); }
 
@@ -786,6 +859,12 @@ const submitToggleBtn = document.getElementById("submitToggleBtn");
 const submitMenu      = document.getElementById("submitMenu");
 const submitStatusLbl = document.getElementById("submitStatusLbl");
 const submitDot       = document.getElementById("submitDot");
+
+// Merge button
+const histAddBtn = document.getElementById("histAddBtn");
+const histNewTitle = document.getElementById("histNewTitle");
+const mergeBtn = document.getElementById("mergeBtn");
+const mergeState = document.getElementById("mergeState");
 
 // Grammar UI
 const grammarBtn = document.getElementById("grammarBtn");
@@ -894,31 +973,52 @@ function setSubmitUI(value){
     "status-dot " + (value==="Open" ? "dot-open" : value==="Pending" ? "dot-pending" : "dot-solved");
 }
   
-function renderInteractionHistory(requesterEmail, currentTicketId){
-  const items = state.tickets
+function (requesterEmail, currentTicketId){
+  const builtIns = state.tickets
     .filter(t => t.requester === requesterEmail && t.id !== currentTicketId)
-    .sort((a,b) => b.createdAt - a.createdAt)
-    .slice(0, 6);
+    .map(t => ({ id: t.id, title: t.subject, createdAt: t.createdAt, status: t.status, _builtin: true }));
+
+  const extras = (historyExtras[requesterEmail] || []).map(h => ({
+    id: h.id, title: h.title, createdAt: h.createdAt, status: h.status, _builtin: false
+  }));
+
+  const items = [...extras, ...builtIns].sort((a,b)=>b.createdAt - a.createdAt).slice(0, 12);
 
   if (!items.length){
     histList.innerHTML = `<div class="small muted">No prior tickets</div>`;
     return;
   }
 
-  histList.innerHTML = items.map(t => {
+  const sel = getMergeSel(currentTicketId);
+  histList.innerHTML = items.map(item => {
     const dotClass =
-      t.status === "Open" ? "dot-open" :
-      t.status === "Pending" ? "dot-pending" : "dot-solved";
+      item.status === "Open" ? "dot-open" :
+      item.status === "Pending" ? "dot-pending" : "dot-solved";
+    const selCls = sel.has(item.id) ? " is-selected" : "";
+    const badge = item._builtin ? "" : `<span class="pill" style="margin-left:auto">custom</span>`;
     return `
-      <div class="hist-item">
+      <div class="hist-item${selCls}" data-id="${esc(item.id)}" title="Click to select for merge">
         <span class="hist-dot ${dotClass}"></span>
-        <div>
-          <div class="small" style="font-weight:600">${esc(t.subject)}</div>
-          <div class="meta">${fmt(new Date(t.createdAt))}</div>
+        <div style="flex:1;min-width:0">
+          <div class="small" style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.title)}</div>
+          <div class="meta">${fmt(new Date(item.createdAt))}</div>
         </div>
+        ${badge}
       </div>
     `;
   }).join("");
+
+  // click to toggle selection
+  [...histList.querySelectorAll(".hist-item")].forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.getAttribute("data-id");
+      const set = getMergeSel(currentTicketId);
+      if(set.has(id)){ set.delete(id); el.classList.remove("is-selected"); }
+      else { set.add(id); el.classList.add("is-selected"); }
+      setMergeSel(currentTicketId, set);
+      updateMergeButtonUI(); // reflect selection state
+    };
+  });
 }
 
 function openDetail(id){
@@ -926,47 +1026,42 @@ function openDetail(id){
   const t = state.tickets.find(x => x.id === id); 
   if (!t) return;
 
+  // show detail, hide list
   document.getElementById("list").classList.add("hidden");
   detail.classList.remove("hidden");
 
-  // Header bits
-  dSubject.textContent = t.subject;
+  // ----- Header bits
+  dSubject.textContent = t.subject || "—";
   dRequester.textContent = t.requester || "—";
   dCreated.textContent = fmt(new Date(t.createdAt));
   dTicketId.textContent = `Ticket ${t.id}`;
   dChannelPill.textContent = t.channel || "—";
-/* --- lock gating (disable submit when ticket is locked) --- */
-if (t.locked) {
-  submitMainBtn.disabled = true;
-  submitToggleBtn.disabled = true;
-  replyBox.disabled = true;
 
-  submitMainBtn.setAttribute("data-locked", "true");
-  submitMainBtn.title = "Locked — ask your trainer to reset";
+  // ----- Lock gating (prevents submit + typing, but you can still set/clear merge)
+  if (t.locked) {
+    submitMainBtn.disabled = true;
+    submitToggleBtn.disabled = true;
+    replyBox.disabled = true;
 
-  // keep inner markup; just change the label/dot
-  submitStatusLbl.textContent = "Locked — ask trainer to reset";
-  submitDot.className = "status-dot dot-solved";
-} else {
-  submitMainBtn.disabled = false;
-  submitToggleBtn.disabled = false;
-  replyBox.disabled = false;
+    submitMainBtn.setAttribute("data-locked", "true");
+    submitMainBtn.title = "Locked — ask your trainer to reset";
+    submitMainBtn.textContent = "Submit as";
+  } else {
+    submitMainBtn.disabled = false;
+    submitToggleBtn.disabled = false;
+    replyBox.disabled = false;
 
-  submitMainBtn.removeAttribute("data-locked");
-  submitMainBtn.title = "";
+    submitMainBtn.removeAttribute("data-locked");
+    submitMainBtn.title = "";
+  }
 
-  // restore normal UI
-  setSubmitUI(dStatus.value);
-}
-
-  // Submit-as control (existing)
+  // ----- Submit-as control defaults
   dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
-  setSubmitUI(dStatus.value);
-
+  setSubmitUI(dStatus.value);            // sync split button label/dot
   renderAssigneeOptions(t);
   dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
 
-  // Tags, fields (existing)
+  // ----- Tags / meta fields
   const tags = (t.tags || []);
   dTags.innerHTML = tags.length 
     ? tags.map(x=>`<span class="z-tag">${esc(x)}</span>`).join("")
@@ -975,7 +1070,7 @@ if (t.locked) {
   dIntent.textContent = t.intent || "—";
   dAccount.textContent = t.accountId || "—";
 
-  // Thread (existing)
+  // ----- Thread
   replyBox.value = "";
   thread.innerHTML = "";
   t.messages.forEach(m=>{
@@ -985,11 +1080,13 @@ if (t.locked) {
     thread.appendChild(d);
   });
 
-  // Attachments (existing)
+  // ----- Attachments
   if (t.attachments && t.attachments.length) {
     snapshots.classList.remove("hidden");
     snapshots.innerHTML = t.attachments.map(a=>{
-      if (a.type==="image") return `<div style="margin-bottom:8px"><img src="${esc(a.url)}" alt="" style="max-width:100%;border-radius:8px"/></div>`;
+      if (a.type==="image") {
+        return `<div style="margin-bottom:8px"><img src="${esc(a.url)}" alt="" style="max-width:100%;border-radius:8px"/></div>`;
+      }
       return `<div class="small"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`;
     }).join("");
   } else {
@@ -997,28 +1094,39 @@ if (t.locked) {
     snapshots.textContent = "No attachments";
   }
 
-  // --- Right column: Requester card + history ---
-  // name (if your requester is an email, show local-part capitalized as a friendly name)
+  // ----- Right column: Requester card
   const email = t.requester || "";
-  const niceName = email.includes("@") ? email.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase()) : email;
+  const niceName = email.includes("@")
+    ? email.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase())
+    : email;
   rName.textContent  = niceName || "—";
   rEmail.textContent = email || "—";
-
-  // local time (simple placeholder — same timezone as browser for demo)
   rLocal.textContent = new Date().toLocaleTimeString();
-
-  // language: derive from tag like language_en if present, else "English (United States)" in screenshot style
   const langTag = (t.tags||[]).find(x => x.startsWith("language_"));
   const langMap = { language_en: "English (United States)", language_es: "Spanish", language_fr: "French" };
   rLang.textContent = langMap[langTag] || "English (United States)";
-
-  // notes: if none, show subtle "Add user notes"
   rNotes.textContent = "—";
 
-  // Interaction history for this requester
+  // ----- Interaction History (built-ins + custom), clickable for merge selection
   renderInteractionHistory(email, t.id);
 
-  // Grading + stats (existing)
+  // Re-apply any previously selected history items for this ticket
+  {
+    const sel = getMergeSel(t.id); // Set of selected history IDs
+    const nodes = histList ? histList.querySelectorAll(".hist-item") : [];
+    nodes.forEach(el => {
+      const hid = el.getAttribute("data-id");
+      el.classList.toggle("is-selected", sel.has(hid));
+    });
+  }
+
+  // Reflect "merged" state (turn button green, show badge, etc.)
+  updateMergeButtonUI();
+
+  // Optionally disable Merge when locked (keep or remove as you prefer)
+  // mergeBtn.disabled = !!t.locked;
+
+  // ----- Grading + stats
   renderGrade(t.grade || null);
   renderStats();
 }
@@ -1096,6 +1204,18 @@ applyGrammarBtn.onclick = ()=>{
   showGrammarPanel(false);
 };
 dismissGrammarBtn.onclick = ()=> showGrammarPanel(false);
+
+// Merge button
+histAddBtn.onclick = ()=>{
+  const t = state.tickets.find(x=>x.id===currentId);
+  if(!t) return;
+  const title = (histNewTitle.value||"").trim();
+  if(!title){ alert("Enter a title first."); return; }
+  addHistoryItem(t.requester, title);
+  histNewTitle.value = "";
+  (t.requester, t.id);
+  toast("Added to history");
+};
 
 // Split menu toggle
 submitToggleBtn.onclick = (e) => {
