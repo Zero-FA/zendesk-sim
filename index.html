@@ -586,12 +586,6 @@ const DEFAULT = {
     sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
     sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
   },
-// extra user-made history items, keyed by requester email
-// shape: { "<email>": [ {id, title, createdAt, status} ] }
-let historyExtras = JSON.parse(localStorage.getItem("sop_sim_hist_v1") || "{}");
-
-// selected history items per ticketId for "merge"
-let mergeSelectionByTicketId = JSON.parse(localStorage.getItem("sop_sim_mergeSel_v1") || "{}");
   tickets: [
     // 1) Normal ticket (macroOnly: false)
     makeTicket({
@@ -729,6 +723,13 @@ if (!state || !Array.isArray(state.tickets)) {
   localStorage.setItem(STORE, JSON.stringify(state));
 }
 </script>
+
+// extra user-made history items, keyed by requester email
+// shape: { "<email>": [ {id, title, createdAt, status} ] }
+let historyExtras = JSON.parse(localStorage.getItem("sop_sim_hist_v1") || "{}");
+
+// selected history items per ticketId for "merge"
+let mergeSelectionByTicketId = JSON.parse(localStorage.getItem("sop_sim_mergeSel_v1") || "{}");
 
 <!-- Main app script -->
 <script>
@@ -973,7 +974,7 @@ function setSubmitUI(value){
     "status-dot " + (value==="Open" ? "dot-open" : value==="Pending" ? "dot-pending" : "dot-solved");
 }
   
-function (requesterEmail, currentTicketId){
+function renderInteractionHistory(requesterEmail, currentTicketId){
   const builtIns = state.tickets
     .filter(t => t.requester === requesterEmail && t.id !== currentTicketId)
     .map(t => ({ id: t.id, title: t.subject, createdAt: t.createdAt, status: t.status, _builtin: true }));
@@ -1007,6 +1008,19 @@ function (requesterEmail, currentTicketId){
       </div>
     `;
   }).join("");
+
+  // click to toggle selection
+  [...histList.querySelectorAll(".hist-item")].forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.getAttribute("data-id");
+      const set = getMergeSel(currentTicketId);
+      if(set.has(id)){ set.delete(id); el.classList.remove("is-selected"); }
+      else { set.add(id); el.classList.add("is-selected"); }
+      setMergeSel(currentTicketId, set);
+      updateMergeButtonUI();
+    };
+  });
+}
 
   // click to toggle selection
   [...histList.querySelectorAll(".hist-item")].forEach(el=>{
@@ -1213,7 +1227,8 @@ histAddBtn.onclick = ()=>{
   if(!title){ alert("Enter a title first."); return; }
   addHistoryItem(t.requester, title);
   histNewTitle.value = "";
-  (t.requester, t.id);
+  renderInteractionHistory(t.requester, t.id); // <-- refresh list
+  updateMergeButtonUI();
   toast("Added to history");
 };
 
