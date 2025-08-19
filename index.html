@@ -681,6 +681,12 @@ function esc(s){
   }[c]));
 }
 
+function showList(){
+  // hide detail view, show list
+  detail.classList.add("hidden");
+  document.getElementById("list").classList.remove("hidden");
+}
+
 // --- elements ---
 const list = document.getElementById("list");
 const detail = document.getElementById("detail");
@@ -1157,12 +1163,6 @@ showList();
         structurePct: macroOk ? 100 : 0
       };
     }
-    // ==== Satisfies ShowList
-    function showList(){
-  // hide detail view, show list
-  detail.classList.add("hidden");
-  document.getElementById("list").classList.remove("hidden");
-}
 
     // ===== Branch 2: Normal structured tickets =====
     // 1) Ask API for structure checks, passing the ticket-specific rubric
