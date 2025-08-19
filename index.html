@@ -705,7 +705,7 @@ if (!state || !Array.isArray(state.tickets) || state.tickets.length === 0) {
 
 // === Admin-seeded Interaction History ===
 (function seedHistoryFromTicketsIfEmpty(){
-  const KEY = "sop_sim_hist_v1";
+  const KEY = "sop_sim_hist_v2";
   if (localStorage.getItem(KEY)) return;
   const now = Date.now();
   const out = {};
