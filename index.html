@@ -943,23 +943,18 @@ if (t.locked) {
 
   submitMainBtn.setAttribute("data-locked", "true");
   submitMainBtn.title = "Locked — ask your trainer to reset";
-
-submitStatusLbl.textContent = "Submit as";
-// no inline reset button here — use the top reset only
-
-  }
+  submitMainBtn.textContent = "Locked — ask trainer to reset"; // clear label
 } else {
   // ensure controls are usable when not locked
   submitMainBtn.disabled = false;
   submitToggleBtn.disabled = false;
   replyBox.disabled = false;
+
   submitMainBtn.removeAttribute("data-locked");
   submitMainBtn.title = "";
-  // restore the standard label/dot via existing helper
-  setSubmitUI(dStatus.value);
 
-  const rb = document.getElementById("resetInlineBtn");
-  if (rb) rb.remove();
+  // restore the standard label/dot via your helper
+  setSubmitUI(dStatus.value);
 }
 
   // Submit-as control (existing)
