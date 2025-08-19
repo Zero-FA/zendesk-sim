@@ -666,6 +666,27 @@ makeTicket({
     "Hi, I am from India. I was wondering if I could trade with you.",
   attachments: []
 }),
+// Ticket with requirements added
+makeTicket({
+  subject: "Whast going on?",
+  requester: "lost@idk.com",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Open",
+  requiredAssignee: "Myself",
+  macroOnly: false,
+  macroCommand: "",
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements:
+    "They need to say that this is being routed to fraud and they will assist with account access.",
+  category: "Support",
+  intent: "Login Issue",
+  accountId: "APEX-Jomama",
+  tags: ["account_questions"],
+  body:
+    "Hi im just wondering why i cant access anyting???",
+  attachments: []
+}),
 // Ticket
 makeTicket({
   subject: "Missing Passed Email",
