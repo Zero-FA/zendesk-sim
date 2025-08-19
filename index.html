@@ -710,16 +710,35 @@ if (!state || !Array.isArray(state.tickets)) {
 (() => {
 // --- helpers / storage ---
 function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+
 function fmt(d){ return d.toLocaleString(); }
+
 function esc(s){
   return String(s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
+
 function scoreBadgeHTML(score){
   const n = Number(score) || 0;
   const cls = n >= 90 ? "score-good" : n >= 80 ? "score-mid" : "score-bad";
   return `<span class="score-badge ${cls}">${n.toFixed(0)}/100</span>`;
+}
+
+// 🔑 Reset helper
+function resetTicket(ticketId){
+  const pw = prompt("Enter reset password:");
+  if (pw === "Reset1234") { // change this to your secret
+    const t = state.tickets.find(x => x.id === ticketId);
+    if (t) {
+      t.locked = false;
+      save();
+      openDetail(ticketId);
+      alert("Ticket reset — submit enabled again.");
+    }
+  } else {
+    alert("Incorrect password.");
+  }
 }
 
 function showList(){
@@ -916,6 +935,40 @@ function openDetail(id){
   dCreated.textContent = fmt(new Date(t.createdAt));
   dTicketId.textContent = `Ticket ${t.id}`;
   dChannelPill.textContent = t.channel || "—";
+// --- lock gating (disable submit when ticket is locked) ---
+if (t.locked) {
+  submitMainBtn.disabled = true;
+  submitToggleBtn.disabled = true;
+  replyBox.disabled = true;
+
+  // keep it obvious it's locked without breaking inner markup refs
+  submitMainBtn.setAttribute("data-locked", "true");
+  submitMainBtn.title = "Locked — ask your trainer to reset";
+  submitMainBtn.textContent = "Locked — ask trainer to reset";
+
+  // add an inline Reset button (password protected) if not already present
+  if (!document.getElementById("resetInlineBtn")) {
+    const resetInlineBtn = document.createElement("button");
+    resetInlineBtn.id = "resetInlineBtn";
+    resetInlineBtn.className = "btn danger";
+    resetInlineBtn.style.marginTop = "8px";
+    resetInlineBtn.textContent = "Reset this ticket";
+    resetInlineBtn.onclick = () => resetTicket(t.id);
+    document.querySelector(".composer").prepend(resetInlineBtn);
+  }
+} else {
+  // ensure controls are usable when not locked
+  submitMainBtn.disabled = false;
+  submitToggleBtn.disabled = false;
+  replyBox.disabled = false;
+  submitMainBtn.removeAttribute("data-locked");
+  submitMainBtn.title = "";
+  // restore the standard label/dot via existing helper
+  setSubmitUI(dStatus.value);
+
+  const rb = document.getElementById("resetInlineBtn");
+  if (rb) rb.remove();
+}
 
   // Submit-as control (existing)
   dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
@@ -1120,6 +1173,9 @@ submitMainBtn.onclick = async () => {
     t.grade = report;
 
     save();
+t.locked = true;
+save();
+// (removed) openDetail is called below
     renderGrade(report);
     renderStats();
     renderList();
