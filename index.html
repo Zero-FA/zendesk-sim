@@ -526,24 +526,27 @@ const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud Gen
 
 // Ticket template helper (unchanged)
 function makeTicket({
-  subject, requester, channel, hoursAgo,
+  subject, requester, requesterName,  // 👈 add requesterName
+  channel, hoursAgo,
   requiredStatus, requiredAssignee,
   macroOnly, macroCommand,
   sections, requirements,
-  category, intent, accountId, tags, body, attachments
+  category, intent, accountId, tags, body, attachments,
+  seedHistory
 }) {
   return {
     id: uid(),
     subject,
     requester,
+    requesterName,                      // 👈 store it
     channel,
     createdAt: now - (hoursAgo * 3600e3),
     status: "Open",
     assignee: "Myself",
     assigneeOptions: ALLOWED_ASSIGNEES,
     messages: [
-      { id: uid(), author: requester, ts: now - (hoursAgo * 3600e3), body }
-    ],
+  { id: uid(), author: requesterName || requester, ts: now - (hoursAgo * 3600e3), body }
+],
     expected: {
       requiredStatus,
       requiredAssignee,
@@ -552,13 +555,10 @@ function makeTicket({
       sections: sections || ["Greeting","Opener","Solution","Closer","Sign-Off"],
       requirements
     },
-    tags,
-    category,
-    intent,
-    accountId,
+    tags, category, intent, accountId,
     attachments: attachments || [],
-    attempts: [],
-    grade: null
+    attempts: [], grade: null,
+    _histSeed: Array.isArray(seedHistory) ? seedHistory : []
   };
 }
 
@@ -569,152 +569,28 @@ const DEFAULT = {
   },
   tickets: [
     // 1) Normal ticket (macroOnly: false)
-    makeTicket({
-      subject: "Can't log in after password reset",
-      requester: "sara@brand.co",
-      channel: "Email",
-      hoursAgo: 4,
-      requiredStatus: "Open",
-      requiredAssignee: "Fraud General",
-      macroOnly: false,
-      macroCommand: "",
-      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-      requirements:
-        "Explicitly state that the request is being routed to the Fraud department due to sensitivity and that they will assist with the password reset.",
-      category: "Support",
-      intent: "Login Issue",
-      accountId: "APEX-00001",
-      tags: ["account_questions","language_en","sentiment_neutral"],
-      body:
-        "Hi, I reset my password but still can’t log in. - Sara",
-      attachments: [
-        {
-          type: "image",
-          url: "https://i.imgur.com/0SxOMjH.png",
-          title: "Login error message"
-        }
-      ]
-    }),
-    // 2) Macro-only ticket (macroOnly: true) — now with image option too
-    makeTicket({
-      subject: "What happened to my account?",
-      requester: "mike@trader.co",
-      channel: "Email",
-      hoursAgo: 2,
-      requiredStatus: "Solved",
-      requiredAssignee: "Myself",
-      macroOnly: true,
-      // Note: this includes the leading slash and uses an EN DASH in the middle.
-      // The norm() in gradeAttempt makes this robust.
-      macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
-      sections: [], // unused in macro mode
-      requirements:
-        "Use the /Drawdown Threshold macro; no additional prose is required.",
-      category: "Account",
-      intent: "Drawdown Info",
-      accountId: "APEX-00420",
-      tags: ["account_questions","language_en","sentiment_neutral"],
-      body:
-        "Hi team, can you tell me why my account was removed? I made 4k on my 50k account and then lost it all but I never went below $47,500? Why is my account saying liquidated?.",
-      attachments: [
-        {
-          type: "image",
-          url: "",
-          title: "Account status banner"
-        }
-      ]
-    }),
-    // Ticket Test from ticketmaker
 makeTicket({
-  subject: "what?",
-  requester: "jomomma@gmail.com",
+  subject: "Can't login",
+  requester: "sara.j@gmail.com",
+  requesterName: "Sara Michaels",
   channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
-  sections: [],
-  requirements:
-    "Use the specified macro; no additional prose is required.",
-  category: "Support",
-  intent: "Drawdown",
-  accountId: "APEX-183914",
-  tags: ["account_question"],
-  body:
-    "Hey where is my account? I was up 10k and only lost 4k and my accounts gone. I didnt even get close to the drawdown at 47,500???",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  subject: "Banned Countries",
-  requester: "clockedout@gmail.com",
-  channel: "Email",
-  hoursAgo: 5,
+  hoursAgo: 4.3,
   requiredStatus: "Open",
   requiredAssignee: "Fraud General",
-  macroOnly: true,
-  macroCommand: "/Gen - Banned Countries",
-  sections: [],
-  requirements:
-    "Use the specified macro; no additional prose is required.",
-  category: "Support",
-  intent: "Countries",
-  accountId: "APEX-183914",
-  tags: ["banned_countries"],
-  body:
-    "Hi, I am from India. I was wondering if I could trade with you.",
-  attachments: []
-}),
-// Ticket with requirements added
-makeTicket({
-  subject: "Whast going on?",
-  requester: "lost@idk.com",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Open",
-  requiredAssignee: "Myself",
   macroOnly: false,
   macroCommand: "",
   sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
   requirements:
-    "They need to say that this is being routed to fraud and they will assist with account access.",
+    "The trainee response should resemble this:\nHi Sara,\n\nThank you for reaching out to Apex Trader Funding Support. I hope you're having a great day!\n\nIf you are following the reset steps correctly and are not receiving any reset emails, we can reset that for you. Please note that any changes with sensitive information must be sent to Fraud department for security purposes. They will help you reset your password so you can continue trading.\n\nAn agent will be reaching out to you shortly with the next steps to resetting your password. Thank you for your patience in this matter!\n\nKind regards,\n\nSean Michael \n\nMust include:\nWhere they are sending them (to fraud dept)\nThat its due to the sensitive info needed to change",
   category: "Support",
   intent: "Login Issue",
-  accountId: "APEX-Jomama",
+  accountId: "APEX-183914",
   tags: ["account_questions"],
   body:
-    "Hi im just wondering why i cant access anyting???",
+    "I keep trying to login and its saying that I am locked out? I need to contact admin. Please help!",
   attachments: []
-}),
-// Ticket
-makeTicket({
-  subject: "Missing Passed Email",
-  requester: "JasonPurraz@gmail.com",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements:
-    "Write a professional reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off).",
-  category: "Support",
-  intent: "Passed Evaluation",
-  accountId: "APEX-183914",
-  tags: ["passed_eval"],
-  body:
-    "I passed my evaluation, but I do not see any passed email yet. I just hit the profit goal today at 9 AM EST, but I haven't gotten any email and the balances in my Apex Dashboard haven't updated. Could you please help me out?",
-  attachments: [
-    {
-      type: "image",
-      url: "https://i.imgur.com/u35QmA3.png",
-      title: "Attachment"
-    }
-  ]
 })
-  ]
+]
 };
 
 // seed or load state
@@ -1018,13 +894,17 @@ if (t.locked) {
 
   // --- Right column: Requester card + history ---
   // name (if your requester is an email, show local-part capitalized as a friendly name)
-  const email = t.requester || "";
-  const niceName = email.includes("@") ? email.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase()) : email;
-  rName.textContent  = niceName || "—";
-  rEmail.textContent = email || "—";
+const email = t.requester || "";
+const deriveNiceName = (em) =>
+  em.includes("@")
+    ? em.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase())
+    : em;
 
-  // local time (simple placeholder — same timezone as browser for demo)
-  rLocal.textContent = new Date().toLocaleTimeString();
+const displayName = (t.requesterName && t.requesterName.trim()) || deriveNiceName(email);
+
+rName.textContent  = displayName || "—";
+rEmail.textContent = email || "—";
+rLocal.textContent = new Date().toLocaleTimeString();
 
   // language: derive from tag like language_en if present, else "English (United States)" in screenshot style
   const langTag = (t.tags||[]).find(x => x.startsWith("language_"));
