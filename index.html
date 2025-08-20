@@ -568,29 +568,7 @@ const DEFAULT = {
     sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
   },
   tickets: [
-    // 1) Normal ticket (macroOnly: false)
-makeTicket({
-  subject: "Can't login",
-  requester: "sara.j@gmail.com",
-  requesterName: "Sara Michaels",
-  channel: "Email",
-  hoursAgo: 4.3,
-  requiredStatus: "Open",
-  requiredAssignee: "Fraud General",
-  macroOnly: false,
-  macroCommand: "",
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements:
-    "The trainee response should resemble this:\nHi Sara,\n\nThank you for reaching out to Apex Trader Funding Support. I hope you're having a great day!\n\nIf you are following the reset steps correctly and are not receiving any reset emails, we can reset that for you. Please note that any changes with sensitive information must be sent to Fraud department for security purposes. They will help you reset your password so you can continue trading.\n\nAn agent will be reaching out to you shortly with the next steps to resetting your password. Thank you for your patience in this matter!\n\nKind regards,\n\nSean Michael \n\nMust include:\nWhere they are sending them (to fraud dept)\nThat its due to the sensitive info needed to change",
-  category: "Support",
-  intent: "Login Issue",
-  accountId: "APEX-183914",
-  tags: ["account_questions"],
-  body:
-    "I keep trying to login and its not working. I am trying to reset my password but I can't seem to!! Please help!",
-  attachments: []
-}),
-// Ticket
+// Drawdown Ticket
 makeTicket({
   subject: "Account gone?",
   requester: "Imlost@gmail.com",
@@ -611,6 +589,34 @@ makeTicket({
   body:
     "So i was trading my account and all of the sudden i couldnt anymore... i never went below the trailing threshold at 47,500. I made 5,400 and lost it all but never went below 47,500. Why did you guys remove my account?",
   attachments: []
+}),
+// PA Drawdown ticket
+makeTicket({
+  subject: "PA missing",
+  requester: "alen12@gmail.com",
+  requesterName: "Alen Markiplier",
+  channel: "Email",
+  hoursAgo: 0.34,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/PA - Trailing Drawdown fixed at $100 + starting balance",
+  sections: [],
+  requirements:
+    "Trainee must use macro.",
+  category: "Support",
+  intent: "Account Missing",
+  accountId: "APEX-183914",
+  tags: ["drawdown_question"],
+  body:
+    "hey guys, i started trading my 25k pa today and now i can no longer take trades. i was up about 1300 but lost it all due to over trading. My current balance is at $24,734.92 though. I thought pa accounts had a static drawdown? Can you please help me out so i can keep trading, thanks!",
+  attachments: [
+    {
+      type: "image",
+      url: "https://i.imgur.com/NCyMkA6.png",
+      title: "pa 08"
+    }
+  ]
 })
 ]
 };
