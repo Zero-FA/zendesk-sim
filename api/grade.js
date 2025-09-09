@@ -93,6 +93,10 @@ ${STRUCTURE_LABELS.join(", ")}
 
 Important: For the Opener, do NOT penalize for sentence length or the presence of an exclamation mark; judge only tone (polite, professional) and relevance.
 
+HARD RULES (enforce regardless of tone/context):
+- Greeting: FAIL if the first greeting line does not end with a comma immediately after the customer's name (e.g., "Hello Jason,"). Also require one blank line after the greeting.
+- Sign-Off: FAIL if there is not (1) a standard sign-off line ending with a comma (e.g., "Best regards,"), then (2) one blank line, then (3) the agent's name on its own line.
+
 STYLE GUIDE:
 ${STYLE_GUIDE}
 
@@ -134,12 +138,119 @@ Also return "structurePct" (0–100) as your overall structure score.
       return { label, ok, detail, score };
     });
 
+    // Deterministic enforcement for punctuation/formatting
+    enforceGreetingPunctuation(text, checks);
+    enforceSignOffFormat(text, checks);
+
     const structurePct = clamp0to100(Number(parsed.structurePct ?? 0));
 
     return res.status(200).json({ checks, structurePct });
   } catch (err) {
     console.error("grading_failed:", err);
     return res.status(500).json({ error: "grading_failed" });
+  }
+}
+
+/**
+ * Enforce "Hello Name," (comma at end) and a blank line after the greeting.
+ * Looks at the first non-empty line only if it reads like a greeting.
+ */
+function enforceGreetingPunctuation(text, checks) {
+  const idx = STRUCTURE_LABELS.indexOf("Greeting");
+  if (idx < 0) return;
+
+  const lines = String(text).split(/\r?\n/);
+  const firstIdx = lines.findIndex(l => l.trim() !== "");
+  if (firstIdx === -1) return;
+
+  const line = lines[firstIdx].trim();
+
+  // Treat these as greeting lines (expand if you like)
+  const greetingRe = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\b/i;
+  const isGreeting = greetingRe.test(line);
+
+  if (!isGreeting) return;
+
+  // Require at least one token (name) after the greeting word(s)
+  const hasNameAfterGreeting = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\s+\S+/.test(line);
+
+  // Must end with a comma (allow trailing spaces)
+  const hasTrailingComma = /,\s*$/.test(line);
+
+  // Must have a blank line after greeting
+  const hasBlankAfter =
+    lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
+
+  if (!hasNameAfterGreeting || !hasTrailingComma || !hasBlankAfter) {
+    const problems = [];
+    if (!hasNameAfterGreeting) problems.push("include the customer's first name");
+    if (!hasTrailingComma) problems.push("end the greeting line with a comma");
+    if (!hasBlankAfter) problems.push("leave one blank line after the greeting");
+
+    checks[idx] = {
+      label: "Greeting",
+      ok: false,
+      detail: `Greeting format issue: ${problems.join("; ")}. Example: "Hello Jason," then a blank line.`,
+      score: 0
+    };
+  }
+}
+
+/**
+ * Enforce Sign-Off format:
+ *  - a standard closing on its own line ending with a comma (e.g., "Best regards,")
+ *  - then one blank line
+ *  - then the agent's name on its own line (letters, spaces, apostrophes/hyphens allowed)
+ */
+function enforceSignOffFormat(text, checks) {
+  const idx = STRUCTURE_LABELS.indexOf("Sign-Off");
+  if (idx < 0) return;
+
+  const lines = String(text).split(/\r?\n/);
+
+  // Find a closing line from the bottom up to catch the final sign-off
+  const signoffRegex = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
+  const nameRegex = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/; // allow O'Donoghue, hyphens, spaces
+
+  let signIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const t = lines[i].trim();
+    if (signoffRegex.test(t)) {
+      signIdx = i;
+      break;
+    }
+  }
+
+  // If we didn't find any sign-off line, fail
+  if (signIdx === -1) {
+    checks[idx] = {
+      label: "Sign-Off",
+      ok: false,
+      detail: `Missing proper sign-off. Use a closing line ending with a comma (e.g., "Best regards,") followed by a blank line and then your name on its own line.`,
+      score: 0
+    };
+    return;
+  }
+
+  // Must have a blank line after sign-off
+  const hasBlankAfter =
+    lines[signIdx + 1] !== undefined && lines[signIdx + 1].trim() === "";
+
+  // Must have a name line after the blank line
+  const nameLine = lines[signIdx + 2] !== undefined ? lines[signIdx + 2].trim() : "";
+  const hasNameLine = !!nameLine && nameRegex.test(nameLine);
+
+  if (!hasBlankAfter || !hasNameLine) {
+    const problems = [];
+    if (!hasBlankAfter) problems.push("leave one blank line after the sign-off");
+    if (!hasNameLine) problems.push("put your name on its own line (letters only, spaces/hyphens/apostrophes allowed)");
+
+    checks[idx] = {
+      label: "Sign-Off",
+      ok: false,
+      detail: `Sign-off format issue: ${problems.join("; ")}. Example:\n"Best regards,"\n\nSean Michael`,
+      score: 0
+    };
   }
 }
 
