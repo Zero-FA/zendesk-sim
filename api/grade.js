@@ -171,29 +171,26 @@ function enforceGreetingPunctuation(text, checks) {
 
   if (!isGreeting) return;
 
-  // Require at least one token (name) after the greeting word(s)
-  const hasNameAfterGreeting = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\s+\S+/.test(line);
+// Require a name after the greeting AND the line must end with a comma (allow trailing spaces)
+const hasNameAndComma = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\s+\S.*,\s*$/i.test(line);
 
-  // Must end with a comma (allow trailing spaces)
-  const hasTrailingComma = /,\s*$/.test(line);
 
   // Must have a blank line after greeting
   const hasBlankAfter =
     lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
 
-  if (!hasNameAfterGreeting || !hasTrailingComma || !hasBlankAfter) {
-    const problems = [];
-    if (!hasNameAfterGreeting) problems.push("include the customer's first name");
-    if (!hasTrailingComma) problems.push("end the greeting line with a comma");
-    if (!hasBlankAfter) problems.push("leave one blank line after the greeting");
+if (!hasNameAndComma || !hasBlankAfter) {
+  const problems = [];
+  if (!hasNameAndComma) problems.push('use "Hello <Name>," on one line (comma required)');
+  if (!hasBlankAfter) problems.push("leave one blank line after the greeting");
 
-    checks[idx] = {
-      label: "Greeting",
-      ok: false,
-      detail: `Greeting format issue: ${problems.join("; ")}. Example: "Hello Jason," then a blank line.`,
-      score: 0
-    };
-  }
+  checks[idx] = {
+    label: "Greeting",
+    ok: false,
+    detail: `Greeting format issue: ${problems.join("; ")}. Example: "Hello Jason," then a blank line.`,
+    score: 0
+  };
+}
 }
 
 /**
