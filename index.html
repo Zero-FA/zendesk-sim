@@ -696,6 +696,31 @@ makeTicket({
   attachments: [
 
   ]
+}),
+// Ticket
+makeTicket({
+  subject: "Test",
+  requester: "test@yahoo.com",
+  requesterName: "Test Test",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Open",
+  requiredAssignee: "Support Tier 2",
+  macroOnly: false,
+  macroCommand: "",
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements:
+    "They need to send it to T2 with an internal note.\n\nInternal Note: User has a 25k rithmic pa fee.",
+  category: "",
+  intent: "",
+  accountId: "APEX-183914",
+  tags: [],
+  scenario:
+    "The user has a lingering 50k rithmic pa fee but has a 25k rithmic account passed.",
+  body:
+    "Testing this out",
+  attachments: [
+  ]
 })
 ]
 };
