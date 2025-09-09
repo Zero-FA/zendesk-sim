@@ -94,7 +94,7 @@ ${STRUCTURE_LABELS.join(", ")}
 Important: For the Opener, do NOT penalize for sentence length or the presence of an exclamation mark; judge only tone (polite, professional) and relevance.
 
 HARD RULES (enforce regardless of tone/context):
-- Greeting: FAIL if the first greeting line does not end with a comma immediately after the customer's name (e.g., "Hello Jason,"). Also require one blank line after the greeting.
+- Greeting: FAIL if the first greeting line is not "Hello/Hi/Hey/Good <time of day> <Name>," exactly ending with a comma (no extra text on that line). Also require one blank line after the greeting.
 - Sign-Off: FAIL if there is not (1) a standard sign-off line ending with a comma (e.g., "Best regards,"), then (2) one blank line, then (3) the agent's name on its own line.
 
 STYLE GUIDE:
@@ -142,7 +142,8 @@ Also return "structurePct" (0–100) as your overall structure score.
     enforceGreetingPunctuation(text, checks);
     enforceSignOffFormat(text, checks);
 
-    const structurePct = clamp0to100(Number(parsed.structurePct ?? 0));
+    // Compute structurePct from (possibly overridden) checks to keep score aligned with hard rules
+    const structurePct = computeStructurePct(checks);
 
     return res.status(200).json({ checks, structurePct });
   } catch (err) {
@@ -152,8 +153,9 @@ Also return "structurePct" (0–100) as your overall structure score.
 }
 
 /**
- * Enforce "Hello Name," (comma at end) and a blank line after the greeting.
- * Looks at the first non-empty line only if it reads like a greeting.
+ * Enforce "Hello/Hi/Hey/Good <time> <Name>," (comma required, no space before comma)
+ * and require a blank line after the greeting.
+ * Operates on the first non-empty line only if it reads like a greeting.
  */
 function enforceGreetingPunctuation(text, checks) {
   const idx = STRUCTURE_LABELS.indexOf("Greeting");
@@ -165,32 +167,32 @@ function enforceGreetingPunctuation(text, checks) {
 
   const line = lines[firstIdx].trim();
 
-  // Treat these as greeting lines (expand if you like)
-  const greetingRe = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\b/i;
-  const isGreeting = greetingRe.test(line);
-
+  // Looks like a greeting?
+  const greetingWord = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\b/i;
+  const isGreeting = greetingWord.test(line);
   if (!isGreeting) return;
 
-// Require a name after the greeting AND the line must end with a comma (allow trailing spaces)
-const hasNameAndComma = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\s+\S.*,\s*$/i.test(line);
-
+  // Require a name after the greeting AND the line must end with a comma (no text after comma).
+  // Also disallow a space immediately before the comma by forcing the char before comma to be non-space (\S).
+  // Examples that PASS: "Hello Jason,", "Hi Sara,", "Good morning John,"
+  // Examples that FAIL: "Hello Jason", "Hello Jason ,", "Hello Jason, Thanks..."
+  const hasNameAndComma = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\s+\S.*\S,\s*$/i.test(line);
 
   // Must have a blank line after greeting
-  const hasBlankAfter =
-    lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
+  const hasBlankAfter = lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
 
-if (!hasNameAndComma || !hasBlankAfter) {
-  const problems = [];
-  if (!hasNameAndComma) problems.push('use "Hello <Name>," on one line (comma required)');
-  if (!hasBlankAfter) problems.push("leave one blank line after the greeting");
+  if (!hasNameAndComma || !hasBlankAfter) {
+    const problems = [];
+    if (!hasNameAndComma) problems.push('use "Hello <Name>," on its own line (comma required, no space before comma, no extra text)');
+    if (!hasBlankAfter) problems.push("leave one blank line after the greeting");
 
-  checks[idx] = {
-    label: "Greeting",
-    ok: false,
-    detail: `Greeting format issue: ${problems.join("; ")}. Example: "Hello Jason," then a blank line.`,
-    score: 0
-  };
-}
+    checks[idx] = {
+      label: "Greeting",
+      ok: false,
+      detail: `Greeting format issue: ${problems.join("; ")}. Example:\n"Hello Jason,"\n\n<your opener sentence>`,
+      score: 0
+    };
+  }
 }
 
 /**
@@ -205,7 +207,7 @@ function enforceSignOffFormat(text, checks) {
 
   const lines = String(text).split(/\r?\n/);
 
-  // Find a closing line from the bottom up to catch the final sign-off
+  // Recognize common sign-offs; line must end with a comma (no trailing words)
   const signoffRegex = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
   const nameRegex = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/; // allow O'Donoghue, hyphens, spaces
 
@@ -218,7 +220,6 @@ function enforceSignOffFormat(text, checks) {
     }
   }
 
-  // If we didn't find any sign-off line, fail
   if (signIdx === -1) {
     checks[idx] = {
       label: "Sign-Off",
@@ -229,11 +230,7 @@ function enforceSignOffFormat(text, checks) {
     return;
   }
 
-  // Must have a blank line after sign-off
-  const hasBlankAfter =
-    lines[signIdx + 1] !== undefined && lines[signIdx + 1].trim() === "";
-
-  // Must have a name line after the blank line
+  const hasBlankAfter = lines[signIdx + 1] !== undefined && lines[signIdx + 1].trim() === "";
   const nameLine = lines[signIdx + 2] !== undefined ? lines[signIdx + 2].trim() : "";
   const hasNameLine = !!nameLine && nameRegex.test(nameLine);
 
@@ -249,6 +246,13 @@ function enforceSignOffFormat(text, checks) {
       score: 0
     };
   }
+}
+
+function computeStructurePct(checks) {
+  // Average the scores we’re returning (0–100)
+  if (!Array.isArray(checks) || checks.length === 0) return 0;
+  const total = checks.reduce((sum, c) => sum + (Number.isFinite(c?.score) ? c.score : (c?.ok ? 100 : 0)), 0);
+  return clamp0to100(Math.round(total / checks.length));
 }
 
 function clamp0to100(n) {
