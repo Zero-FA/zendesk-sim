@@ -1257,36 +1257,114 @@ showList();
       };
     });
 
-    /* ---------- Enforce correct first-name greeting ---------- */
-    (function enforceFirstNameGreeting(){
-      const escapeRegExp = (s) => String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const deriveNiceNameFromEmail = (em) =>
-        (String(em||"").includes("@")
-          ? String(em).split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase())
-          : String(em || "")).trim();
+/* ---------- Deterministic structure enforcement (Greeting + Sign-Off) ---------- */
+(function enforceGreetingAndSignOff(){
+  const structureLabels = ["Greeting","Opener","Solution","Closer","Sign-Off"];
+  const greetingIdx = structureLabels.indexOf("Greeting");
+  const signoffIdx  = structureLabels.indexOf("Sign-Off");
 
-      const fullName = (ticket.requesterName && ticket.requesterName.trim())
-                    || deriveNiceNameFromEmail(ticket.requester);
-      const expectedFirst = (fullName.split(/\s+/)[0] || "").trim();
+  const lines = String(reply).split(/\r?\n/);
 
-      const pat = new RegExp(`\\b(?:hi|hello)\\s*,?\\s*${escapeRegExp(expectedFirst)}\\b`, "i");
+  // Utilities
+  const escapeRegExp = s => String(s||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const deriveNiceNameFromEmail = (em) =>
+    (String(em||"").includes("@")
+      ? String(em).split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+      : String(em||"")).trim();
 
-      const greetingIdx = 0; // "Greeting"
-      const g = structureChecks[greetingIdx];
+  const fullName = (ticket.requesterName && ticket.requesterName.trim())
+                || deriveNiceNameFromEmail(ticket.requester);
+  const expectedFirst = (fullName.split(/\s+/)[0] || "").trim();
 
-      if (expectedFirst) {
-        const ok = pat.test(reply);
-        if (!ok) {
-          g.ok = false;
-          g.score = 0;
-          g.detail = `Greeting must include "Hi ${expectedFirst}" or "Hello ${expectedFirst}".`;
+  /* ===== Greeting enforcement =====
+     Accept:
+       "Hello Jason,"
+       "Hi Jason,"
+       "Good morning Jason,"
+       "Hello again, Jason,"
+     Require:
+       - first non-empty line
+       - greeting word + (optional "again,") + FirstName + comma
+       - no extra text on that line
+       - one blank line after
+  */
+  if (greetingIdx >= 0) {
+    const firstIdx = lines.findIndex(l => l.trim() !== "");
+    if (firstIdx !== -1) {
+      const line = lines[firstIdx].trim();
+      const looksLikeGreeting = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))\b/i.test(line);
+
+      if (looksLikeGreeting) {
+        const nameToken = expectedFirst ? escapeRegExp(expectedFirst) : "\\S+";
+        // if "again" is used, require a comma after it (matches the style-guide example)
+        const re = new RegExp(
+          `^(?:hello|hi|hey|good\\s+(?:morning|afternoon|evening))(?:\\s+again,)?\\s+${nameToken},\\s*$`,
+          "i"
+        );
+
+        const hasGreeting = re.test(line);
+        const hasBlankAfter = lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
+
+        if (!hasGreeting || !hasBlankAfter) {
+          const problems = [];
+          if (!hasGreeting)
+            problems.push(`use "Hello ${expectedFirst||"Name"}," on its own line (comma required; no extra text)`);
+          if (!hasBlankAfter)
+            problems.push("leave one blank line after the greeting");
+
+          structureChecks[greetingIdx].ok = false;
+          structureChecks[greetingIdx].score = 0;
+          structureChecks[greetingIdx].detail = `Greeting format issue: ${problems.join("; ")}.`;
         } else {
-          g.ok = true;
-          g.score = 100;
-          g.detail = `Used correct first-name greeting ("Hi/Hello ${expectedFirst}").`;
+          structureChecks[greetingIdx].ok = true;
+          structureChecks[greetingIdx].score = 100;
+          structureChecks[greetingIdx].detail = `Greeting formatted correctly.`;
         }
       }
-    })();
+    }
+  }
+
+  /* ===== Sign-Off enforcement =====
+     Require:
+       - sign-off line ending with a comma (e.g., "Best regards,")
+       - one blank line
+       - agent name on its own line
+  */
+  if (signoffIdx >= 0) {
+    const signoffRegex = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
+    const nameRegex    = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
+
+    let sIdx = -1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (signoffRegex.test(lines[i].trim())) { sIdx = i; break; }
+    }
+
+    if (sIdx === -1) {
+      structureChecks[signoffIdx].ok = false;
+      structureChecks[signoffIdx].score = 0;
+      structureChecks[signoffIdx].detail =
+        `Missing proper sign-off. Example:\n"Best regards,"\n\nSean Michael`;
+    } else {
+      const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
+      const nameLine   = (lines[sIdx + 2] || "").trim();
+      const nameOk     = !!nameLine && nameRegex.test(nameLine);
+
+      if (!blankAfter || !nameOk) {
+        const parts = [];
+        if (!blankAfter) parts.push("leave one blank line after the sign-off");
+        if (!nameOk)     parts.push("put your name on its own line");
+        structureChecks[signoffIdx].ok = false;
+        structureChecks[signoffIdx].score = 0;
+        structureChecks[signoffIdx].detail =
+          `Sign-off format issue: ${parts.join("; ")}. Example:\n"Best regards,"\n\nSean Michael`;
+      } else {
+        structureChecks[signoffIdx].ok = true;
+        structureChecks[signoffIdx].score = 100;
+        structureChecks[signoffIdx].detail = `Sign-off formatted correctly.`;
+      }
+    }
+  }
+})();
     /* -------------------------------------------------------- */
 
     // Weighted structure %
