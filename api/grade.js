@@ -36,6 +36,7 @@ Support Ticket Style Guide (Apex Training)
 1) Greeting
 - Use customer's first name; brief & warm.
 - Examples: "Hello Sara,", "Hi John,", "Hello again, John,"
+- Must have the comma in the greeting as well, as shown above.
 - Leave one blank line after the greeting.
 
 2) Opener
