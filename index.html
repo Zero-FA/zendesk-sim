@@ -21,6 +21,31 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Seg
 .gate-err{min-height:1.25em;margin-top:8px;font-size:12px;color:var(--warn)}
 body.gated{overflow:hidden}
 
+/* Scenario block */
+.scenario-block{
+  border:1px dashed var(--line);
+  border-left:4px solid var(--accent);
+  background:#f8fafc;
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:12px;
+}
+.scenario-title{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:700;
+  margin-bottom:4px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.scenario-text{
+  white-space:pre-wrap;
+  font-size:12px;
+  color:var(--ink);
+}
+body.dark .scenario-block{ background:#0b1324; border-color:var(--line); }
+
 /* top bar */
 .top{height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;background:#fff;border-bottom:1px solid var(--line)}
 .brand{display:flex;gap:8px;align-items:center}
@@ -526,27 +551,28 @@ const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud Gen
 
 // Ticket template helper (unchanged)
 function makeTicket({
-  subject, requester, requesterName,  // 👈 add requesterName
+  subject, requester, requesterName,
   channel, hoursAgo,
   requiredStatus, requiredAssignee,
   macroOnly, macroCommand,
   sections, requirements,
   category, intent, accountId, tags, body, attachments,
+  scenario,            // ← NEW
   seedHistory
 }) {
   return {
     id: uid(),
     subject,
     requester,
-    requesterName,                      // 👈 store it
+    requesterName,
     channel,
     createdAt: now - (hoursAgo * 3600e3),
     status: "Open",
     assignee: "Myself",
     assigneeOptions: ALLOWED_ASSIGNEES,
     messages: [
-  { id: uid(), author: requesterName || requester, ts: now - (hoursAgo * 3600e3), body }
-],
+      { id: uid(), author: requesterName || requester, ts: now - (hoursAgo * 3600e3), body }
+    ],
     expected: {
       requiredStatus,
       requiredAssignee,
@@ -557,6 +583,7 @@ function makeTicket({
     },
     tags, category, intent, accountId,
     attachments: attachments || [],
+    scenario: scenario || "",   // ← NEW
     attempts: [], grade: null,
     _histSeed: Array.isArray(seedHistory) ? seedHistory : []
   };
@@ -952,6 +979,22 @@ if (t.locked) {
 // Thread (updated – render attachments inline with the first (requester) message)
 replyBox.value = "";
 thread.innerHTML = "";
+
+replyBox.value = "";
+thread.innerHTML = "";
+
+// Show Scenario (if present) above the customer’s first message
+if (t.scenario && t.scenario.trim()) {
+  const sc = document.createElement("div");
+  sc.className = "scenario-block";
+  sc.innerHTML = `
+    <div class="scenario-title">
+      <span class="badge">Scenario</span>
+    </div>
+    <div class="scenario-text">${esc(t.scenario)}</div>
+  `;
+  thread.appendChild(sc);
+}
 
 const hasInlineAttachments = Array.isArray(t.attachments) && t.attachments.length > 0;
 
