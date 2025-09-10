@@ -1278,14 +1278,18 @@ showList();
 })();
 </script>
 
-<!-- Client-side grading wrapper -->
 <script>
 (() => {
   window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    // Merge weights (Solution ~40% overall by default)
+    // Merge weights (adds visibility)
     const w = Object.assign(
       {
-        sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
+        sections: 60,
+        status: 25,
+        assignee: 15,
+        visibility: 10, // ← NEW
+        keywords: 0,
+        pass: 80,
         sectionWeights: { Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 }
       },
       weights || {}
@@ -1300,57 +1304,80 @@ showList();
     const statusOk   = eq(attempt.status,   expectedStatus);
     const assigneeOk = eq(attempt.assignee, expectedAssignee);
 
+    // ===== NEW: policy-aware visibility requirement =====
+    const policy = String(ticket?.expected?.internalPolicy || "on_reassign_open").toLowerCase();
+    let needsInternal = false;
+    if (policy === "always") {
+      needsInternal = true;
+    } else if (policy === "on_reassign_open") {
+      needsInternal =
+        String(attempt.status).toLowerCase() === "open" &&
+        String(attempt.assignee || "").trim().toLowerCase() !== "myself";
+    } // "none" => false
+    const chosenVis = String(attempt.visibility || "Public");
+    const visibilityOk = needsInternal ? chosenVis.toLowerCase() === "internal" : true;
+
     // ===== Branch 1: Macro-only tickets =====
     if (ticket.expected?.macroOnly) {
       const target = String(ticket.expected?.macroCommand || "").trim();
       const macroOk = target ? reply.trim() === target : reply.trim().startsWith("/");
 
-      // Score macro using the same "sections" weight bucket so total weighting still sums nicely.
-      const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.keywords||0));
-      const sMacro    = (macroOk    ? 100 : 0) * (w.sections || 0) / sum;
-      const sStatus   = (statusOk   ? 100 : 0) * (w.status   || 0) / sum;
-      const sAssignee = (assigneeOk ? 100 : 0) * (w.assignee || 0) / sum;
+      const sum = Math.max(
+        1,
+        (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.visibility||0) + (w.keywords||0)
+      );
+      const sMacro    = (macroOk     ? 100 : 0) * (w.sections   || 0) / sum;
+      const sStatus   = (statusOk    ? 100 : 0) * (w.status     || 0) / sum;
+      const sAssignee = (assigneeOk  ? 100 : 0) * (w.assignee   || 0) / sum;
+      const sVis      = (visibilityOk? 100 : 0) * (w.visibility || 0) / sum;
       const sKw       = 0;
 
-      const score = sMacro + sStatus + sAssignee + sKw;
+      const score = sMacro + sStatus + sAssignee + sVis + sKw;
 
       const checks = [
         { label: "Macro command is correct", ok: macroOk, detail: `Typed: ${reply || "—"}` },
         { label: `Submit As is "${expectedStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status ?? "—"}` },
-        { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` }
+        { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` },
+        {
+          label:
+            policy === "always"
+              ? `Visibility is "Internal" (always required)`
+              : policy === "on_reassign_open"
+                ? `Visibility is "Internal" when reassigning Open`
+                : `Visibility check (not required)`,
+          ok: visibilityOk,
+          detail: `Selected: ${chosenVis}; Status: ${attempt.status}; Assignee: ${attempt.assignee || "—"}; Policy: ${policy}`
+        }
       ];
 
       return {
         checks,
         score,
         pass: score >= (w.pass || 0),
-        // For macro tickets, treat structure as "met" when macro is correct
         structurePct: macroOk ? 100 : 0
       };
     }
 
-       // ===== Branch 2: Normal structured tickets =====
-    // 1) Ask API for structure checks, passing the ticket-specific rubric
+    // ===== Branch 2: Normal structured tickets =====
+    // Ask API for structure checks (now pass status/assignee/visibility/policy, though we only read structure back)
     let ai = null;
     try {
       const rubric =
         typeof ticket?.expected?.requirements === "string"
           ? ticket.expected.requirements
           : (ticket?.expected?.requirements?.guidance || "");
-const policy = String(ticket?.expected?.internalPolicy || "on_reassign_open");
-
-const resp = await fetch("/api/grade", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    reply,
-    rubric,
-    status: attempt.status,
-    assignee: attempt.assignee,
-    visibility: attempt.visibility,      // "Public" | "Internal"
-    internalPolicy: policy               // ← NEW
-  })
-});
+      const resp = await fetch("/api/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reply,
+          rubric,
+          status: attempt.status,
+          assignee: attempt.assignee,
+          visibility: attempt.visibility,
+          internalPolicy: policy
+        })
+      });
       if (resp.ok) ai = await resp.json();
     } catch (err) {
       console.warn("AI grading unavailable, using deterministic checks only.", err);
@@ -1375,7 +1402,6 @@ const resp = await fetch("/api/grade", {
 
   const lines = String(reply).split(/\r?\n/);
 
-  // Utilities
   const escapeRegExp = s => String(s||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const deriveNiceNameFromEmail = (em) =>
     (String(em||"").includes("@")
@@ -1386,18 +1412,7 @@ const resp = await fetch("/api/grade", {
                 || deriveNiceNameFromEmail(ticket.requester);
   const expectedFirst = (fullName.split(/\s+/)[0] || "").trim();
 
-  /* ===== Greeting enforcement =====
-     Accept:
-       "Hello Jason,"
-       "Hi Jason,"
-       "Good morning Jason,"
-       "Hello again, Jason,"
-     Require:
-       - first non-empty line
-       - greeting word + (optional "again,") + FirstName + comma
-       - no extra text on that line
-       - one blank line after
-  */
+  // Greeting rule
   if (greetingIdx >= 0) {
     const firstIdx = lines.findIndex(l => l.trim() !== "");
     if (firstIdx !== -1) {
@@ -1406,7 +1421,6 @@ const resp = await fetch("/api/grade", {
 
       if (looksLikeGreeting) {
         const nameToken = expectedFirst ? escapeRegExp(expectedFirst) : "\\S+";
-        // if "again" is used, require a comma after it (matches the style-guide example)
         const re = new RegExp(
           `^(?:hello|hi|hey|good\\s+(?:morning|afternoon|evening))(?:\\s+again,)?\\s+${nameToken},\\s*$`,
           "i"
@@ -1434,12 +1448,7 @@ const resp = await fetch("/api/grade", {
     }
   }
 
-  /* ===== Sign-Off enforcement =====
-     Require:
-       - sign-off line ending with a comma (e.g., "Best regards,")
-       - one blank line
-       - agent name on its own line
-  */
+  // Sign-off rule
   if (signoffIdx >= 0) {
     const signoffRegex = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
     const nameRegex    = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
@@ -1494,48 +1503,36 @@ const resp = await fetch("/api/grade", {
 
     const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
     const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
+    const visibilityCheck = {
+      label:
+        policy === "always"
+          ? `Visibility is "Internal" (always required)`
+          : policy === "on_reassign_open"
+            ? `Visibility is "Internal" when reassigning Open`
+            : `Visibility check (not required)`,
+      ok: visibilityOk,
+      detail: `Selected: ${chosenVis}; Status: ${attempt.status}; Assignee: ${attempt.assignee || "—"}; Policy: ${policy}`
+    };
 
-    const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.keywords||0));
+    const sum = Math.max(
+      1,
+      (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.visibility||0) + (w.keywords||0)
+    );
     const sStructure = structurePctWeighted * (w.sections||0) / sum;
-    const sStatus    = (statusOk   ? 100 : 0) * (w.status   ||0) / sum;
-    const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee ||0) / sum;
+    const sStatus    = (statusOk    ? 100 : 0) * (w.status     || 0) / sum;
+    const sAssignee  = (assigneeOk  ? 100 : 0) * (w.assignee   || 0) / sum;
+    const sVis       = (visibilityOk? 100 : 0) * (w.visibility || 0) / sum;
     const sKw        = 0;
 
-    const score = sStructure + sStatus + sAssignee + sKw;
+    const score = sStructure + sStatus + sAssignee + sVis + sKw;
 
     return {
-      checks: [...structureChecks, statusCheck, assigneeCheck],
+      checks: [...structureChecks, statusCheck, assigneeCheck, visibilityCheck],
       score,
       pass: score >= (w.pass || 0),
       structurePct: structurePctWeighted
     };
   };
-})();
- 
-(function(){
-  const THEME_KEY="sim_theme";
-  const btn=document.getElementById("themeBtn");
-
-  function apply(mode){
-    const dark = mode === "dark";
-    document.body.classList.toggle("dark", dark);
-    if (btn){
-      btn.textContent = dark ? "Light mode" : "Dark mode";
-      btn.setAttribute("aria-pressed", String(dark));
-    }
-  }
-
-  const saved = localStorage.getItem(THEME_KEY);
-  const initial = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  apply(initial);
-
-  if (btn){
-    btn.onclick = () => {
-      const next = document.body.classList.contains("dark") ? "light" : "dark";
-      localStorage.setItem(THEME_KEY, next);
-      apply(next);
-    };
-  }
 })();
 </script>
 </body>
