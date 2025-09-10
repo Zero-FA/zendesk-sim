@@ -562,8 +562,8 @@ function makeTicket({
   subject, requester, requesterName,
   channel, hoursAgo,
   requiredStatus, requiredAssignee,
-  macroOnly, macroCommand,              // ← existing
-  internalPolicy,                       // ← NEW
+  macroOnly, macroCommand,
+  internalRequired = false,            // ← YES/NO toggle
   sections, requirements,
   category, intent, accountId, tags, body, attachments,
   scenario,
@@ -582,18 +582,18 @@ function makeTicket({
     messages: [
       { id: uid(), author: requesterName || requester, ts: now - (hoursAgo * 3600e3), body }
     ],
-expected: {
-  requiredStatus,
-  requiredAssignee,
-  macroOnly,
-  macroCommand: macroCommand || "",
-  internalPolicy: (internalPolicy || "on_reassign_open"), // ← NEW (default)
-  sections: sections || ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements
-},
+    expected: {
+      requiredStatus,
+      requiredAssignee,
+      macroOnly,
+      macroCommand: macroCommand || "",
+      internalRequired: !!internalRequired,                          // ← store boolean
+      sections: sections || ["Greeting","Opener","Solution","Closer","Sign-Off"],
+      requirements
+    },
     tags, category, intent, accountId,
     attachments: attachments || [],
-    scenario: scenario || "",   // ← NEW
+    scenario: scenario || "",
     attempts: [], grade: null,
     _histSeed: Array.isArray(seedHistory) ? seedHistory : []
   };
@@ -1028,7 +1028,9 @@ replyBox.value = "";
 thread.innerHTML = "";
 
 // default visibility for each ticket view
-if (visibilitySel) visibilitySel.value = "Public";
+if (visibilitySel) {
+  visibilitySel.value = (t.expected?.internalRequired ? "Internal" : "Public");
+}
 updateReplyPlaceholder();
 
 // Show Scenario (if present) above the customer’s first message
@@ -1343,13 +1345,13 @@ showList();
 <script>
 (() => {
   window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    // Merge weights (adds visibility)
+    // Merge weights (reuse 'sections' for content/requirements, 'visibility' for internal)
     const w = Object.assign(
       {
         sections: 60,
         status: 25,
         assignee: 15,
-        visibility: 10, // ← NEW
+        visibility: 10,
         keywords: 0,
         pass: 80,
         sectionWeights: { Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 }
@@ -1366,20 +1368,12 @@ showList();
     const statusOk   = eq(attempt.status,   expectedStatus);
     const assigneeOk = eq(attempt.assignee, expectedAssignee);
 
-    // ===== NEW: policy-aware visibility requirement =====
-    const policy = String(ticket?.expected?.internalPolicy || "on_reassign_open").toLowerCase();
-    let needsInternal = false;
-    if (policy === "always") {
-      needsInternal = true;
-    } else if (policy === "on_reassign_open") {
-      needsInternal =
-        String(attempt.status).toLowerCase() === "open" &&
-        String(attempt.assignee || "").trim().toLowerCase() !== "myself";
-    } // "none" => false
+    // NEW: simple toggle — if true, we grade internal-only (no structure)
+    const internalRequired = !!ticket?.expected?.internalRequired;
     const chosenVis = String(attempt.visibility || "Public");
-    const visibilityOk = needsInternal ? chosenVis.toLowerCase() === "internal" : true;
+    const visibilityOk = internalRequired ? (chosenVis.toLowerCase() === "internal") : true;
 
-    // ===== Branch 1: Macro-only tickets =====
+    // ===== Branch 0: Macro-only tickets (works both for public and internal)
     if (ticket.expected?.macroOnly) {
       const target = String(ticket.expected?.macroCommand || "").trim();
       const macroOk = target ? reply.trim() === target : reply.trim().startsWith("/");
@@ -1388,27 +1382,26 @@ showList();
         1,
         (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.visibility||0) + (w.keywords||0)
       );
+
+      // For internal macro tickets: grade macro + visibility only (ignore status/assignee)
       const sMacro    = (macroOk     ? 100 : 0) * (w.sections   || 0) / sum;
-      const sStatus   = (statusOk    ? 100 : 0) * (w.status     || 0) / sum;
-      const sAssignee = (assigneeOk  ? 100 : 0) * (w.assignee   || 0) / sum;
       const sVis      = (visibilityOk? 100 : 0) * (w.visibility || 0) / sum;
+      const sStatus   = internalRequired ? 0 : (statusOk   ? 100 : 0) * (w.status   || 0) / sum;
+      const sAssignee = internalRequired ? 0 : (assigneeOk ? 100 : 0) * (w.assignee || 0) / sum;
       const sKw       = 0;
 
       const score = sMacro + sStatus + sAssignee + sVis + sKw;
 
       const checks = [
         { label: "Macro command is correct", ok: macroOk, detail: `Typed: ${reply || "—"}` },
-        { label: `Submit As is "${expectedStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status ?? "—"}` },
-        { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` },
+        ...(internalRequired ? [] : [
+          { label: `Submit As is "${expectedStatus}"`, ok: statusOk, detail: `Selected: ${attempt.status ?? "—"}` },
+          { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` }
+        ]),
         {
-          label:
-            policy === "always"
-              ? `Visibility is "Internal" (always required)`
-              : policy === "on_reassign_open"
-                ? `Visibility is "Internal" when reassigning Open`
-                : `Visibility check (not required)`,
+          label: internalRequired ? `Visibility is "Internal" (required)` : `Visibility check (not required)`,
           ok: visibilityOk,
-          detail: `Selected: ${chosenVis}; Status: ${attempt.status}; Assignee: ${attempt.assignee || "—"}; Policy: ${policy}`
+          detail: `Selected: ${chosenVis}`
         }
       ];
 
@@ -1416,12 +1409,59 @@ showList();
         checks,
         score,
         pass: score >= (w.pass || 0),
-        structurePct: macroOk ? 100 : 0
+        structurePct: 100 // macro path has no structure breakdown
       };
     }
 
-    // ===== Branch 2: Normal structured tickets =====
-    // Ask API for structure checks (now pass status/assignee/visibility/policy, though we only read structure back)
+    // ===== Branch 1: INTERNAL-ONLY tickets (no structure, requirements + visibility only)
+    if (internalRequired) {
+      // Semantically grade the reply against the ticket Requirements using the API
+      const rubric =
+        typeof ticket?.expected?.requirements === "string"
+          ? ticket.expected.requirements
+          : (ticket?.expected?.requirements?.guidance || "");
+
+      let reqOk = false, reqScore = 0, reqDetail = "AI unavailable";
+      try {
+        const r = await fetch("/api/grade", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "requirements",   // ← tell API we only want requirements grading
+            reply,
+            rubric
+          })
+        });
+        if (r.ok) {
+          const data = await r.json();
+          reqOk     = !!data?.ok;
+          reqScore  = clamp(Number(data?.score || 0), 0, 100);
+          reqDetail = String(data?.detail || "");
+        }
+      } catch (e) {
+        console.warn("Requirements grading failed:", e);
+      }
+
+      // Score only requirements (mapped to 'sections' weight) + visibility
+      const sum = Math.max(1, (w.sections||0) + (w.visibility||0));
+      const sReq = reqScore * (w.sections   || 0) / sum;
+      const sVis = (visibilityOk ? 100 : 0) * (w.visibility || 0) / sum;
+      const score = sReq + sVis;
+
+      const checks = [
+        { label: "Internal requirements met", ok: reqOk, detail: reqDetail || rubric || "—", score: reqScore },
+        { label: `Visibility is "Internal" (required)`, ok: visibilityOk, detail: `Selected: ${chosenVis}` }
+      ];
+
+      return {
+        checks,
+        score,
+        pass: score >= (w.pass || 0),
+        structurePct: 100 // we intentionally skip structure for internal notes
+      };
+    }
+
+    // ===== Branch 2: PUBLIC tickets (full structure)
     let ai = null;
     try {
       const rubric =
@@ -1433,11 +1473,7 @@ showList();
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           reply,
-          rubric,
-          status: attempt.status,
-          assignee: attempt.assignee,
-          visibility: attempt.visibility,
-          internalPolicy: policy
+          rubric
         })
       });
       if (resp.ok) ai = await resp.json();
@@ -1456,105 +1492,89 @@ showList();
       };
     });
 
-/* ---------- Deterministic structure enforcement (Greeting + Sign-Off) ---------- */
-(function enforceGreetingAndSignOff(){
-  const structureLabels = ["Greeting","Opener","Solution","Closer","Sign-Off"];
-  const greetingIdx = structureLabels.indexOf("Greeting");
-  const signoffIdx  = structureLabels.indexOf("Sign-Off");
+    // Deterministic enforcement (greeting/sign-off)
+    (function enforceGreetingAndSignOff(){
+      const greetingIdx = structureLabels.indexOf("Greeting");
+      const signoffIdx  = structureLabels.indexOf("Sign-Off");
+      const lines = String(reply).split(/\r?\n/);
+      const escapeRegExp = s => String(s||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const deriveNiceNameFromEmail = (em) =>
+        (String(em||"").includes("@")
+          ? String(em).split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+          : String(em||"")).trim();
+      const fullName = (ticket.requesterName && ticket.requesterName.trim())
+                    || deriveNiceNameFromEmail(ticket.requester);
+      const expectedFirst = (fullName.split(/\s+/)[0] || "").trim();
 
-  const lines = String(reply).split(/\r?\n/);
-
-  const escapeRegExp = s => String(s||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const deriveNiceNameFromEmail = (em) =>
-    (String(em||"").includes("@")
-      ? String(em).split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, c => c.toUpperCase())
-      : String(em||"")).trim();
-
-  const fullName = (ticket.requesterName && ticket.requesterName.trim())
-                || deriveNiceNameFromEmail(ticket.requester);
-  const expectedFirst = (fullName.split(/\s+/)[0] || "").trim();
-
-  // Greeting rule
-  if (greetingIdx >= 0) {
-    const firstIdx = lines.findIndex(l => l.trim() !== "");
-    if (firstIdx !== -1) {
-      const line = lines[firstIdx].trim();
-      const looksLikeGreeting = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))\b/i.test(line);
-
-      if (looksLikeGreeting) {
-        const nameToken = expectedFirst ? escapeRegExp(expectedFirst) : "\\S+";
-        const re = new RegExp(
-          `^(?:hello|hi|hey|good\\s+(?:morning|afternoon|evening))(?:\\s+again,)?\\s+${nameToken},\\s*$`,
-          "i"
-        );
-
-        const hasGreeting = re.test(line);
-        const hasBlankAfter = lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
-
-        if (!hasGreeting || !hasBlankAfter) {
-          const problems = [];
-          if (!hasGreeting)
-            problems.push(`use "Hello ${expectedFirst||"Name"}," on its own line (comma required; no extra text)`);
-          if (!hasBlankAfter)
-            problems.push("leave one blank line after the greeting");
-
-          structureChecks[greetingIdx].ok = false;
-          structureChecks[greetingIdx].score = 0;
-          structureChecks[greetingIdx].detail = `Greeting format issue: ${problems.join("; ")}.`;
-        } else {
-          structureChecks[greetingIdx].ok = true;
-          structureChecks[greetingIdx].score = 100;
-          structureChecks[greetingIdx].detail = `Greeting formatted correctly.`;
+      // Greeting
+      if (greetingIdx >= 0) {
+        const firstIdx = lines.findIndex(l => l.trim() !== "");
+        if (firstIdx !== -1) {
+          const line = lines[firstIdx].trim();
+          const looksLikeGreeting = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))\b/i.test(line);
+          if (looksLikeGreeting) {
+            const nameToken = expectedFirst ? escapeRegExp(expectedFirst) : "\\S+";
+            const re = new RegExp(
+              `^(?:hello|hi|hey|good\\s+(?:morning|afternoon|evening))(?:\\s+again,)?\\s+${nameToken},\\s*$`,
+              "i"
+            );
+            const hasGreeting = re.test(line);
+            const hasBlankAfter = lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
+            if (!hasGreeting || !hasBlankAfter) {
+              const problems = [];
+              if (!hasGreeting) problems.push(`use "Hello ${expectedFirst||"Name"}," on its own line (comma required; no extra text)`);
+              if (!hasBlankAfter) problems.push("leave one blank line after the greeting");
+              structureChecks[greetingIdx].ok = false;
+              structureChecks[greetingIdx].score = 0;
+              structureChecks[greetingIdx].detail = `Greeting format issue: ${problems.join("; ")}.`;
+            } else {
+              structureChecks[greetingIdx].ok = true;
+              structureChecks[greetingIdx].score = 100;
+              structureChecks[greetingIdx].detail = `Greeting formatted correctly.`;
+            }
+          }
         }
       }
-    }
-  }
 
-  // Sign-off rule
-  if (signoffIdx >= 0) {
-    const signoffRegex = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
-    const nameRegex    = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
-
-    let sIdx = -1;
-    for (let i = lines.length - 1; i >= 0; i--) {
-      if (signoffRegex.test(lines[i].trim())) { sIdx = i; break; }
-    }
-
-    if (sIdx === -1) {
-      structureChecks[signoffIdx].ok = false;
-      structureChecks[signoffIdx].score = 0;
-      structureChecks[signoffIdx].detail =
-        `Missing proper sign-off. Example:\n"Best regards,"\n\nSean Michael`;
-    } else {
-      const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
-      const nameLine   = (lines[sIdx + 2] || "").trim();
-      const nameOk     = !!nameLine && nameRegex.test(nameLine);
-
-      if (!blankAfter || !nameOk) {
-        const parts = [];
-        if (!blankAfter) parts.push("leave one blank line after the sign-off");
-        if (!nameOk)     parts.push("put your name on its own line");
-        structureChecks[signoffIdx].ok = false;
-        structureChecks[signoffIdx].score = 0;
-        structureChecks[signoffIdx].detail =
-          `Sign-off format issue: ${parts.join("; ")}. Example:\n"Best regards,"\n\nSean Michael`;
-      } else {
-        structureChecks[signoffIdx].ok = true;
-        structureChecks[signoffIdx].score = 100;
-        structureChecks[signoffIdx].detail = `Sign-off formatted correctly.`;
+      // Sign-off
+      if (signoffIdx >= 0) {
+        const signoffRegex = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
+        const nameRegex    = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
+        let sIdx = -1;
+        for (let i = lines.length - 1; i >= 0; i--) {
+          if (signoffRegex.test(lines[i].trim())) { sIdx = i; break; }
+        }
+        if (sIdx === -1) {
+          structureChecks[signoffIdx].ok = false;
+          structureChecks[signoffIdx].score = 0;
+          structureChecks[signoffIdx].detail = `Missing proper sign-off. Example:\n"Best regards,"\n\nSean Michael`;
+        } else {
+          const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
+          const nameLine   = (lines[sIdx + 2] || "").trim();
+          const nameOk     = !!nameLine && nameRegex.test(nameLine);
+          if (!blankAfter || !nameOk) {
+            const parts = [];
+            if (!blankAfter) parts.push("leave one blank line after the sign-off");
+            if (!nameOk)     parts.push("put your name on its own line");
+            structureChecks[signoffIdx].ok = false;
+            structureChecks[signoffIdx].score = 0;
+            structureChecks[signoffIdx].detail = `Sign-off format issue: ${parts.join("; ")}. Example:\n"Best regards,"\n\nSean Michael`;
+          } else {
+            structureChecks[signoffIdx].ok = true;
+            structureChecks[signoffIdx].score = 100;
+            structureChecks[signoffIdx].detail = `Sign-off formatted correctly.`;
+          }
+        }
       }
-    }
-  }
-})();
-    /* -------------------------------------------------------- */
+    })();
 
     // Weighted structure %
     const sw = Object.assign(
       { Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 },
       w.sectionWeights || {}
     );
+    const structureLabels = ["Greeting","Opener","Solution","Closer","Sign-Off"];
     const swTotal = structureLabels.reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
-
     let structurePctWeighted = 0;
     structureLabels.forEach((lab, i) => {
       const c = structureChecks[i];
@@ -1565,21 +1585,8 @@ showList();
 
     const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
     const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
-    const visibilityCheck = {
-      label:
-        policy === "always"
-          ? `Visibility is "Internal" (always required)`
-          : policy === "on_reassign_open"
-            ? `Visibility is "Internal" when reassigning Open`
-            : `Visibility check (not required)`,
-      ok: visibilityOk,
-      detail: `Selected: ${chosenVis}; Status: ${attempt.status}; Assignee: ${attempt.assignee || "—"}; Policy: ${policy}`
-    };
 
-    const sum = Math.max(
-      1,
-      (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.visibility||0) + (w.keywords||0)
-    );
+    const sum = Math.max(1, (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.visibility||0) + (w.keywords||0));
     const sStructure = structurePctWeighted * (w.sections||0) / sum;
     const sStatus    = (statusOk    ? 100 : 0) * (w.status     || 0) / sum;
     const sAssignee  = (assigneeOk  ? 100 : 0) * (w.assignee   || 0) / sum;
@@ -1589,7 +1596,7 @@ showList();
     const score = sStructure + sStatus + sAssignee + sVis + sKw;
 
     return {
-      checks: [...structureChecks, statusCheck, assigneeCheck, visibilityCheck],
+      checks: [...structureChecks, statusCheck, assigneeCheck],
       score,
       pass: score >= (w.pass || 0),
       structurePct: structurePctWeighted
