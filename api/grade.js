@@ -3,10 +3,10 @@ import OpenAI from "openai";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Keep this in sync with the client UI and weights
+// Keep this in sync with the client UI and weights (structure labels only)
 const STRUCTURE_LABELS = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
 
-// Strict JSON schema for the model to follow
+/* ---------- JSON schema for the model output (structure only) ---------- */
 const schema = {
   type: "object",
   properties: {
@@ -76,7 +76,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { reply, rubric = "" } = req.body || {};
+    // NEW: status/assignee/visibility are optional, used for the visibility check.
+    const {
+      reply,
+      rubric = "",
+      status = "",
+      assignee = "",
+      visibility = ""
+    } = req.body || {};
+
     const text = String(reply || "");
     if (!text.trim()) return res.status(400).json({ error: "empty_reply" });
 
@@ -113,6 +121,7 @@ Each item needs { label, ok, detail, score } where score is 0–100 (100 = fully
 Also return "structurePct" (0–100) as your overall structure score.
 `.trim();
 
+    // Ask the model for the 5 structure checks (we will still enforce hard rules deterministically)
     const r = await client.chat.completions.create({
       model: process.env.OPENAI_GRADE_MODEL || "gpt-4.1-mini",
       temperature: 0,
@@ -123,7 +132,7 @@ Also return "structurePct" (0–100) as your overall structure score.
       ]
     });
 
-    // Safe parse + sanitize
+    // Safe parse of model output
     const content = r.choices?.[0]?.message?.content || "{}";
     let parsed;
     try { parsed = JSON.parse(content); } catch { parsed = {}; }
@@ -138,14 +147,47 @@ Also return "structurePct" (0–100) as your overall structure score.
       return { label, ok, detail, score };
     });
 
-    // Deterministic enforcement for punctuation/formatting
+    // Deterministic enforcement for punctuation/formatting (hard rules)
     enforceGreetingPunctuation(text, checks);
     enforceSignOffFormat(text, checks);
 
-    // Compute structurePct from (possibly overridden) checks to keep score aligned with hard rules
+    // Compute structurePct from (possibly overridden) checks
     const structurePct = computeStructurePct(checks);
 
-    return res.status(200).json({ checks, structurePct });
+    /* ---------- NEW: Visibility rule (added as an additional check at the end) ----------
+       If the trainee submits as Open AND assigns to a different team (not "Myself"),
+       they must set the note visibility to Internal.
+       We append this as a 6th check so the UI can show it if desired.
+    ------------------------------------------------------------------------------ */
+    const needsInternal =
+      String(status).trim().toLowerCase() === "open" &&
+      String(assignee || "").trim().toLowerCase() !== "myself";
+
+    const selectedVis = (visibility || "Public").trim();
+    const visibilityOk = needsInternal ? (selectedVis.toLowerCase() === "internal") : true;
+
+    const visibilityCheck = {
+      label: needsInternal
+        ? `Visibility is "Internal" when reassigning Open`
+        : `Visibility check (not required)`,
+      ok: visibilityOk,
+      detail: `Selected: ${selectedVis || "—"}; Status: ${status || "—"}; Assignee: ${assignee || "—"}`,
+      score: visibilityOk ? 100 : 0
+    };
+
+    // Append visibility check AFTER the 5 structure checks (client may ignore this safely)
+    checks.push(visibilityCheck);
+
+    // Return structure checks + visibility hint (structurePct still reflects structure only)
+    return res.status(200).json({
+      checks,
+      structurePct,
+      visibility: {
+        needsInternal,
+        selected: selectedVis || "Public",
+        ok: visibilityOk
+      }
+    });
   } catch (err) {
     console.error("grading_failed:", err);
     return res.status(500).json({ error: "grading_failed" });
@@ -174,8 +216,6 @@ function enforceGreetingPunctuation(text, checks) {
 
   // Require a name after the greeting AND the line must end with a comma (no text after comma).
   // Also disallow a space immediately before the comma by forcing the char before comma to be non-space (\S).
-  // Examples that PASS: "Hello Jason,", "Hi Sara,", "Good morning John,"
-  // Examples that FAIL: "Hello Jason", "Hello Jason ,", "Hello Jason, Thanks..."
   const hasNameAndComma = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\s+\S.*\S,\s*$/i.test(line);
 
   // Must have a blank line after greeting
@@ -251,8 +291,12 @@ function enforceSignOffFormat(text, checks) {
 function computeStructurePct(checks) {
   // Average the scores we’re returning (0–100)
   if (!Array.isArray(checks) || checks.length === 0) return 0;
-  const total = checks.reduce((sum, c) => sum + (Number.isFinite(c?.score) ? c.score : (c?.ok ? 100 : 0)), 0);
-  return clamp0to100(Math.round(total / checks.length));
+  const firstFive = checks.slice(0, 5); // structure items only
+  const total = firstFive.reduce(
+    (sum, c) => sum + (Number.isFinite(c?.score) ? c.score : (c?.ok ? 100 : 0)),
+    0
+  );
+  return clamp0to100(Math.round(total / firstFive.length));
 }
 
 function clamp0to100(n) {
