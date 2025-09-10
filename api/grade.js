@@ -3,11 +3,11 @@ import OpenAI from "openai";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Keep this in sync with the client UI and weights (structure labels only)
+// Keep this in sync with client labels
 const STRUCTURE_LABELS = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
 
-/* ---------- JSON schema for the model output (structure only) ---------- */
-const schema = {
+/* ---------- JSON schema for structure mode ---------- */
+const STRUCT_SCHEMA = {
   type: "object",
   properties: {
     checks: {
@@ -18,15 +18,27 @@ const schema = {
           label:  { type: "string" },
           ok:     { type: "boolean" },
           detail: { type: "string" },
-          score:  { type: "number" } // optional, 0–100
+          score:  { type: "number" }
         },
         required: ["label", "ok", "detail"],
         additionalProperties: false
       }
     },
-    structurePct: { type: "number" } // 0–100
+    structurePct: { type: "number" }
   },
   required: ["checks", "structurePct"],
+  additionalProperties: false
+};
+
+/* ---------- JSON schema for requirements-only mode ---------- */
+const REQ_SCHEMA = {
+  type: "object",
+  properties: {
+    ok:     { type: "boolean" },
+    score:  { type: "number" },
+    detail: { type: "string" }
+  },
+  required: ["ok", "score", "detail"],
   additionalProperties: false
 };
 
@@ -42,27 +54,13 @@ Support Ticket Style Guide (Apex Training)
 2) Opener
 - One short opening sentence, polite and professional.
 - Do NOT fail purely for sentence length or for using an exclamation mark if it reads naturally.
-- Examples: "Thank you for reaching out to Apex Trader Funding Support! I hope you're having a great day."
-- Keep it concise and on-tone (no fluff).
 
 3) Solution
-- Most important part.
 - Provide a clear cause/explanation AND a specific, actionable step the user can take now.
 - If a direct solution is not possible, follow the ticket-specific requirements exactly.
-- Include a link only if required by the SOP or directly needed.
 
 4) Closer
-- A single short, professional line that suits the context. It may be ANY ONE of:
-  • an invitation to reach out again, OR
-  • an empathetic acknowledgement (esp. if user is upset), OR
-  • a brief confirmation/encouragement that the path forward is clear, OR
-  • a simple gratitude sentence.
-- Do NOT require all of the above; one is sufficient if concise and professional.
-- Examples (all valid):
-  "If you have any other questions, please don’t hesitate to reach out."
-  "I understand this isn’t the outcome you hoped for and appreciate your understanding."
-  "Thanks for your patience on this."
-  "Glad I could help—reach out if anything else comes up."
+- One concise, professional line (invitation, empathy, thanks, or brief confirmation).
 
 5) Sign-Off
 - Standard sign-off and agent first name on its own line.
@@ -70,26 +68,64 @@ Support Ticket Style Guide (Apex Training)
 - Leave a blank line before the agent's name.
 `.trim();
 
+function clamp0to100(n){ n=Number.isFinite(n)?n:0; return n<0?0:n>100?100:n; }
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    // Accept status/assignee/visibility for the extra visibility check,
-    // and internalPolicy to align with client logic.
     const {
+      mode = "structure",  // "structure" | "requirements"
       reply,
-      rubric = "",
-      status = "",
-      assignee = "",
-      visibility = "",
-      internalPolicy = "on_reassign_open"
+      rubric = ""
     } = req.body || {};
 
     const text = String(reply || "");
     if (!text.trim()) return res.status(400).json({ error: "empty_reply" });
 
+    // ===== Mode A: Requirements-only (internal tickets)
+    if (String(mode).toLowerCase() === "requirements") {
+      const system =
+        "You are a strict QA grader for internal support notes. " +
+        "Grade ONLY whether the note satisfies the provided Requirements. " +
+        "Ignore greeting, opener, closer, and sign-off. Be concise and deterministic.";
+
+      const user = `
+REQUIREMENTS (must-have points):
+${rubric || "None."}
+
+INTERNAL NOTE (trainee):
+"""${text}"""
+
+Return JSON with:
+- ok (boolean): true only if all required points are present and correct
+- score (0–100): your numeric judgement for the requirements coverage
+- detail: a short bullet summary of which required points were met/missed (be specific).
+`.trim();
+
+      const r = await client.chat.completions.create({
+        model: process.env.OPENAI_GRADE_MODEL || "gpt-4.1-mini",
+        temperature: 0,
+        response_format: { type: "json_schema", json_schema: { name: "Requirements", schema: REQ_SCHEMA } },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user }
+        ]
+      });
+
+      const content = r.choices?.[0]?.message?.content || "{}";
+      let parsed; try { parsed = JSON.parse(content); } catch { parsed = {}; }
+
+      return res.status(200).json({
+        ok: !!parsed.ok,
+        score: clamp0to100(parsed.score),
+        detail: String(parsed.detail || "")
+      });
+    }
+
+    // ===== Mode B: Structure grading (public tickets)
     const system =
       "You are a strict, fair QA grader for support tickets. Judge ONLY by the style guide and the ticket-specific requirements. Be concise and deterministic.";
 
@@ -100,8 +136,6 @@ You are grading a customer support reply for structure and style.
 
 Structure labels to check, in order:
 ${STRUCTURE_LABELS.join(", ")}
-
-Important: For the Opener, do NOT penalize for sentence length or the presence of an exclamation mark; judge only tone (polite, professional) and relevance.
 
 HARD RULES (enforce regardless of tone/context):
 - Greeting: FAIL if the first greeting line is not "Hello/Hi/Hey/Good <time of day> <Name>," exactly ending with a comma (no extra text on that line). Also require one blank line after the greeting.
@@ -123,198 +157,24 @@ Each item needs { label, ok, detail, score } where score is 0–100 (100 = fully
 Also return "structurePct" (0–100) as your overall structure score.
 `.trim();
 
-    // Ask the model for the 5 structure checks (we will still enforce hard rules deterministically)
     const r = await client.chat.completions.create({
       model: process.env.OPENAI_GRADE_MODEL || "gpt-4.1-mini",
       temperature: 0,
-      response_format: { type: "json_schema", json_schema: { name: "Grade", schema } },
+      response_format: { type: "json_schema", json_schema: { name: "Grade", schema: STRUCT_SCHEMA } },
       messages: [
         { role: "system", content: system },
         { role: "user", content: user }
       ]
     });
 
-    // Safe parse of model output
     const content = r.choices?.[0]?.message?.content || "{}";
-    let parsed;
-    try { parsed = JSON.parse(content); } catch { parsed = {}; }
+    let parsed; try { parsed = JSON.parse(content); } catch { parsed = {}; }
 
-    const given = Array.isArray(parsed.checks) ? parsed.checks : [];
-    const checks = STRUCTURE_LABELS.map((label, i) => {
-      const c = given[i];
-      const ok = typeof c?.ok === "boolean" ? c.ok : false;
-      const detail =
-        typeof c?.detail === "string" && c.detail ? c.detail : (given[i] ? "Not met" : "AI unavailable");
-      const score = clamp0to100(typeof c?.score === "number" ? c.score : (ok ? 100 : 0));
-      return { label, ok, detail, score };
-    });
+    // pass back what the client expects for structure mode
+    return res.status(200).json(parsed);
 
-    // Deterministic enforcement for punctuation/formatting (hard rules)
-    enforceGreetingPunctuation(text, checks);
-    enforceSignOffFormat(text, checks);
-
-    // Compute structurePct from (possibly overridden) checks
-    const structurePct = computeStructurePct(checks);
-
-    /* ---------- Visibility rule (policy-aware) ----------
-       Matches client logic:
-       - "always"  → Internal required
-       - "on_reassign_open" → Internal required if status=Open AND assignee != Myself
-       - "none"    → no requirement
-    ----------------------------------------------------- */
-    const policy = String(internalPolicy || "on_reassign_open").toLowerCase();
-    let needsInternal = false;
-    if (policy === "always") {
-      needsInternal = true;
-    } else if (policy === "on_reassign_open") {
-      needsInternal =
-        String(status).trim().toLowerCase() === "open" &&
-        String(assignee || "").trim().toLowerCase() !== "myself";
-    } // "none" -> false
-
-    const selectedVis = (visibility || "Public").trim();
-    const visibilityOk = needsInternal ? (selectedVis.toLowerCase() === "internal") : true;
-
-    const visibilityCheck = {
-      label:
-        policy === "always"
-          ? `Visibility is "Internal" (always required)`
-          : policy === "on_reassign_open"
-            ? `Visibility is "Internal" when reassigning Open`
-            : `Visibility check (not required)`,
-      ok: visibilityOk,
-      detail: `Selected: ${selectedVis || "—"}; Status: ${status || "—"}; Assignee: ${assignee || "—"}; Policy: ${policy}`,
-      score: visibilityOk ? 100 : 0
-    };
-
-    // Append visibility check AFTER the 5 structure checks (structurePct remains structure-only)
-    checks.push(visibilityCheck);
-
-    return res.status(200).json({
-      checks,
-      structurePct,
-      visibility: {
-        needsInternal,
-        selected: selectedVis || "Public",
-        ok: visibilityOk,
-        policy
-      }
-    });
   } catch (err) {
     console.error("grading_failed:", err);
     return res.status(500).json({ error: "grading_failed" });
   }
-}
-
-/**
- * Enforce "Hello/Hi/Hey/Good <time> <Name>," (comma required, no space before comma)
- * and require a blank line after the greeting.
- * Operates on the first non-empty line only if it reads like a greeting.
- */
-function enforceGreetingPunctuation(text, checks) {
-  const idx = STRUCTURE_LABELS.indexOf("Greeting");
-  if (idx < 0) return;
-
-  const lines = String(text).split(/\r?\n/);
-  const firstIdx = lines.findIndex(l => l.trim() !== "");
-  if (firstIdx === -1) return;
-
-  const line = lines[firstIdx].trim();
-
-  // Looks like a greeting?
-  const greetingWord = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again,)?\b/i; // require "again," (comma) if used
-  const isGreeting = greetingWord.test(line);
-  if (!isGreeting) return;
-
-  // Require a name after the greeting AND the line must end with a comma (no text after comma).
-  // Also disallow a space immediately before the comma.
-  const hasNameAndComma =
-    /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again,)?\s+\S.*\S,\s*$/i.test(line);
-
-  // Must have a blank line after greeting
-  const hasBlankAfter = lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
-
-  if (!hasNameAndComma || !hasBlankAfter) {
-    const problems = [];
-    if (!hasNameAndComma) problems.push('use "Hello <Name>," on its own line (comma required, no space before comma, no extra text)');
-    if (!hasBlankAfter) problems.push("leave one blank line after the greeting");
-
-    checks[idx] = {
-      label: "Greeting",
-      ok: false,
-      detail: `Greeting format issue: ${problems.join("; ")}. Example:\n"Hello Jason,"\n\n<your opener sentence>`,
-      score: 0
-    };
-  }
-}
-
-/**
- * Enforce Sign-Off format:
- *  - a standard closing on its own line ending with a comma (e.g., "Best regards,")
- *  - then one blank line
- *  - then the agent's name on its own line (letters, spaces, apostrophes/hyphens allowed)
- */
-function enforceSignOffFormat(text, checks) {
-  const idx = STRUCTURE_LABELS.indexOf("Sign-Off");
-  if (idx < 0) return;
-
-  const lines = String(text).split(/\r?\n/);
-
-  // Recognize common sign-offs; line must end with a comma (no trailing words)
-  const signoffRegex = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
-  const nameRegex = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/; // allow O'Donoghue, hyphens, spaces
-
-  let signIdx = -1;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const t = lines[i].trim();
-    if (signoffRegex.test(t)) {
-      signIdx = i;
-      break;
-    }
-  }
-
-  if (signIdx === -1) {
-    checks[idx] = {
-      label: "Sign-Off",
-      ok: false,
-      detail: `Missing proper sign-off. Use a closing line ending with a comma (e.g., "Best regards,") followed by a blank line and then your name on its own line.`,
-      score: 0
-    };
-    return;
-  }
-
-  const hasBlankAfter = lines[signIdx + 1] !== undefined && lines[signIdx + 1].trim() === "";
-  const nameLine = lines[signIdx + 2] !== undefined ? lines[signIdx + 2].trim() : "";
-  const hasNameLine = !!nameLine && nameRegex.test(nameLine);
-
-  if (!hasBlankAfter || !hasNameLine) {
-    const problems = [];
-    if (!hasBlankAfter) problems.push("leave one blank line after the sign-off");
-    if (!hasNameLine) problems.push("put your name on its own line (letters only, spaces/hyphens/apostrophes allowed)");
-
-    checks[idx] = {
-      label: "Sign-Off",
-      ok: false,
-      detail: `Sign-off format issue: ${problems.join("; ")}. Example:\n"Best regards,"\n\nSean Michael`,
-      score: 0
-    };
-  }
-}
-
-function computeStructurePct(checks) {
-  // Average the scores we’re returning (0–100) for the 5 structure items
-  if (!Array.isArray(checks) || checks.length === 0) return 0;
-  const firstFive = checks.slice(0, 5);
-  const total = firstFive.reduce(
-    (sum, c) => sum + (Number.isFinite(c?.score) ? c.score : (c?.ok ? 100 : 0)),
-    0
-  );
-  return clamp0to100(Math.round(total / firstFive.length));
-}
-
-function clamp0to100(n) {
-  n = Number.isFinite(n) ? n : 0;
-  if (n < 0) return 0;
-  if (n > 100) return 100;
-  return n;
 }
