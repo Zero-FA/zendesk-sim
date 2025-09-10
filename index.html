@@ -710,6 +710,33 @@ makeTicket({
     "I was using your code savenow and for some reason i no longer get $35 resets?? when i went to pay for a reset it charged me 50 bucks!! i know the promotion ended but i bought these accounts during the promotion! pls refund me!",
   attachments: [
   ]
+}),
+// Ticket
+makeTicket({
+  subject: "Tester",
+  requester: "testman@gmail.com",
+  requesterName: "testy mctest",
+  channel: "Email",
+  hoursAgo: 6,
+  requiredStatus: "Open",
+  requiredAssignee: "Fraud General",
+  macroOnly: false,
+  macroCommand: "",
+  internalPolicy: "on_reassign_open", // ← NEW
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements:
+    "They must include both emails when assigning to Fraud and say the user has multiple accounts.",
+  category: "",
+  intent: "",
+  accountId: "APEX-183idk",
+  tags: [],
+  scenario:
+    "After searching the user's first name in aMember, you see that there are two personal emails connected to the user.\n1. testman@gmail.com\n2. testerman@gmail.com",
+  body:
+    "Hey i accidentally made another personal account. Can i just keep it?",
+  attachments: [
+
+  ]
 })
 ]
 };
