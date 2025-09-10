@@ -403,6 +403,14 @@ body.dark .badge-id:hover {
     <div style="display:flex;gap:8px;justify-content:space-between;margin-top:6px;align-items:center">
       <button class="btn" id="grammarBtn" title="Ctrl/Cmd+Shift+G">Check grammar</button>
 
+      <!-- Visibility selector -->
+      <label class="small muted" style="display:flex; align-items:center; gap:6px">
+        Visibility
+        <select class="select" id="visibilitySel">
+          <option>Public</option>
+          <option>Internal</option>
+        </select>
+      </label>
       <div class="split">
         <button class="btn primary" id="submitMainBtn">
           <span class="spinner" id="submitSpinner" aria-hidden="true"></span>
