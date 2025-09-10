@@ -598,10 +598,15 @@ function makeTicket({
 }
 
 const DEFAULT = {
-  weights: {
-    sections: 60, status: 25, assignee: 15, keywords: 0, pass: 80,
-    sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
-  },
+ weights: {
+  sections: 60,
+  status: 25,
+  assignee: 15,
+  visibility: 10,  // ← NEW
+  keywords: 0,
+  pass: 80,
+  sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
+},
   tickets: [
 // Drawdown Ticket
 makeTicket({
@@ -782,6 +787,8 @@ const dAccount = document.getElementById("dAccount");
 const thread = document.getElementById("thread");
 const snapshots = document.getElementById("snapshots");
 const replyBox = document.getElementById("replyBox");
+const visibilitySel = document.getElementById("visibilitySel");
+
 
 // Right column (requester + history)
 const rName  = document.getElementById("rName");
@@ -990,6 +997,10 @@ thread.innerHTML = "";
 replyBox.value = "";
 thread.innerHTML = "";
 
+// default visibility for each ticket view
+if (visibilitySel) visibilitySel.value = "Public";
+updateReplyPlaceholder();
+
 // Show Scenario (if present) above the customer’s first message
 if (t.scenario && t.scenario.trim()) {
   const sc = document.createElement("div");
@@ -1091,6 +1102,15 @@ function renderAll(){ renderList(); renderStats(); passLbl.textContent = state.w
 /* ===== Grammar helpers ===== */
 function showGrammarPanel(show){ grammarPanel.classList.toggle("hidden", !show); }
 let lastGrammar = null;
+
+  function updateReplyPlaceholder(){
+  if (!replyBox || !visibilitySel) return;
+  replyBox.placeholder =
+    visibilitySel.value === "Internal"
+      ? "Write your internal note… (not visible to customer)"
+      : "Write your reply… (trainee)";
+}
+if (visibilitySel) visibilitySel.onchange = updateReplyPlaceholder;
 
 async function runGrammar(){
   const text = (replyBox.value||"").trim();
@@ -1194,6 +1214,7 @@ submitMainBtn.onclick = async () => {
   }
 
   const chosenStatus = submitAs;
+  const chosenVisibility = visibilitySel ? visibilitySel.value : "Public";
   const chosenAssignee = dAssignee.value;
   const text = (replyBox.value || "").trim();
   if (!text) { alert("Please write a reply before submitting."); return; }
@@ -1205,8 +1226,13 @@ submitMainBtn.onclick = async () => {
     t.status = chosenStatus;
     t.assignee = chosenAssignee;
 
-    const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee };
-    t.attempts.push(attempt);
+const attempt = {
+  ts: msg.ts,
+  reply: text,
+  status: chosenStatus,
+  assignee: chosenAssignee,
+  visibility: chosenVisibility // ← NEW
+};
 
     const report = await window.gradeAttempt(t, attempt, state.weights);
     if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
