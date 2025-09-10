@@ -609,133 +609,30 @@ const DEFAULT = {
   pass: 80,
   sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
 },
-  tickets: [
-// Drawdown Ticket
-makeTicket({
-  subject: "Account gone?",
-  requester: "Imlost@gmail.com",
-  requesterName: "Joseph Gnar",
-  channel: "Email",
-  hoursAgo: 1.2,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/EVAL – Failed Drawdown Threshold – Revoked/Admin Only Status",
-  sections: [],
-  requirements:
-    "They just need the macro.",
-  category: "Support",
-  intent: "Drawdown",
-  accountId: "APEX-183914",
-  tags: ["account_questions"],
-  body:
-    "So i was trading my new eval and all of the sudden i couldnt anymore... i never went below the trailing threshold at 47,500. I made 5,400 and lost it all but never went below 47,500. Why did you guys remove my account?",
-  attachments: []
-}),
-// PA Drawdown ticket
-makeTicket({
-  subject: "PA missing",
-  requester: "alen12@gmail.com",
-  requesterName: "Alen Markiplier",
-  channel: "Email",
-  hoursAgo: 0.34,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/PA - Failed Drawdown Threshold",
-  sections: [],
-  requirements:
-    "Trainee must use macro.",
-  category: "Support",
-  intent: "Account Missing",
-  accountId: "APEX-183914",
-  tags: ["drawdown_question"],
-  body:
-    "hey guys, i started trading my 25k pa today and now i can no longer take trades. i was up about 1300 but lost it all due to over trading. My current balance is at $24,734.92 though. I thought pa accounts had a static drawdown? Can you please help me out so i can keep trading, thanks!",
-  attachments: [
-    {
-      type: "image",
-      url: "https://i.imgur.com/NCyMkA6.png",
-      title: "pa 08"
-    }
-  ]
-}),
 // Ticket
 makeTicket({
-  subject: "cant even trade",
-  requester: "juxto@gmail.com",
-  requesterName: "Jason Moren",
+  subject: "Test",
+  requester: "Testman@gmail.com",
+  requesterName: "Testy Mctester",
   channel: "Email",
-  hoursAgo: 0.4,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements:
-    "Trainee must include something about this: This error indicates that your credentials are blank in your connection configuration. Make sure you have followed all the steps from the following articles pertaining to your situation. \n\nThey also need to include the correct setup instructions which are the Tradovate ones: SETUP INSTRUCTIONS TRADOVATE & NINJA\n\nWhat needs to be included does not have to be word for word but must include the general solution.",
-  category: "",
-  intent: "",
-  accountId: "APEX-183914",
-  tags: [],
-  body:
-    "every time i try to trade on my tdv accounts i get this error. im missing a lot of good trades please help!!!",
-  attachments: [
-    {
-      type: "image",
-      url: "https://i.imgur.com/j0gT1f4.png",
-      title: "ninja error"
-    }
-  ]
-}),
-// Ticket
-makeTicket({
-  subject: "Need a refund!",
-  requester: "fullerfill@yahoo.com",
-  requesterName: "Gunther Gowler",
-  channel: "Email",
-  hoursAgo: 0.34,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements:
-    "The user must include that the only part of a promotion that stays with an account is the monthly subscription discount. Reset and PA fee discounts end when the promotion ends. If they use savenow, their account will receive the current promotion and that discount will remain on the evaluation until the account expires. \n\nThe main part to let the user know is that promotional discounts are temporary and the coupon code is only connected to the monthly subscription discount.\n\nIt does not have to be word for word, but the general idea must be stated as well as a link to the coupon code page: https://apextraderfunding.com/coupon-code\n\nThe link must match exactly in their message.",
-  category: "",
-  intent: "",
-  accountId: "Ap E x - 1 83 91  4",
-  tags: [],
-  body:
-    "I was using your code savenow and for some reason i no longer get $35 resets?? when i went to pay for a reset it charged me 50 bucks!! i know the promotion ended but i bought these accounts during the promotion! pls refund me!",
-  attachments: [
-  ]
-}),
-// Ticket
-makeTicket({
-  subject: "Tester",
-  requester: "testman@gmail.com",
-  requesterName: "testy mctest",
-  channel: "Email",
-  hoursAgo: 6,
+  hoursAgo: 5,
   requiredStatus: "Open",
-  requiredAssignee: "Fraud General",
+  requiredAssignee: "Support Tier 2",
   macroOnly: false,
   macroCommand: "",
-  internalPolicy: "on_reassign_open", // ← NEW
+  internalRequired: true, // NEW
   sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
   requirements:
-    "They must include both emails when assigning to Fraud and say the user has multiple accounts.",
-  category: "",
-  intent: "",
-  accountId: "APEX-183idk",
+    "Internals must include:\n1. A summary of the scenario",
+  category: "Billing",
+  intent: "Refund",
+  accountId: "APEX-183914",
   tags: [],
   scenario:
-    "After searching the user's first name in aMember, you see that there are two personal emails connected to the user.\n1. testman@gmail.com\n2. testerman@gmail.com",
+    "After checking the user's aMember, you see that they have a 50K Rithmic account passed, but they paid for a 25K Rithmic PA fee.",
   body:
-    "Hey i accidentally made another personal account. Can i just keep it?",
+    "Oi mates! I bought a PA fee but it hasnt even setup yet. Can you guys help me out??",
   attachments: [
-
   ]
 })
 ]
