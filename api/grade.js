@@ -76,13 +76,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    // NEW: status/assignee/visibility are optional, used for the visibility check.
+    // Accept status/assignee/visibility for the extra visibility check,
+    // and internalPolicy to align with client logic.
     const {
       reply,
       rubric = "",
       status = "",
       assignee = "",
-      visibility = ""
+      visibility = "",
+      internalPolicy = "on_reassign_open"
     } = req.body || {};
 
     const text = String(reply || "");
@@ -154,38 +156,48 @@ Also return "structurePct" (0–100) as your overall structure score.
     // Compute structurePct from (possibly overridden) checks
     const structurePct = computeStructurePct(checks);
 
-    /* ---------- NEW: Visibility rule (added as an additional check at the end) ----------
-       If the trainee submits as Open AND assigns to a different team (not "Myself"),
-       they must set the note visibility to Internal.
-       We append this as a 6th check so the UI can show it if desired.
-    ------------------------------------------------------------------------------ */
-    const needsInternal =
-      String(status).trim().toLowerCase() === "open" &&
-      String(assignee || "").trim().toLowerCase() !== "myself";
+    /* ---------- Visibility rule (policy-aware) ----------
+       Matches client logic:
+       - "always"  → Internal required
+       - "on_reassign_open" → Internal required if status=Open AND assignee != Myself
+       - "none"    → no requirement
+    ----------------------------------------------------- */
+    const policy = String(internalPolicy || "on_reassign_open").toLowerCase();
+    let needsInternal = false;
+    if (policy === "always") {
+      needsInternal = true;
+    } else if (policy === "on_reassign_open") {
+      needsInternal =
+        String(status).trim().toLowerCase() === "open" &&
+        String(assignee || "").trim().toLowerCase() !== "myself";
+    } // "none" -> false
 
     const selectedVis = (visibility || "Public").trim();
     const visibilityOk = needsInternal ? (selectedVis.toLowerCase() === "internal") : true;
 
     const visibilityCheck = {
-      label: needsInternal
-        ? `Visibility is "Internal" when reassigning Open`
-        : `Visibility check (not required)`,
+      label:
+        policy === "always"
+          ? `Visibility is "Internal" (always required)`
+          : policy === "on_reassign_open"
+            ? `Visibility is "Internal" when reassigning Open`
+            : `Visibility check (not required)`,
       ok: visibilityOk,
-      detail: `Selected: ${selectedVis || "—"}; Status: ${status || "—"}; Assignee: ${assignee || "—"}`,
+      detail: `Selected: ${selectedVis || "—"}; Status: ${status || "—"}; Assignee: ${assignee || "—"}; Policy: ${policy}`,
       score: visibilityOk ? 100 : 0
     };
 
-    // Append visibility check AFTER the 5 structure checks (client may ignore this safely)
+    // Append visibility check AFTER the 5 structure checks (structurePct remains structure-only)
     checks.push(visibilityCheck);
 
-    // Return structure checks + visibility hint (structurePct still reflects structure only)
     return res.status(200).json({
       checks,
       structurePct,
       visibility: {
         needsInternal,
         selected: selectedVis || "Public",
-        ok: visibilityOk
+        ok: visibilityOk,
+        policy
       }
     });
   } catch (err) {
@@ -210,13 +222,14 @@ function enforceGreetingPunctuation(text, checks) {
   const line = lines[firstIdx].trim();
 
   // Looks like a greeting?
-  const greetingWord = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\b/i;
+  const greetingWord = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again,)?\b/i; // require "again," (comma) if used
   const isGreeting = greetingWord.test(line);
   if (!isGreeting) return;
 
   // Require a name after the greeting AND the line must end with a comma (no text after comma).
-  // Also disallow a space immediately before the comma by forcing the char before comma to be non-space (\S).
-  const hasNameAndComma = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again)?\s+\S.*\S,\s*$/i.test(line);
+  // Also disallow a space immediately before the comma.
+  const hasNameAndComma =
+    /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+again,)?\s+\S.*\S,\s*$/i.test(line);
 
   // Must have a blank line after greeting
   const hasBlankAfter = lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
@@ -289,9 +302,9 @@ function enforceSignOffFormat(text, checks) {
 }
 
 function computeStructurePct(checks) {
-  // Average the scores we’re returning (0–100)
+  // Average the scores we’re returning (0–100) for the 5 structure items
   if (!Array.isArray(checks) || checks.length === 0) return 0;
-  const firstFive = checks.slice(0, 5); // structure items only
+  const firstFive = checks.slice(0, 5);
   const total = firstFive.reduce(
     (sum, c) => sum + (Number.isFinite(c?.score) ? c.score : (c?.ok ? 100 : 0)),
     0
