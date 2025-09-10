@@ -632,7 +632,36 @@ const DEFAULT = {
       body:
         "Oi mates! I bought a PA fee but it hasnt even setup yet. Can you guys help me out??",
       attachments: []
-    })
+    }),
+// Ticket
+makeTicket({
+  subject: "Test",
+  requester: "Test@gmail.com",
+  requesterName: "Testy Mctest",
+  channel: "Email",
+  hoursAgo: 4,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/EVAL - Failed Drawdown Threshold - Revoked/Admin Only Status",
+  internalRequired: false,
+  sections: [],
+  requirements:
+    "Must use macro.",
+  category: "Account",
+  intent: "",
+  accountId: "APEX-183914",
+  tags: [],
+  body:
+    "I was trasding my 300k account and it randomly stopped me from continuing? i never went below the daily drawdown. my account is currently at 301k and no where near 292,500. I even had a ton of successful trades making almost 10k but lost most of it. Can you guys please unlock my account so i can keep trading?",
+  attachments: [
+    {
+      type: "image",
+      url: "https://i.imgur.com/pzUclwn.png",
+      title: "Attachment"
+    }
+  ]
+})
   ]
 };
 
