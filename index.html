@@ -600,42 +600,40 @@ function makeTicket({
 }
 
 const DEFAULT = {
- weights: {
-  sections: 60,
-  status: 25,
-  assignee: 15,
-  visibility: 10,  // ← NEW
-  keywords: 0,
-  pass: 80,
-  sectionWeights: { "Greeting": 8, "Opener": 8, "Solution": 67, "Closer": 8, "Sign-Off": 9 }
-},
-// Ticket
-makeTicket({
-  subject: "Test",
-  requester: "Testman@gmail.com",
-  requesterName: "Testy Mctester",
-  channel: "Email",
-  hoursAgo: 5,
-  requiredStatus: "Open",
-  requiredAssignee: "Support Tier 2",
-  macroOnly: false,
-  macroCommand: "",
-  internalRequired: true, // NEW
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements:
-    "Internals must include:\n1. A summary of the scenario",
-  category: "Billing",
-  intent: "Refund",
-  accountId: "APEX-183914",
-  tags: [],
-  scenario:
-    "After checking the user's aMember, you see that they have a 50K Rithmic account passed, but they paid for a 25K Rithmic PA fee.",
-  body:
-    "Oi mates! I bought a PA fee but it hasnt even setup yet. Can you guys help me out??",
-  attachments: [
+  weights: {
+    sections: 60,
+    status: 25,
+    assignee: 15,
+    visibility: 10,
+    keywords: 0,
+    pass: 80,
+    sectionWeights: { Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 }
+  },
+  tickets: [
+    makeTicket({
+      subject: "Test",
+      requester: "Testman@gmail.com",
+      requesterName: "Testy Mctester",
+      channel: "Email",
+      hoursAgo: 5,
+      requiredStatus: "Open",
+      requiredAssignee: "Support Tier 2",
+      macroOnly: false,
+      macroCommand: "",
+      internalRequired: true, // YES/NO toggle
+      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+      requirements: "Internals must include:\n1. A summary of the scenario",
+      category: "Billing",
+      intent: "Refund",
+      accountId: "APEX-183914",
+      tags: [],
+      scenario:
+        "After checking the user's aMember, you see that they have a 50K Rithmic account passed, but they paid for a 25K Rithmic PA fee.",
+      body:
+        "Oi mates! I bought a PA fee but it hasnt even setup yet. Can you guys help me out??",
+      attachments: []
+    })
   ]
-})
-]
 };
 
 // seed or load state
