@@ -924,7 +924,7 @@ thread.innerHTML = "";
 
 // default visibility for each ticket view
 if (visibilitySel) {
-  visibilitySel.value = (t.expected?.internalRequired ? "Internal" : "Public");
+  visibilitySel.value = (t?.expected?.internalRequired ? "Internal" : "Public");
 }
 updateReplyPlaceholder();
 
