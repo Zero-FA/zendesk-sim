@@ -562,10 +562,11 @@ function makeTicket({
   subject, requester, requesterName,
   channel, hoursAgo,
   requiredStatus, requiredAssignee,
-  macroOnly, macroCommand,
+  macroOnly, macroCommand,              // ← existing
+  internalPolicy,                       // ← NEW
   sections, requirements,
   category, intent, accountId, tags, body, attachments,
-  scenario,            // ← NEW
+  scenario,
   seedHistory
 }) {
   return {
@@ -581,14 +582,15 @@ function makeTicket({
     messages: [
       { id: uid(), author: requesterName || requester, ts: now - (hoursAgo * 3600e3), body }
     ],
-    expected: {
-      requiredStatus,
-      requiredAssignee,
-      macroOnly,
-      macroCommand: macroCommand || "",
-      sections: sections || ["Greeting","Opener","Solution","Closer","Sign-Off"],
-      requirements
-    },
+expected: {
+  requiredStatus,
+  requiredAssignee,
+  macroOnly,
+  macroCommand: macroCommand || "",
+  internalPolicy: (internalPolicy || "on_reassign_open"), // ← NEW (default)
+  sections: sections || ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements
+},
     tags, category, intent, accountId,
     attachments: attachments || [],
     scenario: scenario || "",   // ← NEW
@@ -1335,11 +1337,20 @@ showList();
         typeof ticket?.expected?.requirements === "string"
           ? ticket.expected.requirements
           : (ticket?.expected?.requirements?.guidance || "");
-      const resp = await fetch("/api/grade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reply, rubric })
-      });
+const policy = String(ticket?.expected?.internalPolicy || "on_reassign_open");
+
+const resp = await fetch("/api/grade", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    reply,
+    rubric,
+    status: attempt.status,
+    assignee: attempt.assignee,
+    visibility: attempt.visibility,      // "Public" | "Internal"
+    internalPolicy: policy               // ← NEW
+  })
+});
       if (resp.ok) ai = await resp.json();
     } catch (err) {
       console.warn("AI grading unavailable, using deterministic checks only.", err);
