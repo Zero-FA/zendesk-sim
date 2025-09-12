@@ -661,7 +661,36 @@ makeTicket({
       title: "Attachment"
     }
   ]
-})
+}),
+// Ticket
+makeTicket({
+  subject: "Refund",
+  requester: "tester123@gmail.com",
+  requesterName: "Sara Tester",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: false,
+  macroCommand: "",
+  internalRequired: false,
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements:
+    "A response stating we do not issue refunds, and this faq, if possible: https://support.apextraderfunding.com/hc/en-us/articles/4404843661083-Are-There-Refunds",
+  category: "Billing",
+  intent: "Request a Refund",
+  accountId: "Apex-123456",
+  tags: [],
+  body:
+    "Hi, I would like to request a refund. I purchased a 50k account, but I haven't traded the account in more than 2 weeks, and now I'm planning to move to another prop firm. Thanks",
+  attachments: [
+    {
+      type: "image",
+      url: "https://i.imgur.com/qvWVdYU.png",
+      title: "Image test"
+    }
+  ]
+}),
   ]
 };
 
