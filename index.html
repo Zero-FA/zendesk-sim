@@ -1481,7 +1481,7 @@ showList();
         if (sIdx === -1) {
           structureChecks[signoffIdx].ok = false;
           structureChecks[signoffIdx].score = 0;
-          structureChecks[signoffIdx].detail = `Missing proper sign-off. Example:\n"Best regards,"\n\nSean Michael`;
+          structureChecks[signoffIdx].detail = `Missing proper sign-off. Example:\n"Best regards,"\n\n[Your Name]`;
         } else {
           const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
           const nameLine   = (lines[sIdx + 2] || "").trim();
@@ -1493,7 +1493,7 @@ showList();
             structureChecks[signoffIdx].ok = false;
             structureChecks[signoffIdx].score = 0;
             structureChecks[signoffIdx].detail =
-              `Sign-off format issue: ${parts.join("; ")}. Example:\n"Best regards,"\n\nSean Michael`;
+              `Sign-off format issue: ${parts.join("; ")}. Example:\n"Best regards,"\n\n[Your Name]`;
           }
         }
       }
