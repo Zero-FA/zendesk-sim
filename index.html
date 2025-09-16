@@ -639,7 +639,7 @@ const DEFAULT = {
 // Ticket
 makeTicket({
   subject: "Test",
-  ticketNumber: "TN-10001", // ← pick any format
+  ticketNumber: "TN-10002", // ← pick any format
   requester: "Test@gmail.com",
   requesterName: "Testy Mctest",
   channel: "Email",
@@ -669,7 +669,7 @@ makeTicket({
 // Ticket
 makeTicket({
   subject: "Refund",
-  ticketNumber: "TN-10001", // ← pick any format
+  ticketNumber: "10003", // ← pick any format
   requester: "tester123@gmail.com",
   requesterName: "Sara Tester",
   channel: "Email",
@@ -852,9 +852,9 @@ function filtered(){
   const raw = (searchBox.value||"").trim();
   const q = raw.toLowerCase();
 
-  // Power filters: "tn:12345" or "#12345"
-  if (q.startsWith("tn:") || q.startsWith("#")) {
-    const needle = q.replace(/^tn:|^#/, "").trim();
+  // Power filter: "#123456"
+  if (q.startsWith("#")) {
+    const needle = q.replace(/^#/, "").trim();
     return state.tickets.filter(t=>{
       const tn = (t.ticketNumber||"").toLowerCase();
       return needle ? tn.includes(needle) : !!tn;
