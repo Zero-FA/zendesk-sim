@@ -563,13 +563,15 @@ function makeTicket({
   channel, hoursAgo,
   requiredStatus, requiredAssignee,
   macroOnly, macroCommand,
-  internalRequired = false,            // ← YES/NO toggle
+  internalRequired = false,
   sections, requirements,
   category, intent, accountId, tags, body, attachments,
   scenario,
-  seedHistory
+  seedHistory,
+  ticketNumber               // ← NEW
 }) {
   return {
+    ticketNumber: ticketNumber || null,   // ← NEW
     id: uid(),
     subject,
     requester,
@@ -612,6 +614,7 @@ const DEFAULT = {
   tickets: [
     makeTicket({
       subject: "Test",
+  ticketNumber: "TN-10001", // ← pick any format
       requester: "Testman@gmail.com",
       requesterName: "Testy Mctester",
       channel: "Email",
@@ -636,6 +639,7 @@ const DEFAULT = {
 // Ticket
 makeTicket({
   subject: "Test",
+  ticketNumber: "TN-10001", // ← pick any format
   requester: "Test@gmail.com",
   requesterName: "Testy Mctest",
   channel: "Email",
@@ -665,6 +669,7 @@ makeTicket({
 // Ticket
 makeTicket({
   subject: "Refund",
+  ticketNumber: "TN-10001", // ← pick any format
   requester: "tester123@gmail.com",
   requesterName: "Sara Tester",
   channel: "Email",
@@ -844,11 +849,30 @@ function renderStats(){
 
 // --- filters / list ---
 function filtered(){
-  const q=(searchBox.value||"").toLowerCase();
+  const raw = (searchBox.value||"").trim();
+  const q = raw.toLowerCase();
+
+  // Power filters: "tn:12345" or "#12345"
+  if (q.startsWith("tn:") || q.startsWith("#")) {
+    const needle = q.replace(/^tn:|^#/, "").trim();
+    return state.tickets.filter(t=>{
+      const tn = (t.ticketNumber||"").toLowerCase();
+      return needle ? tn.includes(needle) : !!tn;
+    });
+  }
+
   return state.tickets.filter(t=>{
     const okS = fStatus.value==="All"||t.status===fStatus.value;
     const okC = fChannel.value==="All"||t.channel===fChannel.value;
-    const text = (t.subject+" "+t.requester+" "+t.messages.map(m=>m.body).join(" ")+" "+(t.expected?.sections||[]).join(" ")).toLowerCase();
+
+    // Include ticketNumber in free-text index
+    const text = (
+      (t.ticketNumber ? ` ${t.ticketNumber} ` : "") +
+      t.subject+" "+t.requester+" "+
+      t.messages.map(m=>m.body).join(" ")+" "+
+      (t.expected?.sections||[]).join(" ")
+    ).toLowerCase();
+
     const okQ = !q || text.includes(q);
     return okS && okC && okQ;
   });
@@ -863,8 +887,9 @@ function renderList(){
        <div style="flex:1;min-width:0">
          <div class="small" style="display:flex;align-items:center;gap:8px">
            <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
-           <span class="pill">${esc(t.channel)}</span>
-           ${t.grade ? scoreBadgeHTML(t.grade.score) : ""}
+<span class="pill">${esc(t.channel)}</span>
+${t.ticketNumber ? `<span class="pill">#${esc(t.ticketNumber)}</span>` : ""}
+${t.grade ? scoreBadgeHTML(t.grade.score) : ""}
          </div>
          <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
        </div>
@@ -934,7 +959,9 @@ function openDetail(id){
   dSubject.textContent = t.subject;
   dRequester.textContent = t.requester || "—";
   dCreated.textContent = fmt(new Date(t.createdAt));
-  dTicketId.textContent = `Ticket ${t.id}`;
+  dTicketId.textContent = t.ticketNumber
+  ? `Ticket ${t.ticketNumber} • id ${t.id}`
+  : `Ticket ${t.id}`;
   dChannelPill.textContent = t.channel || "—";
 /* --- lock gating (disable submit when ticket is locked) --- */
 if (t.locked) {
