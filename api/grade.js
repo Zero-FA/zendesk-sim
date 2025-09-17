@@ -66,9 +66,12 @@ Support Ticket Style Guide (Apex Trader Funding Training)
 - If vague or missing, suggest a 1-sentence improvement in feedback.
 
 5) Sign-Off
-- Standard sign-off and agent first name on its own line.
-- Examples: "Best regards,", "Kind regards,"
-- Leave a blank line before the agent's name.
+- Use a standard closing phrase on its own line.
+- Examples of accepted phrases: "Best regards,", "Kind regards,", "Warm regards,"
+- The phrase must include a comma at the end.
+- Insert one blank line after the closing phrase.
+- Write the agent's first name only on a new line, below the blank line.
+- No last name, title, or additional text.
 `.trim();
 
 function clamp0to100(n){ n=Number.isFinite(n)?n:0; return n<0?0:n>100?100:n; }
