@@ -43,13 +43,14 @@ const REQ_SCHEMA = {
 };
 
 const STYLE_GUIDE = `
-Support Ticket Style Guide (Apex Training)
+Support Ticket Style Guide (Apex Trader Funding Training)
 
 1) Greeting
-- Use customer's first name; brief & warm.
-- Examples: "Hello Sara,", "Hi John,", "Hello again, John,"
-- Must have the comma in the greeting as well, as shown above.
-- Leave one blank line after the greeting.
+- Use the customer's first name; brief & warm.
+- Must be a single line ending with a comma, followed by exactly one blank line.
+- Accept: "Hello <Name>,", "Hi <Name>,", "Good morning <Name>,"
+- Common issues to flag: missing comma, extra text on the greeting line, no blank line after, missing/incorrect name, wrong casing.
+- Feedback should reference the exact issue(s) detected and suggest a corrected line.
 
 2) Opener
 - One short opening sentence, polite and professional.
@@ -61,6 +62,8 @@ Support Ticket Style Guide (Apex Training)
 
 4) Closer
 - One concise, professional line (invitation, empathy, thanks, or brief confirmation).
+- Prefer an explicit invitation/next step (e.g., “If anything else comes up, reply to this email and we’ll help.”).
+- If vague or missing, suggest a 1-sentence improvement in feedback.
 
 5) Sign-Off
 - Standard sign-off and agent first name on its own line.
@@ -131,7 +134,7 @@ Return JSON with:
 
     const labelsList = STRUCTURE_LABELS.map((l, i) => `${i + 1}. ${l}`).join("\n  ");
 
-    const user = `
+   const user = `
 You are grading a customer support reply for structure and style.
 
 Structure labels to check, in order:
@@ -153,7 +156,12 @@ TRAINEE REPLY:
 Return JSON matching the schema:
 - "checks": exactly these 5 in order and with these exact labels:
   ${labelsList}
-Each item needs { label, ok, detail, score } where score is 0–100 (100 = fully met).
+Each item must include { label, ok, detail, score } where score is 0–100 (100 = fully met).
+
+Write "detail" as ACTIONABLE feedback:
+- If a label FAILS, identify the specific issue(s) you observed in the trainee text and include ONE single-line example fix the trainee could paste (concrete, minimal). If the customer’s name is unknown, use “there” (e.g., "Hello there,").
+- If a label PASSES but could be improved, include ONE concise suggestion (max one sentence).
+
 Also return "structurePct" (0–100) as your overall structure score.
 `.trim();
 
