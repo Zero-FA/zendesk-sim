@@ -334,7 +334,7 @@ module.exports = function handler(req, res) {
       ],
       scenario: "You suspect the user has 'Liquidating Only' enabled in RTrader, blocking new orders.",
       scenarioAttachments: [
-        { type: "image", url: "https://i.imgur.com/cLRp8ku.png", title: "RTrader — Liquidating Only toggle (example)" },
+        { type: "", url: "", title: "" },
         {
           type: "link",
           url: "https://support.apextraderfunding.com/hc/en-us/articles/10973928895259",
