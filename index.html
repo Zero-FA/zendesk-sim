@@ -11,6 +11,14 @@
 :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+/* Force all links to be the same bright color */
+a,
+a:visited,
+a:hover,
+a:active {
+  color: #3b82f6;   /* bright blue */
+  text-decoration: underline;
+}
 
 /* ========== ACCESS GATE ========== */
 .gate{position:fixed;inset:0;display:grid;place-items:center;background:rgba(2,6,23,.8);z-index:9999}
