@@ -711,44 +711,43 @@ function openDetail(id){
   if (visibilitySel) { visibilitySel.value = (t?.expected?.internalRequired ? "Internal" : "Public"); }
   updateReplyPlaceholder();
 
-if (t.scenario && t.scenario.trim()) {
-  const sc = document.createElement("div");
-  sc.className = "scenario-block";
-  const parts = [];
-  parts.push(`
-    <div class="scenario-title">
-      <span class="badge">Scenario</span>
-    </div>
-    <div class="scenario-text">${esc(t.scenario)}</div>
-  `);
-  if (Array.isArray(t.scenarioAttachments) && t.scenarioAttachments.length) {
-    const items = t.scenarioAttachments.map(a => {
-      const title = esc(a.title || a.url || "attachment");
-      const url   = esc(a.url || "#");
-      const type  = String(a.type || "").toLowerCase();
-      if (type === "image") {
-        return `
-          <figure style="margin:8px 0 0">
-            <img src="${url}" alt="${title}" style="max-width:100%;border-radius:8px;display:block"/>
-            <figcaption class="small muted" style="margin-top:4px">${title}</figcaption>
-          </figure>
-        `;
-      }
-      // file/link fallback
-      return `
-        <div class="small" style="margin-top:8px">
-          <a href="${url}" target="_blank" rel="noopener">${title}</a>
-        </div>
-      `;
-    }).join("");
+  if (t.scenario && t.scenario.trim()) {
+    const sc = document.createElement("div");
+    sc.className = "scenario-block";
+    const parts = [];
     parts.push(`
-      <div class="small muted" style="margin-top:8px;font-weight:700">Scenario attachments</div>
-      ${items}
+      <div class="scenario-title">
+        <span class="badge">Scenario</span>
+      </div>
+      <div class="scenario-text">${esc(t.scenario)}</div>
     `);
+    if (Array.isArray(t.scenarioAttachments) && t.scenarioAttachments.length) {
+      const items = t.scenarioAttachments.map(a => {
+        const title = esc(a.title || a.url || "attachment");
+        const url   = esc(a.url || "#");
+        const type  = String(a.type || "").toLowerCase();
+        if (type === "image") {
+          return `
+            <figure style="margin:8px 0 0">
+              <img src="${url}" alt="${title}" style="max-width:100%;border-radius:8px;display:block"/>
+              <figcaption class="small muted" style="margin-top:4px">${title}</figcaption>
+            </figure>
+          `;
+        }
+        return `
+          <div class="small" style="margin-top:8px">
+            <a href="${url}" target="_blank" rel="noopener">${title}</a>
+          </div>
+        `;
+      }).join("");
+      parts.push(`
+        <div class="small muted" style="margin-top:8px;font-weight:700">Scenario attachments</div>
+        ${items}
+      `);
+    }
+    sc.innerHTML = parts.join("");
+    thread.appendChild(sc);
   }
-  sc.innerHTML = parts.join("");
-  thread.appendChild(sc);
-});
 
   snapshots.classList.add("hidden"); snapshots.innerHTML = "";
 
