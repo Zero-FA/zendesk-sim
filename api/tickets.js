@@ -125,8 +125,8 @@ module.exports = function handler(req, res) {
       scenarioAttachments: [
         {
           type: "link",
-          url: "https://support.apextraderfunding.com/hc/en-us/articles/4407696269851-Evaluation-Passed-Profit-Target-Next-Steps",
-          title: "FAQ: Next Steps After Passing"
+          url: "",
+          title: ""
         }
       ]
     },
@@ -177,8 +177,8 @@ module.exports = function handler(req, res) {
       scenarioAttachments: [
         {
           type: "image",
-          url: "https://i.imgur.com/9PZJpHs.png",
-          title: "aMember: Account Sharing Prevention banner (example)"
+          url: "",
+          title: ""
         }
       ]
     },
@@ -297,7 +297,7 @@ module.exports = function handler(req, res) {
       body:
         "Hi Apex help desk! \n\nI passed my Rithmic eval 2 days ago, and I'm trying to get my PA. I've already paid for and signed for it, but it's not showing up. The account I passed is -05. Can you help me activate it or tell me what I'm missing? Thank you. \n\nBest,\n\nSara",
       attachments: [
-        { type: "image", url: "https://i.imgur.com/lRpnmbP.png", title: "Attachment" }
+        { type: "image", url: "", title: "Attachment" }
       ],
       scenarioAttachments: [
         { type: "image", url: "https://i.imgur.com/lRpnmbP.png", title: "aMember — Rithmic tab snapshot" },
