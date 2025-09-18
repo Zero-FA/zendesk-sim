@@ -401,22 +401,24 @@ body.dark .badge-id:hover{background:rgba(148,163,184,0.18);border-color:#3b475b
 (() => {
   const $ = (id) => document.getElementById(id);
   const GATE_KEY = "sim_authed_session";
-const gate = $("gate"),
-      input = $("gateInput"),
-      first = $("gateFirst"),
-      last  = $("gateLast"),
-      btn   = $("gateBtn"),
-      err   = $("gateErr");
+  const gate = $("gate"),
+        input = $("gateInput"),
+        first = $("gateFirst"),
+        last  = $("gateLast"),
+        btn   = $("gateBtn"),
+        err   = $("gateErr");
 
-const unlock = () => {
-  sessionStorage.setItem(GATE_KEY, "1");
-  // persist identity + code for grader
-  sessionStorage.setItem("sim_access_code", (input.value || "").trim());
-  sessionStorage.setItem("sim_agent_first", (first?.value || "").trim());
-  sessionStorage.setItem("sim_agent_last",  (last?.value  || "").trim());
-  document.body.classList.remove("gated");
-  gate && gate.remove();
-};
+  // Resolve API base robustly (works in subpaths too)
+  const AUTH_URL = new URL("./api/auth", window.location.href).toString();
+
+  const unlock = () => {
+    sessionStorage.setItem(GATE_KEY, "1");
+    sessionStorage.setItem("sim_access_code", (input.value || "").trim());
+    sessionStorage.setItem("sim_agent_first", (first?.value || "").trim());
+    sessionStorage.setItem("sim_agent_last",  (last?.value  || "").trim());
+    document.body.classList.remove("gated");
+    gate && gate.remove();
+  };
 
   if (sessionStorage.getItem(GATE_KEY) === "1") { unlock(); return; }
   document.body.classList.add("gated");
@@ -425,29 +427,29 @@ const unlock = () => {
     err.textContent = "";
     btn.disabled = true; btn.setAttribute("aria-busy","true");
     try{
-const code  = (input.value || "").trim();
-const fName = (first?.value || "").trim();
-const lName = (last?.value  || "").trim();
-if (!code)  { err.textContent = "Enter the access code.";  return; }
-if (!fName) { err.textContent = "Enter your first name."; return; }
+      const code  = (input.value || "").trim();
+      const fName = (first?.value || "").trim();
+      const lName = (last?.value  || "").trim();
 
-const resp = await fetch("/api/grade", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    mode: "requirements",
-    reply,
-    rubric,
-    accessCode,
-    agentFirstName,
-    agentLastName
-  })
-});
+      if (!code)  { err.textContent = "Enter the access code.";  return; }
+      if (!fName) { err.textContent = "Enter your first name."; return; }
+
+      const resp = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ code })
+      });
+
       if (resp.ok){ unlock(); return; }
-      const data = await resp.json().catch(()=>({}));
-      err.textContent = data?.error || "Invalid code";
-    }catch{
-      err.textContent = "Network error. Try again.";
+
+      // Show real server error if any
+      let msg = "Invalid code";
+      try { const data = await resp.json(); msg = data?.error || msg; } catch {}
+      err.textContent = `${msg}${resp.status ? ` (HTTP ${resp.status})` : ""}`;
+    }catch(e){
+      // Network/CORS/route-not-found will land here
+      err.textContent = `Network error: ${e?.message || "Request failed"}.`;
+      console.error("Gate auth failed:", e);
     }finally{
       btn.disabled = false; btn.removeAttribute("aria-busy"); input.focus();
     }
