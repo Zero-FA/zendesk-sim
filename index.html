@@ -1,57 +1,39 @@
+<!-- /index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Simulation — Trainee</title>
+
 <style>
+/* ========== THEME & BASE ========== */
 :root{--bg:#f8fafc;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#059669;--accent2:#047857;--warn:#ef4444}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
 
-/* ==== Access Gate styles ==== */
+/* ========== ACCESS GATE ========== */
 .gate{position:fixed;inset:0;display:grid;place-items:center;background:rgba(2,6,23,.8);z-index:9999}
-.gate-card{width:320px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;
-  box-shadow:0 12px 36px rgba(15,23,42,.35)}
+.gate-card{width:320px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 12px 36px rgba(15,23,42,.35)}
 .gate-title{font-weight:700;margin-bottom:10px}
 .gate-input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;background:#fff}
-.gate-btn{width:100%;margin-top:10px;border:1px solid var(--line);background:#635bff;color:#fff;border-radius:10px;
-  padding:10px 12px;font-size:14px;cursor:pointer}
+.gate-btn{width:100%;margin-top:10px;border:1px solid var(--line);background:#635bff;color:#fff;border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer}
 .gate-btn[aria-busy="true"]{opacity:.8;cursor:default}
 .gate-err{min-height:1.25em;margin-top:8px;font-size:12px;color:var(--warn)}
 body.gated{overflow:hidden}
 
 /* Scenario block */
-.scenario-block{
-  border:1px dashed var(--line);
-  border-left:4px solid var(--accent);
-  background:#f8fafc;
-  border-radius:10px;
-  padding:10px;
-  margin-bottom:12px;
-}
-.scenario-title{
-  font-size:12px;
-  color:var(--muted);
-  font-weight:700;
-  margin-bottom:4px;
-  display:flex;
-  align-items:center;
-  gap:6px;
-}
-.scenario-text{
-  white-space:pre-wrap;
-  font-size:12px;
-  color:var(--ink);
-}
-body.dark .scenario-block{ background:#0b1324; border-color:var(--line); }
+.scenario-block{border:1px dashed var(--line);border-left:4px solid var(--accent);background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:12px}
+.scenario-title{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.scenario-text{white-space:pre-wrap;font-size:12px;color:var(--ink)}
+body.dark .scenario-block{background:#0b1324;border-color:var(--line)}
 
-/* top bar */
+/* Top bar */
 .top{height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;background:#fff;border-bottom:1px solid var(--line)}
 .brand{display:flex;gap:8px;align-items:center}
 .logo{width:28px;height:28px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
 
-/* shell layout */
+/* Shell layout */
 .layout{display:grid;gap:16px;grid-template-columns:220px 1fr;padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px}
 .rail{padding:12px;display:flex;flex-direction:column}
@@ -59,7 +41,7 @@ body.dark .scenario-block{ background:#0b1324; border-color:var(--line); }
 .nav-item{padding:8px;border-radius:12px;display:flex;gap:8px;align-items:center}
 .nav-item.active{background:#eef2f7;font-weight:600}
 
-/* controls */
+/* Controls */
 .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-size:13px;cursor:pointer}
 .btn:hover{background:#f8fafc}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -68,7 +50,7 @@ body.dark .scenario-block{ background:#0b1324; border-color:var(--line); }
 .btn.danger:hover{background:#fef2f2}
 .select,.input{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;background:#fff}
 
-/* list */
+/* List */
 .filters{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}
 .row{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
 .row:hover{background:#f8fafc}
@@ -78,53 +60,27 @@ body.dark .scenario-block{ background:#0b1324; border-color:var(--line); }
 .small{font-size:12px}
 .bubble{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
 .badge{font-size:11px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:999px}
-/* Score badge (list view) */
-.score-badge{
-  display:inline-block;
-  font-size:12px;
-  font-weight:600;
-  border-radius:999px;
-  padding:2px 8px;
-  min-width:40px;
-  text-align:center;
-}
 
-/* ≥90 */
-.score-good{
-  background: rgba(16,185,129,.14);
-  color:#22c55e;
-  border:1px solid rgba(16,185,129,.4);
-}
-
-/* 80–89 */
-.score-mid{
-  background: rgba(234,179,8,.16);
-  color:#facc15;
-  border:1px solid rgba(234,179,8,.40);
-}
-
-/* <80 */
-.score-bad{
-  background: rgba(239,68,68,.16);
-  color:#f87171;
-  border:1px solid rgba(239,68,68,.45);
-}
-
-/* optional: tiny tweak for dark to keep contrast comfy */
-body.dark .score-badge{ box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+/* Score badge */
+.score-badge{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 8px;min-width:40px;text-align:center}
+.score-good{background:rgba(16,185,129,.14);color:#22c55e;border:1px solid rgba(16,185,129,.4)}
+.score-mid{background:rgba(234,179,8,.16);color:#facc15;border:1px solid rgba(234,179,8,.40)}
+.score-bad{background:rgba(239,68,68,.16);color:#f87171;border:1px solid rgba(239,68,68,.45)}
+body.dark .score-badge{box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
 .hidden{display:none}
 
-/* reply box */
+/* Reply box */
 textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;resize:vertical}
 
+/* Table */
 .table{width:100%;border-collapse:collapse}
 .table th,.table td{border-bottom:1px solid var(--line);padding:6px;text-align:left;font-size:12px}
 .ok{color:#065f46}.fail{color:#991b1b}
 
-/* responsive shell */
+/* Responsive */
 @media (max-width:1100px){.layout{grid-template-columns:1fr}}
 
-/* ---------- Zendesk-ish detail layout ---------- */
+/* Zendesk-ish detail layout */
 .z-layout{display:grid;grid-template-columns:260px 1fr 300px;gap:16px;padding:12px}
 .z-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
 .z-left,.z-right{padding:12px}
@@ -138,137 +94,75 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 .z-snap{border:1px dashed var(--line);border-radius:8px;padding:8px;font-size:12px;color:var(--muted);margin-top:8px}
 .composer{border-top:1px solid var(--line);padding:8px 12px}
 
-/* ===== Split submit + menu + dots + toast ===== */
+/* Split submit + menu + dots + toast */
 .split{position:relative;display:inline-flex}
 .split .btn{border-radius:10px 0 0 10px}
 .split .split-toggle{border-left:none;border-radius:0 10px 10px 0}
-.menu{position:absolute;right:0;bottom:44px;background:var(--card);border:1px solid var(--line);
-  border-radius:12px;min-width:220px;box-shadow:0 8px 24px rgba(15,23,42,.12);padding:6px;z-index:10}
+.menu{position:absolute;right:0;bottom:44px;background:var(--card);border:1px solid var(--line);border-radius:12px;min-width:220px;box-shadow:0 8px 24px rgba(15,23,42,.12);padding:6px;z-index:10}
 .menu-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer}
 .menu-item:hover{background:#f8fafc}
 
-/* status dots */
 .status-dot{width:8px;height:8px;border-radius:999px;display:inline-block;margin-right:8px;vertical-align:middle}
-.dot-open{background:#ef4444}    /* red */
-.dot-pending{background:#2563eb} /* blue */
-.dot-solved{background:#6b7280}  /* gray */
+.dot-open{background:#ef4444}.dot-pending{background:#2563eb}.dot-solved{background:#6b7280}
 
-/* toast */
-.toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;
-  padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.18);
-  font-size:13px;opacity:0;transform:translateY(8px);transition:.25s}
+.toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.18);font-size:13px;opacity:0;transform:translateY(8px);transition:.25s}
 .toast.show{opacity:1;transform:translateY(0)}
 
-/* ===== Grammar panel ===== */
+/* Grammar panel */
 .grammar{border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:10px;margin-top:8px}
 .grammar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .grammar-list{display:flex;flex-direction:column;gap:8px}
 .grammar-note{font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px}
 .grammar-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
 .diffblock{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.diffcol{font:12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;border:1px dashed var(--line);border-radius:8px;background:var(--card);padding:8px;white-space:pre-wrap}
+.diffcol{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;border:1px dashed var(--line);border-radius:8px;background:var(--card);padding:8px;white-space:pre-wrap}
 .difflabel{font-size:11px;color:var(--muted);margin-bottom:4px}
 
-/* ===== Submit spinner (show only when .loading on button) ===== */
-.spinner{
-  width:14px;height:14px;border:2px solid rgba(255,255,255,.45);
-  border-top-color:#fff;border-radius:50%;
-  margin-right:8px;animation:spin .8s linear infinite;
-  display:none;
-}
-.btn.primary.loading .spinner{display:inline-block;}
+/* Spinner */
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;margin-right:8px;animation:spin .8s linear infinite;display:none}
+.btn.primary.loading .spinner{display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
-.btn.primary.loading{opacity:.9;cursor:default}
 
-/* ===== Dark mode palette (toggle by adding .dark to <body>) ===== */
-body.dark{
-  --bg:#0b1220;
-  --card:#0f172a;
-  --ink:#e5e7eb;
-  --muted:#94a3b8;
-  --line:#1f2937;
-  --accent:#10b981;
-  --accent2:#059669;
-  --warn:#f87171;
-}
-
-/* component tweaks for dark */
-body.dark .top{ background:var(--card); border-bottom:1px solid var(--line); }
-body.dark .card{ background:var(--card); border-color:var(--line); }
-body.dark .nav-item.active{ background:rgba(255,255,255,.06); }
-body.dark .nav-item:hover{ background:rgba(255,255,255,.04); }
-
-body.dark .btn{ background:#0b1324; color:var(--ink); border-color:var(--line); }
-body.dark .btn:hover{ background:#0f172a; }
-body.dark .btn.primary{ background:var(--accent); border-color:var(--accent); color:#001010; }
-body.dark .btn.primary:hover{ background:var(--accent2); }
-body.dark .btn.danger{ color:var(--warn); border-color:#7f1d1d; }
-body.dark .btn.danger:hover{ background:#2b0b0b; }
-
-body.dark .select,
-body.dark .input,
-body.dark textarea{ background:#0b1324; color:var(--ink); border-color:#263143; }
-body.dark .input::placeholder,
-body.dark textarea::placeholder{ color:#6b7280; }
-
-body.dark .filters{ border-bottom-color:var(--line); }
-body.dark .row{ border-bottom-color:var(--line); }
-body.dark .row:hover{ background:rgba(255,255,255,.03); }
-body.dark .avatar{ background:#172132; }
-
-body.dark .pill{ background:rgba(255,255,255,.06); border-color:var(--line); color:var(--ink); }
-body.dark .bubble{ background:#0b1324; border-color:var(--line); }
-body.dark .badge{ background:rgba(16,185,129,.12); color:#34d399; border-color:rgba(16,185,129,.35); }
-body.dark .z-snap{ color:var(--muted); border-color:var(--line); }
-
-body.dark .z-card{ background:var(--card); border-color:var(--line); }
-body.dark .z-main-head{ border-bottom-color:var(--line); }
-body.dark .composer{ border-top-color:var(--line); }
-body.dark .menu{ background:var(--card); border-color:var(--line); box-shadow:0 8px 24px rgba(0,0,0,.45); }
-body.dark .menu-item:hover{ background:rgba(255,255,255,.06); }
-
-body.dark .table th,
-body.dark .table td{ border-bottom-color:var(--line); }
-
-body.dark .toast{ background:#0b1324; color:var(--ink); }
-/* --- Fix tag pills in dark mode --- */
-body.dark .z-tags { gap: 6px; }
-
-body.dark .z-tag{
-  background: rgba(148, 163, 184, 0.12);  /* soft slate tint */
-  border-color: #334155;                  /* slate-700 border */
-  color: #e5e7eb;                         /* text-slate-200 */
-  box-shadow: inset 0 0 0 1px rgba(51,65,85,.25);
-}
-
-body.dark .z-tag:hover{
-  background: rgba(148, 163, 184, 0.18);
-  border-color: #3b475b;
-}
-
-/* if you show “disabled” or non-interactive tags, keep them subtle */
-body.dark .z-tag[aria-disabled="true"],
-body.dark .z-tag.is-disabled{
-  color: #94a3b8;
-  background: rgba(148,163,184,0.10);
-  border-color: #2b3647;
-}
-
-/* optional: make generic .pill chips match too */
-body.dark .pill{
-  background: rgba(148,163,184,0.12);
-  border-color: #334155;
-  color: #e5e7eb;
-}
-
-/* optional dark scrollbars */
+/* Dark mode palette */
+body.dark{--bg:#0b1220;--card:#0f172a;--ink:#e5e7eb;--muted:#94a3b8;--line:#1f2937;--accent:#10b981;--accent2:#059669;--warn:#f87171}
+body.dark .top{background:var(--card);border-bottom:1px solid var(--line)}
+body.dark .card{background:var(--card);border-color:var(--line)}
+body.dark .nav-item.active{background:rgba(255,255,255,.06)}
+body.dark .nav-item:hover{background:rgba(255,255,255,.04)}
+body.dark .btn{background:#0b1324;color:var(--ink);border-color:var(--line)}
+body.dark .btn:hover{background:#0f172a}
+body.dark .btn.primary{background:var(--accent);border-color:var(--accent);color:#001010}
+body.dark .btn.primary:hover{background:var(--accent2)}
+body.dark .btn.danger{color:var(--warn);border-color:#7f1d1d}
+body.dark .btn.danger:hover{background:#2b0b0b}
+body.dark .select,body.dark .input,body.dark textarea{background:#0b1324;color:var(--ink);border-color:#263143}
+body.dark .input::placeholder,body.dark textarea::placeholder{color:#6b7280}
+body.dark .filters,.dark .row,.dark .table th,.dark .table td{border-bottom-color:var(--line)}
+body.dark .row:hover{background:rgba(255,255,255,.03)}
+body.dark .avatar{background:#172132}
+body.dark .pill{background:rgba(255,255,255,.06);border-color:var(--line);color:var(--ink)}
+body.dark .bubble{background:#0b1324;border-color:var(--line)}
+body.dark .badge{background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.35)}
+body.dark .z-snap{color:var(--muted);border-color:var(--line)}
+body.dark .z-card{background:var(--card);border-color:var(--line)}
+body.dark .z-main-head{border-bottom-color:var(--line)}
+body.dark .composer{border-top-color:var(--line)}
+body.dark .menu{background:var(--card);border-color:var(--line);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+body.dark .menu-item:hover{background:rgba(255,255,255,.06)}
+body.dark .toast{background:#0b1324;color:var(--ink)}
+body.dark .z-tags{gap:6px}
+body.dark .z-tag{background:rgba(148,163,184,.12);border-color:#334155;color:#e5e7eb;box-shadow:inset 0 0 0 1px rgba(51,65,85,.25)}
+body.dark .z-tag:hover{background:rgba(148,163,184,.18);border-color:#3b475b}
+body.dark .z-tag[aria-disabled="true"],body.dark .z-tag.is-disabled{color:#94a3b8;background:rgba(148,163,184,.10);border-color:#2b3647}
+body.dark .pill{background:rgba(148,163,184,.12);border-color:#334155;color:#e5e7eb}
 @media (pointer:fine){
-  body.dark *{ scrollbar-color:#334155 transparent; }
-  body.dark *::-webkit-scrollbar{ height:10px; width:10px; }
-  body.dark *::-webkit-scrollbar-thumb{ background:#334155; border-radius:8px; }
-  body.dark *::-webkit-scrollbar-track{ background:transparent; }
+  body.dark *{scrollbar-color:#334155 transparent}
+  body.dark *::-webkit-scrollbar{height:10px;width:10px}
+  body.dark *::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+  body.dark *::-webkit-scrollbar-track{background:transparent}
 }
-/* ===== Zendesk-style right column: requester + history ===== */
+
+/* Requester + history */
 .req-card{display:grid;grid-template-columns:1fr;gap:10px}
 .req-section{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--card)}
 .req-title{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px}
@@ -279,23 +173,13 @@ body.dark .pill{
 .hist-dot{width:10px;height:10px;border-radius:999px;margin-top:3px;background:#9ca3af;flex-shrink:0}
 .hist-item .meta{font-size:12px;color:var(--muted)}
 .badge-id{font-size:11px;border:1px solid var(--line);background:#eef2f7;padding:2px 8px;border-radius:999px;margin-left:8px}
-/* Dark-mode fix for Ticket ID pill */
-body.dark .badge-id {
-  background: rgba(148,163,184,0.12); /* subtle slate tint */
-  border-color: #334155;
-  color: #e5e7eb;
-  box-shadow: inset 0 0 0 1px rgba(51,65,85,.25);
-}
-
-body.dark .badge-id:hover {
-  background: rgba(148,163,184,0.18);
-  border-color: #3b475b;
-}
+body.dark .badge-id{background:rgba(148,163,184,0.12);border-color:#334155;color:#e5e7eb;box-shadow:inset 0 0 0 1px rgba(51,65,85,.25)}
+body.dark .badge-id:hover{background:rgba(148,163,184,0.18);border-color:#3b475b}
 .lang-tools{display:flex;gap:8px;align-items:center}
 </style>
 </head>
 <body>
-<!-- Access Gate Overlay -->
+<!-- ===== GATE ===== -->
 <div id="gate" class="gate">
   <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
     <div id="gateTitle" class="gate-title">Enter Access Code</div>
@@ -305,6 +189,7 @@ body.dark .badge-id:hover {
   </div>
 </div>
 
+<!-- ===== TOP ===== -->
 <div class="top">
   <div class="brand"><div class="logo">Z</div><div class="small muted">Simulation (Trainee)</div></div>
   <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
@@ -312,8 +197,9 @@ body.dark .badge-id:hover {
     <button class="btn" id="resetBtn">Reset</button>
   </div>
 </div>
+
+<!-- ===== LAYOUT ===== -->
 <div class="layout">
-  <!-- LEFT RAIL -->
   <aside class="rail card">
     <div class="nav-label">Your work</div>
     <div class="nav-item active"><span>📄</span><span>Tickets</span></div>
@@ -321,7 +207,6 @@ body.dark .badge-id:hover {
     <div class="nav-item"><span>🗓️</span><span>Last 30 days</span></div>
   </aside>
 
-  <!-- CENTER -->
   <main class="card">
     <div class="filters">
       <strong id="countLbl">0 tickets</strong>
@@ -340,10 +225,10 @@ body.dark .badge-id:hover {
 
     <div id="list"></div>
 
-    <!-- DETAIL (Zendesk-ish) -->
+    <!-- ===== DETAIL ===== -->
     <div id="detail" class="hidden">
       <div class="z-layout">
-        <!-- LEFT: fields -->
+        <!-- LEFT -->
         <aside class="z-left z-card">
           <div class="z-field">
             <div class="z-label">Assignee</div>
@@ -377,150 +262,144 @@ body.dark .badge-id:hover {
           </div>
         </aside>
 
-        <!-- CENTER: thread + composer -->
-<section class="z-card">
-  <div class="z-main-head">
-    <strong id="dSubject" style="font-weight:600"></strong>
-    <span id="dTicketId" class="badge-id">Ticket —</span>
-    <span id="dChannelPill" class="pill" style="margin-left:6px">—</span>
-    <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
-      <div class="lang-tools small muted">🌐 <span>Language/merge</span></div>
-      <div class="small muted">
-        <span id="dRequester">—</span> • <span id="dCreated">—</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="z-main-body">
-    <div id="thread"></div>
-    <div id="snapshots" class="z-snap hidden">No attachments</div>
-  </div>
-
-  <div class="composer">
-    <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
-
-    <!-- Top row: Grammar on left, Submit split on right -->
-    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:6px;align-items:center">
-      <button class="btn" id="grammarBtn" title="Ctrl/Cmd+Shift+G">Check grammar</button>
-
-      <!-- Visibility selector -->
-      <label class="small muted" style="display:flex; align-items:center; gap:6px">
-        Visibility
-        <select class="select" id="visibilitySel">
-          <option>Public</option>
-          <option>Internal</option>
-        </select>
-      </label>
-      <div class="split">
-        <button class="btn primary" id="submitMainBtn">
-          <span class="spinner" id="submitSpinner" aria-hidden="true"></span>
-          <span class="status-dot dot-open" id="submitDot" aria-hidden="true"></span>
-          Submit as <span id="submitStatusLbl">Open</span>
-        </button>
-        <button class="btn primary split-toggle" id="submitToggleBtn" aria-haspopup="menu" aria-expanded="false">▾</button>
-        <div class="menu hidden" id="submitMenu" role="menu" aria-label="Submit as">
-          <div class="menu-item" role="menuitem" data-value="Open">
-            <span class="status-dot dot-open" aria-hidden="true"></span> Submit as Open
+        <!-- CENTER -->
+        <section class="z-card">
+          <div class="z-main-head">
+            <strong id="dSubject" style="font-weight:600"></strong>
+            <span id="dTicketId" class="badge-id">Ticket —</span>
+            <span id="dChannelPill" class="pill" style="margin-left:6px">—</span>
+            <div style="margin-left:auto;display:flex;gap:12px;align-items:center">
+              <div class="lang-tools small muted">🌐 <span>Language/merge</span></div>
+              <div class="small muted">
+                <span id="dRequester">—</span> • <span id="dCreated">—</span>
+              </div>
+            </div>
           </div>
-          <div class="menu-item" role="menuitem" data-value="Pending">
-            <span class="status-dot dot-pending" aria-hidden="true"></span> Submit as Pending
+
+          <div class="z-main-body">
+            <div id="thread"></div>
+            <div id="snapshots" class="z-snap hidden">No attachments</div>
           </div>
-          <div class="menu-item" role="menuitem" data-value="Solved">
-            <span class="status-dot dot-solved" aria-hidden="true"></span> Submit as Solved
+
+          <div class="composer">
+            <textarea id="replyBox" placeholder="Write your reply… (trainee)"></textarea>
+
+            <div style="display:flex;gap:8px;justify-content:space-between;margin-top:6px;align-items:center">
+              <button class="btn" id="grammarBtn" title="Ctrl/Cmd+Shift+G">Check grammar</button>
+
+              <label class="small muted" style="display:flex; align-items:center; gap:6px">
+                Visibility
+                <select class="select" id="visibilitySel">
+                  <option>Public</option>
+                  <option>Internal</option>
+                </select>
+              </label>
+
+              <div class="split">
+                <button class="btn primary" id="submitMainBtn">
+                  <span class="spinner" id="submitSpinner" aria-hidden="true"></span>
+                  <span class="status-dot dot-open" id="submitDot" aria-hidden="true"></span>
+                  Submit as <span id="submitStatusLbl">Open</span>
+                </button>
+                <button class="btn primary split-toggle" id="submitToggleBtn" aria-haspopup="menu" aria-expanded="false">▾</button>
+                <div class="menu hidden" id="submitMenu" role="menu" aria-label="Submit as">
+                  <div class="menu-item" role="menuitem" data-value="Open">
+                    <span class="status-dot dot-open" aria-hidden="true"></span> Submit as Open
+                  </div>
+                  <div class="menu-item" role="menuitem" data-value="Pending">
+                    <span class="status-dot dot-pending" aria-hidden="true"></span> Submit as Pending
+                  </div>
+                  <div class="menu-item" role="menuitem" data-value="Solved">
+                    <span class="status-dot dot-solved" aria-hidden="true"></span> Submit as Solved
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grammar -->
+            <div id="grammarPanel" class="grammar hidden">
+              <div class="grammar-head">
+                <strong>Grammar suggestions</strong>
+                <div class="small muted" id="grammarMeta">—</div>
+              </div>
+              <div class="diffblock">
+                <div class="diffcol">
+                  <div class="difflabel">Original</div>
+                  <div id="grammarOrig" class="small"></div>
+                </div>
+                <div class="diffcol">
+                  <div class="difflabel">Suggested</div>
+                  <div id="grammarFix"  class="small"></div>
+                </div>
+              </div>
+              <div class="grammar-list" id="grammarList"></div>
+              <div class="grammar-actions">
+                <button class="btn" id="dismissGrammarBtn">Dismiss</button>
+                <button class="btn primary" id="applyGrammarBtn">Replace text with fixes</button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </section>
 
-    <!-- Grammar results panel -->
-    <div id="grammarPanel" class="grammar hidden">
-      <div class="grammar-head">
-        <strong>Grammar suggestions</strong>
-        <div class="small muted" id="grammarMeta">—</div>
-      </div>
-      <div class="diffblock">
-        <div class="diffcol">
-          <div class="difflabel">Original</div>
-          <div id="grammarOrig" class="small"></div>
-        </div>
-        <div class="diffcol">
-          <div class="difflabel">Suggested</div>
-          <div id="grammarFix" class="small"></div>
-        </div>
-      </div>
-      <div class="grammar-list" id="grammarList"></div>
-      <div class="grammar-actions">
-        <button class="btn" id="dismissGrammarBtn">Dismiss</button>
-        <button class="btn primary" id="applyGrammarBtn">Replace text with fixes</button>
-      </div>
-    </div>
-  </div>
-</section>
+        <!-- RIGHT -->
+        <aside class="z-right z-card">
+          <div class="req-card">
+            <section class="req-section">
+              <div class="req-title">Requester info</div>
+              <div class="req-kv">
+                <div class="k">Name</div><div id="rName">—</div>
+                <div class="k">Email</div><div id="rEmail">—</div>
+                <div class="k">Local time</div><div id="rLocal">—</div>
+                <div class="k">Language</div><div id="rLang">—</div>
+                <div class="k">Notes</div><div id="rNotes">—</div>
+              </div>
+            </section>
 
-        <!-- RIGHT: grader + stats -->
-<aside class="z-right z-card">
-  <div class="req-card">
-    <!-- Requester Info -->
-    <section class="req-section">
-      <div class="req-title">Requester info</div>
-      <div class="req-kv">
-        <div class="k">Name</div><div id="rName">—</div>
-        <div class="k">Email</div><div id="rEmail">—</div>
-        <div class="k">Local time</div><div id="rLocal">—</div>
-        <div class="k">Language</div><div id="rLang">—</div>
-        <div class="k">Notes</div><div id="rNotes">—</div>
-      </div>
-    </section>
+            <section class="req-section">
+              <div class="req-title">Interaction history</div>
+              <div id="histList" class="hist-list"></div>
+            </section>
 
-    <!-- Interaction History -->
-    <section class="req-section">
-      <div class="req-title">Interaction history</div>
-      <div id="histList" class="hist-list"></div>
-    </section>
-
-    <!-- Keep your existing Auto-Grade panel below -->
-    <section class="req-section">
-      <div class="small" style="font-weight:600">Auto-Grade</div>
-      <table class="table" id="gradeTable">
-        <thead><tr><th>Check</th><th>Result</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <div class="small" style="margin-top:8px">Score: <strong id="scoreLbl">0/100</strong></div>
-      <div class="small" style="margin-top:4px">Pass threshold: <strong id="passLbl"></strong></div>
-      <hr style="margin:12px 0;border:none;border-top:1px solid var(--line)"/>
-      <div class="small" style="font-weight:600">Ticket statistics</div>
-      <div class="kpi"><span class="muted small">Solved (7d): </span><span id="kSolved">0</span></div>
-      <div class="kpi"><span class="muted small">Open now: </span><span id="kOpen">0</span></div>
-      <div class="small" style="font-weight:600;margin-top:8px">QA average grade</div>
-      <div class="muted small">(auto-graded)</div>
-      <div style="font-size:24px;font-weight:800" id="kAvg">—</div>
-    </section>
-  </div>
-</aside>
+            <section class="req-section">
+              <div class="small" style="font-weight:600">Auto-Grade</div>
+              <table class="table" id="gradeTable">
+                <thead><tr><th>Check</th><th>Result</th></tr></thead>
+                <tbody></tbody>
+              </table>
+              <div class="small" style="margin-top:8px">Score: <strong id="scoreLbl">0/100</strong></div>
+              <div class="small" style="margin-top:4px">Pass threshold: <strong id="passLbl"></strong></div>
+              <hr style="margin:12px 0;border:none;border-top:1px solid var(--line)"/>
+              <div class="small" style="font-weight:600">Ticket statistics</div>
+              <div class="kpi"><span class="muted small">Solved (7d): </span><span id="kSolved">0</span></div>
+              <div class="kpi"><span class="muted small">Open now: </span><span id="kOpen">0</span></div>
+              <div class="small" style="font-weight:600;margin-top:8px">QA average grade</div>
+              <div class="muted small">(auto-graded)</div>
+              <div style="font-size:24px;font-weight:800" id="kAvg">—</div>
+            </section>
+          </div>
+        </aside>
       </div>
     </div>
   </main>
 </div>
 
-<!-- Toast element (must exist before scripts) -->
+<!-- Toast -->
 <div id="toast" class="toast" aria-live="polite"></div>
 
+<!-- ===== 1) GATE ===== -->
 <script>
-(function(){
+(() => {
+  const $ = (id) => document.getElementById(id);
   const GATE_KEY = "sim_authed_session";
-  const gate = document.getElementById("gate");
-  const input = document.getElementById("gateInput");
-  const btn = document.getElementById("gateBtn");
-  const err = document.getElementById("gateErr");
+  const gate = $("gate"), input = $("gateInput"), btn = $("gateBtn"), err = $("gateErr");
 
-  function unlock(){
+  const unlock = () => {
     sessionStorage.setItem(GATE_KEY, "1");
     document.body.classList.remove("gated");
     gate && gate.remove();
-  }
+  };
 
   if (sessionStorage.getItem(GATE_KEY) === "1") { unlock(); return; }
-
   document.body.classList.add("gated");
 
   async function submit(){
@@ -536,7 +415,7 @@ body.dark .badge-id:hover {
       if (resp.ok){ unlock(); return; }
       const data = await resp.json().catch(()=>({}));
       err.textContent = data?.error || "Invalid code";
-    }catch(e){
+    }catch{
       err.textContent = "Network error. Try again.";
     }finally{
       btn.disabled = false; btn.removeAttribute("aria-busy"); input.focus();
@@ -549,15 +428,15 @@ body.dark .badge-id:hover {
 })();
 </script>
 
-<!-- DEFAULT tickets & constants -->
+<!-- ===== 2) DATA / SEED ===== -->
 <script>
-function uid(){ return Math.random().toString(36).slice(2,9); }
-
-const STORE = "sop_sim_state_v15"; // bump to reseed
+/* Util */
+const uid = () => Math.random().toString(36).slice(2,9);
+const STORE = "sop_sim_state_v15"; /* bump to reseed */
 const now   = Date.now();
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 
-// Ticket template helper (unchanged)
+/* Ticket factory */
 function makeTicket({
   subject, requester, requesterName,
   channel, hoursAgo,
@@ -566,30 +445,21 @@ function makeTicket({
   internalRequired = false,
   sections, requirements,
   category, intent, accountId, tags, body, attachments,
-  scenario,
-  seedHistory,
-  ticketNumber               // ← NEW
+  scenario, seedHistory, ticketNumber
 }) {
   return {
-    ticketNumber: ticketNumber || null,   // ← NEW
+    ticketNumber: ticketNumber || null,
     id: uid(),
-    subject,
-    requester,
-    requesterName,
-    channel,
+    subject, requester, requesterName, channel,
     createdAt: now - (hoursAgo * 3600e3),
     status: "Open",
     assignee: "Myself",
     assigneeOptions: ALLOWED_ASSIGNEES,
-    messages: [
-      { id: uid(), author: requesterName || requester, ts: now - (hoursAgo * 3600e3), body }
-    ],
+    messages: [{ id: uid(), author: requesterName || requester, ts: now - (hoursAgo * 3600e3), body }],
     expected: {
-      requiredStatus,
-      requiredAssignee,
-      macroOnly,
+      requiredStatus, requiredAssignee, macroOnly,
       macroCommand: macroCommand || "",
-      internalRequired: !!internalRequired,                          // ← store boolean
+      internalRequired: !!internalRequired, /* why: UI default visibility */
       sections: sections || ["Greeting","Opener","Solution","Closer","Sign-Off"],
       requirements
     },
@@ -601,347 +471,32 @@ function makeTicket({
   };
 }
 
+/* Default dataset (unchanged content) */
 const DEFAULT = {
   weights: {
-    sections: 60,
-    status: 25,
-    assignee: 15,
-    visibility: 10,
-    keywords: 0,
-    pass: 80,
+    sections: 60, status: 25, assignee: 15, visibility: 10, keywords: 0, pass: 80,
     sectionWeights: { Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 }
   },
   tickets: [
- // Ticket
-makeTicket({
-  ticketNumber: "3001",
-  subject: "Account not showing",
-  requester: "Tester2025@gmail.com",
-  requesterName: "Carlos M.",
-  channel: "Email",
-  hoursAgo: 240,
-  requiredStatus: "Pending",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/GEN - Missing Info",
-  internalRequired: false,
-  sections: [],
-  requirements: "Use the specified macro; no additional prose is required.",
-  category: "Account",
-  intent: "Account info",
-  accountId: "APEX-123456",
-  tags: ["account_questions", "T1", "support"],
-  body: "Hi Apex. Can you please tell me what happened to my acc?",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "3002",
-  subject: "Account not showing",
-  requester: "Tester2025@gmail.com",
-  requesterName: "Bach John",
-  channel: "Email",
-  hoursAgo: 900,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/EVAL - Failed Drawdown Threshold - Revoked/Admin Only Status",
-  internalRequired: false,
-  sections: [],
-  requirements: "Use the specified macro; no additional prose is required.",
-  category: "Support",
-  intent: "Figure out what happened with their account",
-  accountId: "APEX-123456",
-  tags: [],
-  scenario: "After checking the user's aMember, you see that the account APEX-123456-96 is blown once because the user breached the drawdown threshold",
-  body: "Hi customer support\n\nI need your help... Today I tried to place a trade in my account APEX-123456-96, but it isn't letting me place a trade; it says something like admin only. I need your help right now. Thanks",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "3003",
-  subject: "Account doesn't work",
-  requester: "Tester2025@gmail.com",
-  requesterName: "Raul Tester",
-  channel: "Email",
-  hoursAgo: 2000,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/EVAL - Failed TDV",
-  internalRequired: false,
-  sections: [],
-  requirements: "Must contain at least 1 screenshot",
-  category: "Support",
-  intent: "Looking for an explanation about their account",
-  accountId: "APEX-123456",
-  tags: ["account_questions"],
-  scenario: "After checking the user's aMember, you see that the user has effectively breached the threshold in their account",
-  body: "Ey Apex, you are scammers!\n\nMy Tdv account APEX-15 appears as blown, and I have NEVER touched the drawdown! I KNOW HOW MY THRESHOLD IS 2500 AND I HAVE NEVER DROPPED MY ACCOUNT DOWN TO 2500!!!!\n\nI need my account restored right now!!!!",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "3004",
-  subject: "How many accounts?",
-  requester: "rafaga@gmail.com",
-  requesterName: "Raul Tester",
-  channel: "Email",
-  hoursAgo: 1,
-  requiredStatus: "Pending",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/GEN - Wrong Email",
-  internalRequired: false,
-  sections: [],
-  requirements: "Use the specified macro; no additional prose is required.",
-  category: "Support",
-  intent: "Looking for an explanation about their account",
-  accountId: "APEX-123456",
-  tags: ["account_questions"],
-  scenario: "You tried to pull up the user's account in aMember, but the email the user opened the ticket with is not connected to any Apex account",
-  body: "Hi. I would like to ask you how many active PA accounts I have, cause I'm not sure if I have 20 or 21",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "3005",
-  subject: "2FA issues",
-  requester: "rafaga@gmail.com",
-  requesterName: "Raul Tester",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Pending",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/2FA Troubleshooting - 1st email",
-  internalRequired: false,
-  sections: [],
-  requirements: "Use the specified macro; no additional prose is required.",
-  category: "Support",
-  intent: "Looking for help about the 2FA",
-  accountId: "APEX-123456",
-  tags: ["account_questions"],
-  body: "Hi, I'm having issues setting up the 2 factor, please I need some assistance.",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "3006",
-  subject: "No access, help",
-  requester: "rafaga@gmail.com",
-  requesterName: "Marina T.",
-  channel: "Email",
-  hoursAgo: 900001,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/Authentication Website Lockout",
-  internalRequired: false,
-  sections: [],
-  requirements: "Use the specified macro; no additional prose is required.",
-  category: "Account",
-  intent: "Looking for help to get access their Apex dashboard",
-  accountId: "APEX-123456",
-  tags: ["account_questions"],
-  scenario: "After checking the user's aMember, you see the following message in the upper part: ''This user exceeded Account Sharing Prevention limits and temporarily locked. You can temporarily disable auto-locking for this customer for 1 day and allow access for his account.''",
-  body: "Ey bro, I have no access to my Apex dashboard, I'm being locked out when trying to log in",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "3007",
-  subject: "Data issues",
-  requester: "rafaga@gmail.com",
-  requesterName: "Rafael Garcia",
-  channel: "Email",
-  hoursAgo: 987654321,
-  requiredStatus: "Pending",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/Data Generic 2.0 NEW",
-  internalRequired: false,
-  sections: [],
-  requirements: "Use the specified macro; no additional prose is required.",
-  category: "Account",
-  intent: "",
-  accountId: "APEX-123456",
-  tags: ["account_questions"],
-  body: "Ey, this is terrible!!!! My data is the worst, and I have the best computer and internet in the whole country!",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "3008",
-  subject: "Switch account",
-  requester: "rafaga@gmail.com",
-  requesterName: "Rafael Garcia",
-  channel: "Email",
-  hoursAgo: 0.1,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/Platform - Purchased Wrong Account Type",
-  internalRequired: false,
-  sections: [],
-  requirements: "Use the specified macro; no additional prose is required.",
-  category: "Account",
-  intent: "",
-  accountId: "APEX-123456",
-  tags: [],
-  body: "Hi dear customer service. I would like to ask a change. By mistake, I purchased a Wealthcharts account just 5 minutes ago, but I want a Rithmic account. Can you please convert it?\n\nThank you, dears",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "3009",
-  subject: "Delayed data",
-  requester: "rafaga@gmail.com",
-  requesterName: "Rafael Garcia",
-  channel: "Email",
-  hoursAgo: 123456789,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/TECH - Data Issue",
-  internalRequired: false,
-  sections: [],
-  requirements: "Use the specified macro; no additional prose is required.",
-  category: "Account",
-  intent: "",
-  accountId: "APEX-123456",
-  tags: ["account_questions"],
-  body: "De de de la la la yed yed yed  Da da da ta ta ta\n\nApex, this Rithmic data is terrible, it's making me lose too much money cause it's too slow to load, basically it's super delayed!\nPlease reset the data right now! You should improve the way you feed the data to the accounts!",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "3010",
-  subject: "Passed the test",
-  requester: "rafaga@gmail.com",
-  requesterName: "Rafael Garcia",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: true,
-  macroCommand: "/EVAL - Passed Evaluation",
-  internalRequired: false,
-  sections: [],
-  requirements: "Use the specified macro; no additional prose is required.",
-  category: "Account",
-  intent: "",
-  accountId: "APEX-123456",
-  tags: ["account_questions"],
-  body: "Finally, I passed the evaluation, what should I do now? I promise I will become millionaire and also I will lead Apex to the next level with all the profits coming on my side!!!!!",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "4000",
-  subject: "PA not showing",
-  requester: "sara@gmail.com",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Open",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  internalRequired: false,
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements: "Write a professional public reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off). It could combine wording from the macros /numerical order and /how to sign macros. The response should guide the user to sign for the lowest account number (-04) to activate their PA, wording from one of the following FAQs and should include one or more of the following FAQ links: \nhttps://support.apextraderfunding.com/hc/en-us/articles/31519770974235-Evaluation-Passed-Converting… \nhttps://support.apextraderfunding.com/hc/en-us/articles/4407696269851-Evaluation-Passed-Profit-Targ…",
-  category: "Support",
-  intent: "PA conversion",
-  accountId: "APEX-1235",
-  tags: [],
-  scenario: "You go to aMember and check the Rithmic tab, verifying which evals are passed, signed, and paid for. The image attached shows what you find.",
-  body: "Hi Apex help desk! \n\nI passed my Rithmic eval 2 days ago, and I'm trying to get my PA. I've already paid for and signed for it, but it's not showing up. The account I passed is -05. Can you help me activate it or tell me what I'm missing? Thank you. \n\nBest,\n\nSara",
-  attachments: [
-    {
-      type: "image",
-      url: "https://imgur.com/a/3T9MFNB",
-      title: "Attachment"
-    }
-  ]
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "4001",
-  subject: "Error Rejected at RMS",
-  requester: "fixitplease@gmail.com",
-  requesterName: "John",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Open",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  internalRequired: false,
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements: "Personalized response should include this information (could be paraphrased): You will need to uncheck Liquidating Only option in your RTrader dashboard. Right click on the account in trader dashboard and turn OFF Enable Liquidating Only (Trader). The response could mention a screenshot describing where to turn it off and mention risk parameters. The following FAQ link should be added:\nhttps://support.apextraderfunding.com/hc/en-us/articles/10973928895259-Error-Messages-and-How-To-Fi…",
-  category: "Support",
-  intent: "",
-  accountId: "APEX - 123411",
-  tags: [],
-  body: "Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",
-  attachments: [
-    {
-      type: "image",
-      url: "https://imgur.com/a/oaCaxLd",
-      title: "Attachment"
-    }
-  ]
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "4002",
-  subject: "Can't use Ninja Trader",
-  requester: "dannytfixmyissue@hotmail.com",
-  requesterName: "Danny T",
-  channel: "Email",
-  hoursAgo: 1,
-  requiredStatus: "Open",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  internalRequired: false,
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements: "Personalized response including information from the FAQ Rithmic & Ninja Connection Guide and corresponding link: https://support.apextraderfunding.com/hc/en-us/articles/31519440985499-Rithmic-Ninja-Connection-Gui…",
-  category: "Support",
-  intent: "",
-  accountId: "APEX - 543210",
-  tags: [],
-  scenario: "After checking the user's information, you see that everything on R-Manager and R-Trader seems to be ok.",
-  body: "Hello.\n\nI feel absolutely frustrated because I purchased my Rithmic evaluation 5 days ago and was able to set everything up in RTrader, but I haven't been able to connect to NinjaTrader to trade. Can you help me? I need your guidance.\n\nIf you are unable to help me, then I would like a refund because I need to trade asap.",
-  attachments: []
-}),
-// Ticket
-makeTicket({
-  ticketNumber: "4004",
-  subject: "Can't connect to TradingView",
-  requester: "wolfangamadeusmozart@gmail.com",
-  requesterName: "Amadeus Mozart",
-  channel: "Email",
-  hoursAgo: 3.5,
-  requiredStatus: "Open",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  internalRequired: false,
-  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-  requirements: "Personalized response explaining that the user should activate the TradingView plugin. The message should include the explanation on how to activate the plugin (or addon) from Tradovate and/or some wording from the following FAQ and the link to it: https://support.apextraderfunding.com/hc/en-us/articles/31519470769947-Tradovate-Setup-TradingView.",
-  category: "Support",
-  intent: "Tradovate data",
-  accountId: "APEX-000111",
-  tags: ["tradovate_questions"],
-  scenario: "You go to NTDash and ensure that the accounts are not blown, membership is ok, but TradingView is not appearing in their plugins.",
-  body: "Hello Apex. It's been 2 days and I still can't log in to TradingView. I haven't failed the test, my account is almost at the original balance. Fix my issue!!!",
-  attachments: []
-})
+    /* === 3001..3010, 4000..4004 (exactly as provided) === */
+makeTicket({ticketNumber:"3001",subject:"Account not showing",requester:"Tester2025@gmail.com",requesterName:"Carlos M.",channel:"Email",hoursAgo:240,requiredStatus:"Pending",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/GEN - Missing Info",internalRequired:false,sections:[],requirements:"Use the specified macro; no additional prose is required.",category:"Account",intent:"Account info",accountId:"APEX-123456",tags:["account_questions","T1","support"],body:"Hi Apex. Can you please tell me what happened to my acc?",attachments:[]}),
+makeTicket({ticketNumber:"3002",subject:"Account not showing",requester:"Tester2025@gmail.com",requesterName:"Bach John",channel:"Email",hoursAgo:900,requiredStatus:"Solved",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/EVAL - Failed Drawdown Threshold - Revoked/Admin Only Status",internalRequired:false,sections:[],requirements:"Use the specified macro; no additional prose is required.",category:"Support",intent:"Figure out what happened with their account",accountId:"APEX-123456",tags:[],scenario:"After checking the user's aMember, you see that the account APEX-123456-96 is blown once because the user breached the drawdown threshold",body:"Hi customer support\n\nI need your help... Today I tried to place a trade in my account APEX-123456-96, but it isn't letting me place a trade; it says something like admin only. I need your help right now. Thanks",attachments:[]}),
+makeTicket({ticketNumber:"3003",subject:"Account doesn't work",requester:"Tester2025@gmail.com",requesterName:"Raul Tester",channel:"Email",hoursAgo:2000,requiredStatus:"Solved",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/EVAL - Failed TDV",internalRequired:false,sections:[],requirements:"Must contain at least 1 screenshot",category:"Support",intent:"Looking for an explanation about their account",accountId:"APEX-123456",tags:["account_questions"],scenario:"After checking the user's aMember, you see that the user has effectively breached the threshold in their account",body:"Ey Apex, you are scammers!\n\nMy Tdv account APEX-15 appears as blown, and I have NEVER touched the drawdown! I KNOW HOW MY THRESHOLD IS 2500 AND I HAVE NEVER DROPPED MY ACCOUNT DOWN TO 2500!!!!\n\nI need my account restored right now!!!!",attachments:[]}),
+makeTicket({ticketNumber:"3004",subject:"How many accounts?",requester:"rafaga@gmail.com",requesterName:"Raul Tester",channel:"Email",hoursAgo:1,requiredStatus:"Pending",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/GEN - Wrong Email",internalRequired:false,sections:[],requirements:"Use the specified macro; no additional prose is required.",category:"Support",intent:"Looking for an explanation about their account",accountId:"APEX-123456",tags:["account_questions"],scenario:"You tried to pull up the user's account in aMember, but the email the user opened the ticket with is not connected to any Apex account",body:"Hi. I would like to ask you how many active PA accounts I have, cause I'm not sure if I have 20 or 21",attachments:[]}),
+makeTicket({ticketNumber:"3005",subject:"2FA issues",requester:"rafaga@gmail.com",requesterName:"Raul Tester",channel:"Email",hoursAgo:2,requiredStatus:"Pending",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/2FA Troubleshooting - 1st email",internalRequired:false,sections:[],requirements:"Use the specified macro; no additional prose is required.",category:"Support",intent:"Looking for help about the 2FA",accountId:"APEX-123456",tags:["account_questions"],body:"Hi, I'm having issues setting up the 2 factor, please I need some assistance.",attachments:[]}),
+makeTicket({ticketNumber:"3006",subject:"No access, help",requester:"rafaga@gmail.com",requesterName:"Marina T.",channel:"Email",hoursAgo:900001,requiredStatus:"Solved",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/Authentication Website Lockout",internalRequired:false,sections:[],requirements:"Use the specified macro; no additional prose is required.",category:"Account",intent:"Looking for help to get access their Apex dashboard",accountId:"APEX-123456",tags:["account_questions"],scenario:"After checking the user's aMember, you see the following message in the upper part: ''This user exceeded Account Sharing Prevention limits and temporarily locked. You can temporarily disable auto-locking for this customer for 1 day and allow access for his account.''",body:"Ey bro, I have no access to my Apex dashboard, I'm being locked out when trying to log in",attachments:[]}),
+makeTicket({ticketNumber:"3007",subject:"Data issues",requester:"rafaga@gmail.com",requesterName:"Rafael Garcia",channel:"Email",hoursAgo:987654321,requiredStatus:"Pending",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/Data Generic 2.0 NEW",internalRequired:false,sections:[],requirements:"Use the specified macro; no additional prose is required.",category:"Account",intent:"",accountId:"APEX-123456",tags:["account_questions"],body:"Ey, this is terrible!!!! My data is the worst, and I have the best computer and internet in the whole country!",attachments:[]}),
+makeTicket({ticketNumber:"3008",subject:"Switch account",requester:"rafaga@gmail.com",requesterName:"Rafael Garcia",channel:"Email",hoursAgo:0.1,requiredStatus:"Solved",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/Platform - Purchased Wrong Account Type",internalRequired:false,sections:[],requirements:"Use the specified macro; no additional prose is required.",category:"Account",intent:"",accountId:"APEX-123456",tags:[],body:"Hi dear customer service. I would like to ask a change. By mistake, I purchased a Wealthcharts account just 5 minutes ago, but I want a Rithmic account. Can you please convert it?\n\nThank you, dears",attachments:[]}),
+makeTicket({ticketNumber:"3009",subject:"Delayed data",requester:"rafaga@gmail.com",requesterName:"Rafael Garcia",channel:"Email",hoursAgo:123456789,requiredStatus:"Solved",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/TECH - Data Issue",internalRequired:false,sections:[],requirements:"Use the specified macro; no additional prose is required.",category:"Account",intent:"",accountId:"APEX-123456",tags:["account_questions"],body:"De de de la la la yed yed yed  Da da da ta ta ta\n\nApex, this Rithmic data is terrible, it's making me lose too much money cause it's too slow to load, basically it's super delayed!\nPlease reset the data right now! You should improve the way you feed the data to the accounts!",attachments:[]}),
+makeTicket({ticketNumber:"3010",subject:"Passed the test",requester:"rafaga@gmail.com",requesterName:"Rafael Garcia",channel:"Email",hoursAgo:2,requiredStatus:"Solved",requiredAssignee:"Myself",macroOnly:true,macroCommand:"/EVAL - Passed Evaluation",internalRequired:false,sections:[],requirements:"Use the specified macro; no additional prose is required.",category:"Account",intent:"",accountId:"APEX-123456",tags:["account_questions"],body:"Finally, I passed the evaluation, what should I do now? I promise I will become millionaire and also I will lead Apex to the next level with all the profits coming on my side!!!!!",attachments:[]}),
+makeTicket({ticketNumber:"4000",subject:"PA not showing",requester:"sara@gmail.com",channel:"Email",hoursAgo:2,requiredStatus:"Open",requiredAssignee:"Myself",macroOnly:false,macroCommand:"",internalRequired:false,sections:["Greeting","Opener","Solution","Closer","Sign-Off"],requirements:"Write a professional public reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off). It could combine wording from the macros /numerical order and /how to sign macros. The response should guide the user to sign for the lowest account number (-04) to activate their PA, wording from one of the following FAQs and should include one or more of the following FAQ links: \nhttps://support.apextraderfunding.com/hc/en-us/articles/31519770974235-Evaluation-Passed-Converting… \nhttps://support.apextraderfunding.com/hc/en-us/articles/4407696269851-Evaluation-Passed-Profit-Targ…",category:"Support",intent:"PA conversion",accountId:"APEX-1235",tags:[],scenario:"You go to aMember and check the Rithmic tab, verifying which evals are passed, signed, and paid for. The image attached shows what you find.",body:"Hi Apex help desk! \n\nI passed my Rithmic eval 2 days ago, and I'm trying to get my PA. I've already paid for and signed for it, but it's not showing up. The account I passed is -05. Can you help me activate it or tell me what I'm missing? Thank you. \n\nBest,\n\nSara",attachments:[{type:"image",url:"https://imgur.com/a/3T9MFNB",title:"Attachment"}]}),
+makeTicket({ticketNumber:"4001",subject:"Error Rejected at RMS",requester:"fixitplease@gmail.com",requesterName:"John",channel:"Email",hoursAgo:2,requiredStatus:"Open",requiredAssignee:"Myself",macroOnly:false,macroCommand:"",internalRequired:false,sections:["Greeting","Opener","Solution","Closer","Sign-Off"],requirements:"Personalized response should include this information (could be paraphrased): You will need to uncheck Liquidating Only option in your RTrader dashboard. Right click on the account in trader dashboard and turn OFF Enable Liquidating Only (Trader). The response could mention a screenshot describing where to turn it off and mention risk parameters. The following FAQ link should be added:\nhttps://support.apextraderfunding.com/hc/en-us/articles/10973928895259-Error-Messages-and-How-To-Fi…",category:"Support",intent:"",accountId:"APEX - 123411",tags:[],body:"Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",attachments:[{type:"image",url:"https://imgur.com/a/oaCaxLd",title:"Attachment"}]}),
+makeTicket({ticketNumber:"4002",subject:"Can't use Ninja Trader",requester:"dannytfixmyissue@hotmail.com",requesterName:"Danny T",channel:"Email",hoursAgo:1,requiredStatus:"Open",requiredAssignee:"Myself",macroOnly:false,macroCommand:"",internalRequired:false,sections:["Greeting","Opener","Solution","Closer","Sign-Off"],requirements:"Personalized response including information from the FAQ Rithmic & Ninja Connection Guide and corresponding link: https://support.apextraderfunding.com/hc/en-us/articles/31519440985499-Rithmic-Ninja-Connection-Gui…",category:"Support",intent:"",accountId:"APEX - 543210",tags:[],scenario:"After checking the user's information, you see that everything on R-Manager and R-Trader seems to be ok.",body:"Hello.\n\nI feel absolutely frustrated because I purchased my Rithmic evaluation 5 days ago and was able to set everything up in RTrader, but I haven't been able to connect to NinjaTrader to trade. Can you help me? I need your guidance.\n\nIf you are unable to help me, then I would like a refund because I need to trade asap.",attachments:[]}),
+makeTicket({ticketNumber:"4004",subject:"Can't connect to TradingView",requester:"wolfangamadeusmozart@gmail.com",requesterName:"Amadeus Mozart",channel:"Email",hoursAgo:3.5,requiredStatus:"Open",requiredAssignee:"Myself",macroOnly:false,macroCommand:"",internalRequired:false,sections:["Greeting","Opener","Solution","Closer","Sign-Off"],requirements:"Personalized response explaining that the user should activate the TradingView plugin. The message should include the explanation on how to activate the plugin (or addon) from Tradovate and/or some wording from the following FAQ and the link to it: https://support.apextraderfunding.com/hc/en-us/articles/31519470769947-Tradovate-Setup-TradingView.",category:"Support",intent:"Tradovate data",accountId:"APEX-000111",tags:["tradovate_questions"],scenario:"You go to NTDash and ensure that the accounts are not blown, membership is ok, but TradingView is not appearing in their plugins.",body:"Hello Apex. It's been 2 days and I still can't log in to TradingView. I haven't failed the test, my account is almost at the original balance. Fix my issue!!!",attachments:[]})
   ]
 };
 
-// seed or load state
+/* Load or seed */
 let state = null;
 try { state = JSON.parse(localStorage.getItem(STORE) || "null"); } catch {}
 if (!state || !Array.isArray(state.tickets)) {
@@ -950,153 +505,105 @@ if (!state || !Array.isArray(state.tickets)) {
 }
 </script>
 
-<!-- Main app script -->
+<!-- ===== 3) APP (UI + LOGIC) ===== -->
 <script>
 (() => {
-// --- helpers / storage ---
-function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+/* ---------- Helpers ---------- */
+const $  = (id)=>document.getElementById(id);
+const $$ = (sel,root=document)=>[...root.querySelectorAll(sel)];
+const save = ()=> localStorage.setItem(STORE, JSON.stringify(state));
+const fmt  = (d)=> d.toLocaleString();
+const esc  = (s)=> String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
+const eq=(a,b)=>String(a??'').trim().toLowerCase()===String(b??'').trim().toLowerCase();
+const scoreBadgeHTML=(score)=>{ const n=Number(score)||0,cls=n>=90?"score-good":n>=80?"score-mid":"score-bad"; return `<span class="score-badge ${cls}">${n.toFixed(0)}/100</span>`; };
 
-function fmt(d){ return d.toLocaleString(); }
+const toastEl = $("toast"); let toastT=null;
+function toast(msg){ toastEl.textContent = msg; toastEl.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove("show"),1800); }
 
-function esc(s){
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
-}
-
-function scoreBadgeHTML(score){
-  const n = Number(score) || 0;
-  const cls = n >= 90 ? "score-good" : n >= 80 ? "score-mid" : "score-bad";
-  return `<span class="score-badge ${cls}">${n.toFixed(0)}/100</span>`;
-}
-
-// 🔑 Reset helper
-function resetTicket(ticketId){
+/* ---------- Exported: per-ticket reset (trainer code) ---------- */
+window.resetTicket = function resetTicket(ticketId){
   const pw = prompt("Enter reset code:");
   if (pw === "apexreset01") {
     const t = state.tickets.find(x => x.id === ticketId);
-    if (t) {
-      t.locked = false;
-      save();
-      openDetail(ticketId); // re-render the now-unlocked ticket
-      alert("Unlocked — you can submit this ticket again.");
-    }
-  } else {
-    alert("Incorrect code.");
-  }
-}
+    if (t) { t.locked = false; save(); openDetail(ticketId); alert("Unlocked — you can submit this ticket again."); }
+  } else { alert("Incorrect code."); }
+};
 
-function showList(){
-  // hide detail view, show list
-  detail.classList.add("hidden");
-  document.getElementById("list").classList.remove("hidden");
-}
+/* ---------- DOM refs ---------- */
+const list = $("list"), detail = $("detail"), countLbl = $("countLbl");
+const fStatus = $("fStatus"), fChannel = $("fChannel"), searchBox = $("searchBox");
+const themeBtn = $("themeBtn"), resetBtn = $("resetBtn");
 
-// --- elements ---
-const list = document.getElementById("list");
-const detail = document.getElementById("detail");
-const countLbl = document.getElementById("countLbl");
-const fStatus = document.getElementById("fStatus");
-const fChannel = document.getElementById("fChannel");
-const searchBox = document.getElementById("searchBox");
-const themeBtn = document.getElementById("themeBtn");
+const backBtn = $("backBtn"), dSubject = $("dSubject"), dRequester = $("dRequester"), dCreated = $("dCreated");
+const dTicketId = $("dTicketId"), dChannelPill = $("dChannelPill");
+const dStatus = $("dStatus"), dAssignee = $("dAssignee"), dTags = $("dTags");
+const dCategory = $("dCategory"), dIntent = $("dIntent"), dAccount = $("dAccount");
+const thread = $("thread"), snapshots = $("snapshots"), replyBox = $("replyBox"), visibilitySel = $("visibilitySel");
 
-const backBtn = document.getElementById("backBtn");
-const dSubject = document.getElementById("dSubject");
-const dRequester = document.getElementById("dRequester");
-const dCreated = document.getElementById("dCreated");
-const dTicketId = document.getElementById("dTicketId");
-const dChannelPill = document.getElementById("dChannelPill");
+const rName=$("rName"), rEmail=$("rEmail"), rLocal=$("rLocal"), rLang=$("rLang"), rNotes=$("rNotes"), histList=$("histList");
 
-const dStatus = document.getElementById("dStatus");
-const dAssignee = document.getElementById("dAssignee");
-const dTags = document.getElementById("dTags");
-const dCategory = document.getElementById("dCategory");
-const dIntent = document.getElementById("dIntent");
-const dAccount = document.getElementById("dAccount");
-const thread = document.getElementById("thread");
-const snapshots = document.getElementById("snapshots");
-const replyBox = document.getElementById("replyBox");
-const visibilitySel = document.getElementById("visibilitySel");
+const submitMainBtn=$("submitMainBtn"), submitToggleBtn=$("submitToggleBtn"), submitMenu=$("submitMenu");
+const submitStatusLbl=$("submitStatusLbl"), submitDot=$("submitDot");
 
+const grammarBtn=$("grammarBtn"), grammarPanel=$("grammarPanel"), grammarMeta=$("grammarMeta"), grammarOrig=$("grammarOrig"), grammarFix=$("grammarFix"), grammarList=$("grammarList");
+const applyGrammarBtn=$("applyGrammarBtn"), dismissGrammarBtn=$("dismissGrammarBtn");
 
-// Right column (requester + history)
-const rName  = document.getElementById("rName");
-const rEmail = document.getElementById("rEmail");
-const rLocal = document.getElementById("rLocal");
-const rLang  = document.getElementById("rLang");
-const rNotes = document.getElementById("rNotes");
-const histList = document.getElementById("histList");
+const gradeTable = document.querySelector("#gradeTable tbody"), scoreLbl = $("scoreLbl"), passLbl = $("passLbl");
+const kSolved=$("kSolved"), kOpen=$("kOpen"), kAvg=$("kAvg");
 
-// split submit refs
-const submitMainBtn   = document.getElementById("submitMainBtn");
-const submitToggleBtn = document.getElementById("submitToggleBtn");
-const submitMenu      = document.getElementById("submitMenu");
-const submitStatusLbl = document.getElementById("submitStatusLbl");
-const submitDot       = document.getElementById("submitDot");
+let currentId=null, submitAs="Open", lastGrammar=null;
 
-// Grammar UI
-const grammarBtn = document.getElementById("grammarBtn");
-const grammarPanel = document.getElementById("grammarPanel");
-const grammarMeta = document.getElementById("grammarMeta");
-const grammarOrig = document.getElementById("grammarOrig");
-const grammarFix  = document.getElementById("grammarFix");
-const grammarList = document.getElementById("grammarList");
-const applyGrammarBtn = document.getElementById("applyGrammarBtn");
-const dismissGrammarBtn = document.getElementById("dismissGrammarBtn");
-
-// grader/stats UI
-const gradeTable = document.querySelector("#gradeTable tbody");
-const scoreLbl = document.getElementById("scoreLbl");
-const passLbl  = document.getElementById("passLbl");
-
-const kSolved = document.getElementById("kSolved");
-const kOpen = document.getElementById("kOpen");
-const kAvg = document.getElementById("kAvg");
-
-const resetBtn = document.getElementById("resetBtn");
-
-// toast
-const toastEl = document.getElementById("toast");
-let toastT=null;
-function toast(msg){
-  toastEl.textContent = msg;
-  toastEl.classList.add("show");
-  clearTimeout(toastT);
-  toastT = setTimeout(()=>toastEl.classList.remove("show"), 1800);
-}
-
-let currentId = null;
-let submitAs = "Open"; // current dropdown selection
-
-// spinner toggle — only class controls visibility
+/* ---------- Small UI helpers ---------- */
 function setSubmitting(on){
   submitMainBtn.classList.toggle("loading", on);
-  submitMainBtn.disabled = on;
-  submitToggleBtn.disabled = on;
+  submitMainBtn.disabled = on; submitToggleBtn.disabled = on;
   submitMainBtn.setAttribute("aria-busy", on ? "true" : "false");
   submitToggleBtn.setAttribute("aria-disabled", on ? "true" : "false");
 }
 
-// --- stats ---
+function setSubmitUI(value){
+  submitAs = value;
+  dStatus.value = value;
+  submitStatusLbl.textContent = value;
+  submitDot.className = "status-dot " + (value==="Open" ? "dot-open" : value==="Pending" ? "dot-pending" : "dot-solved");
+}
+
 function renderStats(){
   const weekAgo = Date.now() - 7*24*3600e3;
   const solved = state.tickets.filter(t=>t.status==="Solved" && t.createdAt>=weekAgo).length;
   const open = state.tickets.filter(t=>t.status!=="Solved").length;
-  kSolved.textContent = solved;
-  kOpen.textContent = open;
+  kSolved.textContent = solved; kOpen.textContent = open;
   const graded = state.tickets.map(t=>t.grade?.score).filter(x=>typeof x==="number");
   kAvg.textContent = graded.length? (graded.reduce((a,b)=>a+b,0)/graded.length).toFixed(0): "—";
 }
 
-// --- filters / list ---
+function renderAssigneeOptions(t){
+  const opts=(t.assigneeOptions&&t.assigneeOptions.length)?t.assigneeOptions:ALLOWED_ASSIGNEES;
+  dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
+}
+
+function renderGrade(report){
+  gradeTable.innerHTML = ""; scoreLbl.textContent = "0/100"; passLbl.textContent = state.weights.pass + "/100";
+  if(!report){ return; }
+  for(const c of report.checks){
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td class="small">${esc(c.label)}<div class="muted small">${esc(c.detail||"")}</div></td>
+                    <td class="small ${c.ok?"ok":"fail"}">${c.ok?"✅ Pass":"❌ Fail"}</td>`;
+    gradeTable.appendChild(tr);
+  }
+  scoreLbl.textContent = `${report.score.toFixed(0)}/100 ${report.pass?"• ✅ Pass":"• ❌ Fail"}`;
+}
+
+function renderAll(){ renderList(); renderStats(); passLbl.textContent = state.weights.pass + "/100"; }
+
+/* ---------- Filters & list ---------- */
 function filtered(){
   const raw = (searchBox.value||"").trim();
   const q = raw.toLowerCase();
 
-  // Power filter: "#123456"
   if (q.startsWith("#")) {
-    const needle = q.replace(/^#/, "").trim();
+    const needle = q.slice(1).trim();
     return state.tickets.filter(t=>{
       const tn = (t.ticketNumber||"").toLowerCase();
       return needle ? tn.includes(needle) : !!tn;
@@ -1106,15 +613,10 @@ function filtered(){
   return state.tickets.filter(t=>{
     const okS = fStatus.value==="All"||t.status===fStatus.value;
     const okC = fChannel.value==="All"||t.channel===fChannel.value;
-
-    // Include ticketNumber in free-text index
     const text = (
       (t.ticketNumber ? ` ${t.ticketNumber} ` : "") +
-      t.subject+" "+t.requester+" "+
-      t.messages.map(m=>m.body).join(" ")+" "+
-      (t.expected?.sections||[]).join(" ")
+      t.subject+" "+t.requester+" "+ t.messages.map(m=>m.body).join(" ")+" "+ (t.expected?.sections||[]).join(" ")
     ).toLowerCase();
-
     const okQ = !q || text.includes(q);
     return okS && okC && okQ;
   });
@@ -1124,47 +626,35 @@ function renderList(){
   const items = filtered();
   countLbl.textContent = `${items.length} tickets`;
   list.innerHTML = items.map(t=>`
-     <div class="row" data-id="${t.id}">
-       <div class="avatar">📨</div>
-       <div style="flex:1;min-width:0">
-         <div class="small" style="display:flex;align-items:center;gap:8px">
-           <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
-<span class="pill">${esc(t.channel)}</span>
-${t.ticketNumber ? `<span class="pill">#${esc(t.ticketNumber)}</span>` : ""}
-${t.grade ? scoreBadgeHTML(t.grade.score) : ""}
-         </div>
-         <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
-       </div>
-       <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
-     </div>
-   `).join("");
+    <div class="row" data-id="${t.id}">
+      <div class="avatar">📨</div>
+      <div style="flex:1;min-width:0">
+        <div class="small" style="display:flex;align-items:center;gap:8px">
+          <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.subject)}</span>
+          <span class="pill">${esc(t.channel)}</span>
+          ${t.ticketNumber ? `<span class="pill">#${esc(t.ticketNumber)}</span>` : ""}
+          ${t.grade ? scoreBadgeHTML(t.grade.score) : ""}
+        </div>
+        <div class="small muted">${esc(t.requester)} • ${fmt(new Date(t.createdAt))}</div>
+      </div>
+      <div class="small muted" style="width:120px;text-align:right">${esc(t.status)}</div>
+    </div>
+  `).join("");
 
-  [...list.querySelectorAll(".row")].forEach(el=>el.onclick=()=>openDetail(el.dataset.id));
+  $$(".row", list).forEach(el=> el.onclick = ()=> openDetail(el.dataset.id));
 
   if(items.length===0){
     list.innerHTML = `<div style="padding:48px;text-align:center;color:var(--muted)">
-       <div style="font-size:48px;margin-bottom:8px">👨‍✈️</div>
-       <div style="font-weight:700">No tickets</div>
-       <div class="small">Work you're assigned will appear here.</div></div>`;
+      <div style="font-size:48px;margin-bottom:8px">👨‍✈️</div>
+      <div style="font-weight:700">No tickets</div>
+      <div class="small">Work you're assigned will appear here.</div></div>`;
   }
 }
 
-function renderAssigneeOptions(t){
-  const opts=(t.assigneeOptions&&t.assigneeOptions.length)?t.assigneeOptions:ALLOWED_ASSIGNEES;
-  dAssignee.innerHTML = opts.map(o=>`<option>${esc(o)}</option>`).join("");
-}
-
-function setSubmitUI(value){
-  submitAs = value;
-  dStatus.value = value;                  // keep hidden select in sync
-  submitStatusLbl.textContent = value;    // label text
-  submitDot.className =
-    "status-dot " + (value==="Open" ? "dot-open" : value==="Pending" ? "dot-pending" : "dot-solved");
-}
-  
-function renderInteractionHistory(requesterEmail, currentTicketId){
+/* ---------- History ---------- */
+function renderInteractionHistory(email, currentTicketId){
   const items = state.tickets
-    .filter(t => t.requester === requesterEmail && t.id !== currentTicketId)
+    .filter(t => t.requester === email && t.id !== currentTicketId)
     .sort((a,b) => b.createdAt - a.createdAt)
     .slice(0, 6);
 
@@ -1174,9 +664,7 @@ function renderInteractionHistory(requesterEmail, currentTicketId){
   }
 
   histList.innerHTML = items.map(t => {
-    const dotClass =
-      t.status === "Open" ? "dot-open" :
-      t.status === "Pending" ? "dot-pending" : "dot-solved";
+    const dotClass = t.status === "Open" ? "dot-open" : t.status === "Pending" ? "dot-pending" : "dot-solved";
     return `
       <div class="hist-item">
         <span class="hist-dot ${dotClass}"></span>
@@ -1189,182 +677,101 @@ function renderInteractionHistory(requesterEmail, currentTicketId){
   }).join("");
 }
 
+/* ---------- Detail ---------- */
+function updateReplyPlaceholder(){
+  if (!replyBox || !visibilitySel) return;
+  replyBox.placeholder = visibilitySel.value === "Internal"
+      ? "Write your internal note… (not visible to customer)"
+      : "Write your reply… (trainee)";
+}
+
 function openDetail(id){
   currentId = id;
-  const t = state.tickets.find(x => x.id === id); 
-  if (!t) return;
+  const t = state.tickets.find(x => x.id === id); if(!t) return;
 
-  document.getElementById("list").classList.add("hidden");
+  $("list").classList.add("hidden");
   detail.classList.remove("hidden");
 
-  // Header bits
   dSubject.textContent = t.subject;
   dRequester.textContent = t.requester || "—";
   dCreated.textContent = fmt(new Date(t.createdAt));
-  dTicketId.textContent = t.ticketNumber
-  ? `Ticket ${t.ticketNumber} • id ${t.id}`
-  : `Ticket ${t.id}`;
+  dTicketId.textContent = t.ticketNumber ? `Ticket ${t.ticketNumber} • id ${t.id}` : `Ticket ${t.id}`;
   dChannelPill.textContent = t.channel || "—";
-/* --- lock gating (disable submit when ticket is locked) --- */
-if (t.locked) {
-  submitMainBtn.disabled = true;
-  submitToggleBtn.disabled = true;
-  replyBox.disabled = true;
 
-  submitMainBtn.setAttribute("data-locked", "true");
-  submitMainBtn.title = "Locked — ask your trainer to reset";
-} else {
-  // ensure controls are usable when not locked
-  submitMainBtn.disabled = false;
-  submitToggleBtn.disabled = false;
-  replyBox.disabled = false;
+  /* Lock: why — prevent resubmission without trainer intervention */
+  if (t.locked) {
+    submitMainBtn.disabled = true; submitToggleBtn.disabled = true; replyBox.disabled = true;
+    submitMainBtn.setAttribute("data-locked","true");
+    submitMainBtn.title = "Locked — ask your trainer to reset";
+  } else {
+    submitMainBtn.disabled = false; submitToggleBtn.disabled = false; replyBox.disabled = false;
+    submitMainBtn.removeAttribute("data-locked"); submitMainBtn.title = "";
+    setSubmitUI(dStatus.value);
+  }
 
-  submitMainBtn.removeAttribute("data-locked");
-  submitMainBtn.title = "";
-
-  // restore the standard label/dot via your helper
-  setSubmitUI(dStatus.value);
-}
-
-  // Submit-as control (existing)
   dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
   setSubmitUI(dStatus.value);
 
   renderAssigneeOptions(t);
   dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
 
-  // Tags, fields (existing)
   const tags = (t.tags || []);
-  dTags.innerHTML = tags.length 
-    ? tags.map(x=>`<span class="z-tag">${esc(x)}</span>`).join("")
-    : `<span class="z-value muted">—</span>`;
+  dTags.innerHTML = tags.length ? tags.map(x=>`<span class="z-tag">${esc(x)}</span>`).join("") : `<span class="z-value muted">—</span>`;
   dCategory.textContent = t.category || "—";
   dIntent.textContent = t.intent || "—";
   dAccount.textContent = t.accountId || "—";
 
-// Thread (updated – render attachments inline with the first (requester) message)
-replyBox.value = "";
-thread.innerHTML = "";
+  replyBox.value = ""; thread.innerHTML = "";
+  if (visibilitySel) { visibilitySel.value = (t?.expected?.internalRequired ? "Internal" : "Public"); }
+  updateReplyPlaceholder();
 
-replyBox.value = "";
-thread.innerHTML = "";
-
-// default visibility for each ticket view
-if (visibilitySel) {
-  visibilitySel.value = (t?.expected?.internalRequired ? "Internal" : "Public");
-}
-updateReplyPlaceholder();
-
-// Show Scenario (if present) above the customer’s first message
-if (t.scenario && t.scenario.trim()) {
-  const sc = document.createElement("div");
-  sc.className = "scenario-block";
-  sc.innerHTML = `
-    <div class="scenario-title">
-      <span class="badge">Scenario</span>
-    </div>
-    <div class="scenario-text">${esc(t.scenario)}</div>
-  `;
-  thread.appendChild(sc);
-}
-
-const hasInlineAttachments = Array.isArray(t.attachments) && t.attachments.length > 0;
-
-t.messages.forEach((m, idx) => {
-  const d = document.createElement("div");
-  d.className = "bubble";
-
-  let bodyHtml = `
-    <div class="small muted" style="margin-bottom:4px">
-      ${esc(m.author)} • ${fmt(new Date(m.ts))}
-    </div>
-    <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>
-  `;
-
-  // Attach customer snapshots directly under the first message
-  if (idx === 0 && hasInlineAttachments) {
-    const attHtml = t.attachments.map(a => {
-      if (a.type === "image") {
-        return `
-          <div style="margin-top:8px">
-            <img src="${esc(a.url)}" alt="${esc(a.title||"attachment")}"
-                 style="max-width:100%;border-radius:8px;display:block"/>
-          </div>`;
-      }
-      return `
-        <div class="small" style="margin-top:8px">
-          <a href="${esc(a.url)}" target="_blank" rel="noopener">
-            ${esc(a.title||a.url)}
-          </a>
-        </div>`;
-    }).join("");
-    bodyHtml += attHtml;
+  if (t.scenario && t.scenario.trim()) {
+    const sc = document.createElement("div");
+    sc.className = "scenario-block";
+    sc.innerHTML = `<div class="scenario-title"><span class="badge">Scenario</span></div><div class="scenario-text">${esc(t.scenario)}</div>`;
+    thread.appendChild(sc);
   }
 
-  d.innerHTML = bodyHtml;
-  thread.appendChild(d);
-});
+  const hasAtt = Array.isArray(t.attachments) && t.attachments.length > 0;
+  t.messages.forEach((m, idx) => {
+    const d = document.createElement("div");
+    d.className = "bubble";
+    let bodyHtml = `
+      <div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
+      <div class="small" style="white-space:pre-wrap">${esc(m.body)}</div>
+    `;
+    if (idx === 0 && hasAtt) {
+      bodyHtml += t.attachments.map(a => a.type === "image"
+        ? `<div style="margin-top:8px"><img src="${esc(a.url)}" alt="${esc(a.title||"attachment")}" style="max-width:100%;border-radius:8px;display:block"/></div>`
+        : `<div class="small" style="margin-top:8px"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`
+      ).join("");
+    }
+    d.innerHTML = bodyHtml;
+    thread.appendChild(d);
+  });
 
-// Hide the bottom snapshots panel (we show them inline now)
-snapshots.classList.add("hidden");
-snapshots.innerHTML = "";
+  snapshots.classList.add("hidden"); snapshots.innerHTML = "";
 
-  // --- Right column: Requester card + history ---
-  // name (if your requester is an email, show local-part capitalized as a friendly name)
-const email = t.requester || "";
-const deriveNiceName = (em) =>
-  em.includes("@")
-    ? em.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase())
-    : em;
+  const email = t.requester || "";
+  const deriveNiceName = (em)=> em.includes("@") ? em.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase()) : em;
+  const displayName = (t.requesterName && t.requesterName.trim()) || deriveNiceName(email);
 
-const displayName = (t.requesterName && t.requesterName.trim()) || deriveNiceName(email);
+  rName.textContent  = displayName || "—";
+  rEmail.textContent = email || "—";
+  rLocal.textContent = new Date().toLocaleTimeString();
 
-rName.textContent  = displayName || "—";
-rEmail.textContent = email || "—";
-rLocal.textContent = new Date().toLocaleTimeString();
-
-  // language: derive from tag like language_en if present, else "English (United States)" in screenshot style
   const langTag = (t.tags||[]).find(x => x.startsWith("language_"));
   const langMap = { language_en: "English (United States)", language_es: "Spanish", language_fr: "French" };
   rLang.textContent = langMap[langTag] || "English (United States)";
-
-  // notes: if none, show subtle "Add user notes"
   rNotes.textContent = "—";
 
-  // Interaction history for this requester
   renderInteractionHistory(email, t.id);
-
-  // Grading + stats (existing)
   renderGrade(t.grade || null);
   renderStats();
 }
 
-function renderGrade(report){
-  gradeTable.innerHTML = ""; scoreLbl.textContent = "0/100"; passLbl.textContent = state.weights.pass + "/100";
-  if(!report){ return; }
-  for(const c of report.checks){
-    const tr=document.createElement("tr");
-    tr.innerHTML = `<td class="small">${esc(c.label)}<div class="muted small">${esc(c.detail||"")}</div></td>
-                     <td class="small ${c.ok?"ok":"fail"}">${c.ok?"✅ Pass":"❌ Fail"}</td>`;
-    gradeTable.appendChild(tr);
-  }
-  scoreLbl.textContent = `${report.score.toFixed(0)}/100 ${report.pass?"• ✅ Pass":"• ❌ Fail"}`;
-}
-
-function renderAll(){ renderList(); renderStats(); passLbl.textContent = state.weights.pass + "/100"; }
-
-/* ===== Grammar helpers ===== */
+/* ---------- Grammar ---------- */
 function showGrammarPanel(show){ grammarPanel.classList.toggle("hidden", !show); }
-let lastGrammar = null;
-
-  function updateReplyPlaceholder(){
-  if (!replyBox || !visibilitySel) return;
-  replyBox.placeholder =
-    visibilitySel.value === "Internal"
-      ? "Write your internal note… (not visible to customer)"
-      : "Write your reply… (trainee)";
-}
-if (visibilitySel) visibilitySel.onchange = updateReplyPlaceholder;
 
 async function runGrammar(){
   const text = (replyBox.value||"").trim();
@@ -1381,9 +788,8 @@ async function runGrammar(){
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ text })
     });
-    if(!resp.ok){ throw new Error("Grammar API failed"); }
-    const data = await resp.json();
-    lastGrammar = data;
+    if(!resp.ok) throw new Error("Grammar API failed");
+    const data = await resp.json(); lastGrammar = data;
 
     grammarFix.textContent = data.corrected || text;
 
@@ -1391,9 +797,7 @@ async function runGrammar(){
     (data.changes||[]).forEach(ch=>{
       notes.push(`<div class="grammar-note"><div class="small"><strong>Change:</strong> <code>${esc(ch.before)}</code> → <code>${esc(ch.after)}</code></div><div class="small muted">${esc(ch.reason||"")}</div></div>`);
     });
-    (data.warnings||[]).forEach(w=>{
-      notes.push(`<div class="grammar-note"><div class="small">${esc(w)}</div></div>`);
-    });
+    (data.warnings||[]).forEach(w=> notes.push(`<div class="grammar-note"><div class="small">${esc(w)}</div></div>`));
     grammarList.innerHTML = notes.join("") || `<div class="small muted">No specific notes — only minor polish applied.</div>`;
 
     const count = (data.changes||[]).length;
@@ -1406,31 +810,22 @@ async function runGrammar(){
   }
 }
 
-// --- events ---
+/* ---------- Events ---------- */
 fStatus.onchange = renderList;
 fChannel.onchange = renderList;
 searchBox.oninput = renderList;
-backBtn.onclick = showList;
+backBtn.onclick = ()=>{ detail.classList.add("hidden"); $("list").classList.remove("hidden"); };
 
 grammarBtn.onclick = runGrammar;
-applyGrammarBtn.onclick = ()=>{
-  if(lastGrammar?.corrected){
-    replyBox.value = lastGrammar.corrected;
-    toast("Applied grammar fixes");
-  }
-  showGrammarPanel(false);
-};
+applyGrammarBtn.onclick = ()=>{ if(lastGrammar?.corrected){ replyBox.value = lastGrammar.corrected; toast("Applied grammar fixes"); } showGrammarPanel(false); };
 dismissGrammarBtn.onclick = ()=> showGrammarPanel(false);
 
-// Split menu toggle
 submitToggleBtn.onclick = (e) => {
   e.stopPropagation();
   submitMenu.classList.toggle("hidden");
   submitToggleBtn.setAttribute("aria-expanded", String(!submitMenu.classList.contains("hidden")));
 };
-
-// Choose a submit-as option (does NOT submit yet)
-[...submitMenu.querySelectorAll(".menu-item")].forEach(item=>{
+$$(".menu-item", submitMenu).forEach(item=>{
   item.onclick = () => {
     setSubmitUI(item.dataset.value);
     submitMenu.classList.add("hidden");
@@ -1438,34 +833,20 @@ submitToggleBtn.onclick = (e) => {
     toast(`Submit as ${submitAs} selected`);
   };
 });
-
-// Close the menu when clicking outside or on ESC
 document.addEventListener("click", ()=>submitMenu.classList.add("hidden"));
 document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") submitMenu.classList.add("hidden"); });
 
-// Shortcuts: Ctrl/Cmd+Enter submits; Ctrl/Cmd+Shift+S open status; Ctrl/Cmd+Shift+G grammar
 document.addEventListener("keydown",(e)=>{
   const mod = e.ctrlKey || e.metaKey;
   if(mod && e.key==="Enter"){ submitMainBtn.click(); }
-  if(mod && e.shiftKey && (e.key.toLowerCase()==="s")){
-    e.preventDefault();
-    submitToggleBtn.click();
-  }
-  if(mod && e.shiftKey && (e.key.toLowerCase()==="g")){
-    e.preventDefault();
-    runGrammar();
-  }
+  if(mod && e.shiftKey && (e.key.toLowerCase()==="s")){ e.preventDefault(); submitToggleBtn.click(); }
+  if(mod && e.shiftKey && (e.key.toLowerCase()==="g")){ e.preventDefault(); runGrammar(); }
 });
 
-// Submit using the chosen status
 submitMainBtn.onclick = async () => {
-  const t = state.tickets.find(x=>x.id===currentId);
-  if (!t) return;
-
+  const t = state.tickets.find(x=>x.id===currentId); if (!t) return;
   if (typeof window.gradeAttempt !== "function") { alert('Grader is not loaded.'); return; }
-  if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) {
-    alert("This ticket is missing grading rules."); return;
-  }
+  if (!t.expected || !("requiredStatus" in t.expected) || !("requiredAssignee" in t.expected)) { alert("This ticket is missing grading rules."); return; }
 
   const chosenStatus = submitAs;
   const chosenVisibility = visibilitySel ? visibilitySel.value : "Public";
@@ -1473,196 +854,135 @@ submitMainBtn.onclick = async () => {
   const text = (replyBox.value || "").trim();
   if (!text) { alert("Please write a reply before submitting."); return; }
 
-  setSubmitting(true); // spinner on
+  setSubmitting(true);
   try {
     const msg = { id: uid(), author: "Trainee", ts: Date.now(), body: text };
     t.messages.push(msg);
     t.status = chosenStatus;
     t.assignee = chosenAssignee;
 
-const attempt = {
-  ts: msg.ts,
-  reply: text,
-  status: chosenStatus,
-  assignee: chosenAssignee,
-  visibility: chosenVisibility // ← NEW
-};
+    const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee, visibility: chosenVisibility };
 
     const report = await window.gradeAttempt(t, attempt, state.weights);
     if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
     t.grade = report;
 
+    t.locked = true; /* why: lock after grading */
     save();
-t.locked = true;
-save();
-// (removed) openDetail is called below
-    renderGrade(report);
-    renderStats();
-    renderList();
-    openDetail(t.id);
-    replyBox.value = "";
 
+    renderGrade(report); renderStats(); renderList(); openDetail(t.id);
+    replyBox.value = "";
     toast(`Submitted as ${chosenStatus}`);
   } catch (err) {
     console.error("Submit/grade failed:", err);
     alert("Grading failed. Check the browser console for details.");
   } finally {
-    setSubmitting(false); // spinner off
+    setSubmitting(false);
   }
 };
 
-// --- theme (dark mode) ---
+/* ---------- Theme ---------- */
 const THEME_KEY = "sim_theme";
-
 function applyTheme(theme){
   const isDark = theme === "dark";
   document.body.classList.toggle("dark", isDark);
   if (themeBtn) themeBtn.textContent = isDark ? "Light mode" : "Dark mode";
 }
-
 function initTheme(){
   const saved = localStorage.getItem(THEME_KEY);
-  const preferred = saved || (window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const preferred = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   applyTheme(preferred);
 }
-
-if (themeBtn) {
-  themeBtn.onclick = () => {
-    const next = document.body.classList.contains("dark") ? "light" : "dark";
-    localStorage.setItem(THEME_KEY, next);
-    applyTheme(next);
-  };
-}
-
-// If the user never chose a theme, follow OS changes live.
+if (themeBtn) { themeBtn.onclick = () => { const next = document.body.classList.contains("dark") ? "light" : "dark"; localStorage.setItem(THEME_KEY, next); applyTheme(next); }; }
 try {
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  mq.addEventListener?.("change", e => {
-    if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? "dark" : "light");
-  });
+  mq.addEventListener?.("change", e => { if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? "dark" : "light"); });
 } catch {}
-
 initTheme();
 
-// Reset (code-protected)
+/* ---------- Reset (dataset) ---------- */
 const STUDENT_RESET_CODE = "apexreset01";
 resetBtn.onclick = async () => {
   const code = prompt("Enter reset code (provided by your trainer):");
   if (code === null) return;
   if (code.trim() !== STUDENT_RESET_CODE) { alert("Invalid code."); return; }
   state = structuredClone(DEFAULT);
-  save();
-  renderAll();
-  showList();
+  save(); renderAll();
+  detail.classList.add("hidden"); $("list").classList.remove("hidden");
   alert("Reset complete.");
 };
 
-// boot
+/* ---------- Boot ---------- */
 renderAll();
-showList();
+detail.classList.add("hidden"); $("list").classList.remove("hidden");
 })();
 </script>
 
+<!-- ===== 4) GRADER ===== -->
 <script>
 (() => {
   window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    // Weights (visibility included)
     const w = Object.assign(
-      {
-        sections: 60,
-        status: 25,
-        assignee: 15,
-        visibility: 10,
-        keywords: 0,
-        pass: 80,
-        sectionWeights: { Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 }
-      },
+      { sections:60, status:25, assignee:15, visibility:10, keywords:0, pass:80,
+        sectionWeights:{Greeting:8, Opener:8, Solution:67, Closer:8, "Sign-Off":9} },
       weights || {}
     );
 
     const reply = String(attempt.reply || "");
-    const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-    const eq = (a,b)=>String(a??'').trim().toLowerCase()===String(b??'').trim().toLowerCase();
+    const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
+    const eq=(a,b)=>String(a??'').trim().toLowerCase()===String(b??'').trim().toLowerCase();
 
     const expectedStatus   = ticket.expected?.requiredStatus ?? "";
     const expectedAssignee = ticket.expected?.requiredAssignee ?? "";
     const statusOk   = eq(attempt.status,   expectedStatus);
     const assigneeOk = eq(attempt.assignee, expectedAssignee);
 
-    // YES/NO toggle for internal grading
     const internalRequired = !!ticket?.expected?.internalRequired;
     const chosenVis = String(attempt.visibility || "Public");
     const visibilityOk = internalRequired ? chosenVis.toLowerCase() === "internal" : true;
 
-    /* ---------- Branch 0: Macro-only tickets ---------- */
+    /* ---- A) Macro-only ---- */
     if (ticket.expected?.macroOnly) {
       const target = String(ticket.expected?.macroCommand || "").trim();
       const macroOk = target ? reply.trim() === target : reply.trim().startsWith("/");
 
-      const sum = Math.max(1,
-        (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.visibility||0) + (w.keywords||0)
-      );
-
-      // For macro tickets treat "macroOk" as the structure bucket
+      const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
       const sStructure = (macroOk ? 100 : 0) * (w.sections||0) / sum;
-      const sStatus    = (statusOk    ? 100 : 0) * (w.status   || 0) / sum;
-      const sAssignee  = (assigneeOk  ? 100 : 0) * (w.assignee || 0) / sum;
-      const sVis       = (visibilityOk? 100 : 0) * (w.visibility||0) / sum;
-      const sKw        = 0;
-
-      const score = sStructure + sStatus + sAssignee + sVis + sKw;
+      const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+      const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+      const sVis       = (visibilityOk?100:0) * (w.visibility||0) / sum;
+      const score = sStructure + sStatus + sAssignee + sVis;
 
       const checks = [
         { label: "Macro command is correct", ok: macroOk, detail: `Typed: ${reply || "—"}` },
         { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` },
         { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` },
-        {
-          label: internalRequired ? `Visibility is "Internal" (required)` : `Visibility check (not required)`,
-          ok: visibilityOk,
-          detail: `Selected: ${chosenVis}`
-        }
+        { label: internalRequired ? `Visibility is "Internal" (required)` : `Visibility check (not required)`, ok: visibilityOk, detail: `Selected: ${chosenVis}` }
       ];
-
-      return {
-        checks,
-        score,
-        pass: score >= (w.pass || 0),
-        structurePct: macroOk ? 100 : 0
-      };
+      return { checks, score, pass: score >= (w.pass || 0), structurePct: macroOk ? 100 : 0 };
     }
 
-    /* ---------- Branch 1: Internal-only (requirements mode) ---------- */
+    /* ---- B) Internal-only (requirements) ---- */
     if (internalRequired) {
-      // Grade ONLY the requirements; ignore structure sections entirely
       let req = { ok:false, score:0, detail:"" };
       try {
-        const rubric =
-          typeof ticket?.expected?.requirements === "string"
-            ? ticket.expected.requirements
-            : (ticket?.expected?.requirements?.guidance || "");
+        const rubric = typeof ticket?.expected?.requirements === "string"
+          ? ticket.expected.requirements
+          : (ticket?.expected?.requirements?.guidance || "");
         const resp = await fetch("/api/grade", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mode: "requirements", reply, rubric })
         });
         if (resp.ok) req = await resp.json();
-      } catch (e) {
-        console.warn("Requirements grading failed", e);
-      }
+      } catch {}
 
       const reqScore = clamp(Number(req.score || 0), 0, 100);
-
-      const sum = Math.max(1,
-        (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.visibility||0) + (w.keywords||0)
-      );
-      const sStructure = reqScore * (w.sections||0) / sum; // use requirements score as the sections bucket
-      const sStatus    = (statusOk    ? 100 : 0) * (w.status   || 0) / sum;
-      const sAssignee  = (assigneeOk  ? 100 : 0) * (w.assignee || 0) / sum;
-      const sVis       = (visibilityOk? 100 : 0) * (w.visibility||0) / sum;
-      const sKw        = 0;
-
-      const score = sStructure + sStatus + sAssignee + sVis + sKw;
+      const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
+      const sStructure = reqScore * (w.sections||0) / sum;
+      const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+      const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+      const sVis       = (visibilityOk?100:0) * (w.visibility||0) / sum;
+      const score = sStructure + sStatus + sAssignee + sVis;
 
       const checks = [
         { label: "Internal requirements met", ok: !!req.ok, detail: req.detail || "—" },
@@ -1670,144 +990,93 @@ showList();
         { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` },
         { label: `Visibility is "Internal" (required)`, ok: visibilityOk, detail: `Selected: ${chosenVis}` }
       ];
-
-      return {
-        checks,
-        score,
-        pass: score >= (w.pass || 0),
-        structurePct: reqScore
-      };
+      return { checks, score, pass: score >= (w.pass || 0), structurePct: reqScore };
     }
 
-    /* ---------- Branch 2: Normal public reply (structure mode) ---------- */
-    // Ask API for structure checks (5 labels)
+    /* ---- C) Normal public reply (structure) ---- */
     let ai = null;
     try {
-      const rubric =
-        typeof ticket?.expected?.requirements === "string"
-          ? ticket.expected.requirements
-          : (ticket?.expected?.requirements?.guidance || "");
+      const rubric = typeof ticket?.expected?.requirements === "string"
+        ? ticket.expected.requirements
+        : (ticket?.expected?.requirements?.guidance || "");
       const resp = await fetch("/api/grade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode: "structure", reply, rubric })
       });
       if (resp.ok) ai = await resp.json();
-    } catch (err) {
-      console.warn("AI grading unavailable, using deterministic checks only.", err);
-    }
+    } catch {}
 
-    const structureLabels = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
-    const structureChecks = structureLabels.map((label, i) => {
+    const labels = ["Greeting","Opener","Solution","Closer","Sign-Off"];
+    const structureChecks = labels.map((label, i) => {
       const c = Array.isArray(ai?.checks) ? ai.checks[i] : null;
-      return {
-        label,
-        ok: !!c?.ok,
-        detail: c?.detail || (ai ? "Not met" : "AI unavailable"),
-        score: typeof c?.score === "number" ? clamp(c.score, 0, 100) : (c?.ok ? 100 : 0)
-      };
+      return { label, ok: !!c?.ok, detail: c?.detail || (ai ? "Not met" : "AI unavailable"), score: typeof c?.score === "number" ? clamp(c.score,0,100) : (c?.ok ? 100 : 0) };
     });
 
-    // Deterministic enforcement (Greeting + Sign-Off)
-    (function enforceGreetingAndSignOff(){
-      const greetingIdx = structureLabels.indexOf("Greeting");
-      const signoffIdx  = structureLabels.indexOf("Sign-Off");
+    /* Deterministic greeting/sign-off enforcement */
+    (function enforce(){
+      const greetingIdx = labels.indexOf("Greeting");
+      const signoffIdx  = labels.indexOf("Sign-Off");
       const lines = String(reply).split(/\r?\n/);
 
-      // Greeting: "Hello/Hi/Hey/Good <time> <Name>," + blank line after
       if (greetingIdx >= 0) {
         const firstIdx = lines.findIndex(l => l.trim() !== "");
         if (firstIdx !== -1) {
           const line = lines[firstIdx].trim();
-          const looksLikeGreeting = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))\b/i.test(line);
-          if (looksLikeGreeting) {
+          const looks = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))\b/i.test(line);
+          if (looks) {
             const blankAfter = lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
             const commaOk = /,\s*$/.test(line);
             if (!commaOk || !blankAfter) {
-              structureChecks[greetingIdx].ok = false;
-              structureChecks[greetingIdx].score = 0;
-              structureChecks[greetingIdx].detail =
-                `Greeting format issue: ${
-                  (!commaOk ? 'line must end with a comma' : '')
-                }${
-                  (!commaOk && !blankAfter ? '; ' : '')
-                }${
-                  (!blankAfter ? 'leave one blank line after the greeting' : '')
-                }.`;
+              structureChecks[greetingIdx].ok = false; structureChecks[greetingIdx].score = 0;
+              structureChecks[greetingIdx].detail = `Greeting format issue: ${(!commaOk?'line must end with a comma':'')}${(!commaOk && !blankAfter ? '; ' : '')}${(!blankAfter ? 'leave one blank line after the greeting' : '')}.`;
             }
           }
         }
       }
 
-      // Sign-off: closing with comma, blank line, then agent name
       if (signoffIdx >= 0) {
-        const signoffRegex = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
-        const nameRegex    = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
+        const signRe = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
+        const nameRe = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
         let sIdx = -1;
-        for (let i = lines.length - 1; i >= 0; i--) {
-          if (signoffRegex.test(lines[i].trim())) { sIdx = i; break; }
-        }
+        for (let i = lines.length - 1; i >= 0; i--) if (signRe.test(lines[i].trim())) { sIdx = i; break; }
         if (sIdx === -1) {
-          structureChecks[signoffIdx].ok = false;
-          structureChecks[signoffIdx].score = 0;
+          structureChecks[signoffIdx].ok = false; structureChecks[signoffIdx].score = 0;
           structureChecks[signoffIdx].detail = `Missing proper sign-off. Example:\n"Best regards,"\n\n[Your Name]`;
         } else {
           const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
           const nameLine   = (lines[sIdx + 2] || "").trim();
-          const nameOk     = !!nameLine && nameRegex.test(nameLine);
+          const nameOk     = !!nameLine && nameRe.test(nameLine);
           if (!blankAfter || !nameOk) {
-            const parts = [];
-            if (!blankAfter) parts.push("leave one blank line after the sign-off");
-            if (!nameOk)     parts.push("put your name on its own line");
-            structureChecks[signoffIdx].ok = false;
-            structureChecks[signoffIdx].score = 0;
-            structureChecks[signoffIdx].detail =
-              `Sign-off format issue: ${parts.join("; ")}. Example:\n"Best regards,"\n\n[Your Name]`;
+            const parts = []; if (!blankAfter) parts.push("leave one blank line after the sign-off"); if (!nameOk) parts.push("put your name on its own line");
+            structureChecks[signoffIdx].ok = false; structureChecks[signoffIdx].score = 0;
+            structureChecks[signoffIdx].detail = `Sign-off format issue: ${parts.join("; ")}. Example:\n"Best regards,"\n\n[Your Name]`;
           }
         }
       }
     })();
 
-    // Weighted structure %
-    const sw = Object.assign(
-      { Greeting: 8, Opener: 8, Solution: 67, Closer: 8, "Sign-Off": 9 },
-      w.sectionWeights || {}
-    );
-    const swTotal = structureLabels.reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
+    const sw = Object.assign({ Greeting:8, Opener:8, Solution:67, Closer:8, "Sign-Off":9 }, w.sectionWeights || {});
+    const swTotal = labels.reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
 
     let structurePctWeighted = 0;
-    structureLabels.forEach((lab, i) => {
-      const c = structureChecks[i];
-      const pct = clamp(Number(c?.score ?? 0), 0, 100);
+    labels.forEach((lab, i) => {
+      const c = structureChecks[i]; const pct = clamp(Number(c?.score ?? 0), 0, 100);
       structurePctWeighted += pct * (sw[lab] || 0) / swTotal;
     });
     structurePctWeighted = clamp(structurePctWeighted, 0, 100);
 
     const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
     const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
-    const visibilityCheck = {
-      label: `Visibility check (not required)`,
-      ok: true,
-      detail: `Selected: ${chosenVis}`
-    };
+    const visibilityCheck = { label: `Visibility check (not required)`, ok: true, detail: `Selected: ${chosenVis}` };
 
-    const sum = Math.max(1,
-      (w.sections||0) + (w.status||0) + (w.assignee||0) + (w.visibility||0) + (w.keywords||0)
-    );
+    const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
     const sStructure = structurePctWeighted * (w.sections||0) / sum;
-    const sStatus    = (statusOk    ? 100 : 0) * (w.status   || 0) / sum;
-    const sAssignee  = (assigneeOk  ? 100 : 0) * (w.assignee || 0) / sum;
-    const sVis       = (visibilityOk? 100 : 0) * (w.visibility||0) / sum; // always true here
-    const sKw        = 0;
+    const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+    const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+    const sVis       = (visibilityOk?100:0) * (w.visibility||0) / sum;
+    const score = sStructure + sStatus + sAssignee + sVis;
 
-    const score = sStructure + sStatus + sAssignee + sVis + sKw;
-
-    return {
-      checks: [...structureChecks, statusCheck, assigneeCheck, visibilityCheck],
-      score,
-      pass: score >= (w.pass || 0),
-      structurePct: structurePctWeighted
-    };
+    return { checks: [...structureChecks, statusCheck, assigneeCheck, visibilityCheck], score, pass: score >= (w.pass || 0), structurePct: structurePctWeighted };
   };
 })();
 </script>
