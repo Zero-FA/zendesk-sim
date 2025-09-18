@@ -88,10 +88,9 @@ function lastLine(s){
   return m ? m[1].trim() : "";
 }
 function hasGreetingBlankLine(s){
-  // greeting ends with comma on first line, then exactly one blank line
   const T = normalizeEOL(s);
-  // Start-of-text greeting pattern:
-  return /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n/.test(T);
+  // Greeting must be "Hello/Hi/Hey/Good <time> <Name>," then exactly one blank line, then more text
+  return /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/.test(T);
 }
 function hasSignoffBlankLine(s){
   const T = normalizeEOL(s);
