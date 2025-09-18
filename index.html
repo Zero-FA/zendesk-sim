@@ -1019,6 +1019,7 @@ detail.classList.add("hidden"); $("list").classList.remove("hidden");
 const accessCode     = sessionStorage.getItem("sim_access_code") || "";
 const agentFirstName = sessionStorage.getItem("sim_agent_first") || "";
 const agentLastName  = sessionStorage.getItem("sim_agent_last")  || "";
+const equalsIgnoreCase = (a,b) => String(a||"").trim().toLowerCase() === String(b||"").trim().toLowerCase();
     const w = Object.assign(
       { sections:60, status:25, assignee:15, visibility:10, keywords:0, pass:80,
         sectionWeights:{Greeting:8, Opener:8, Solution:67, Closer:8, "Sign-Off":9} },
@@ -1153,25 +1154,42 @@ if (!greetOK) {
         }
       }
 
-      if (signoffIdx >= 0) {
-        const signRe = /^(?:Best regards,|Kind regards,|Warm regards,)$/i;
-        const nameRe = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
-        let sIdx = -1;
-        for (let i = lines.length - 1; i >= 0; i--) if (signRe.test(lines[i].trim())) { sIdx = i; break; }
-        if (sIdx === -1) {
-          structureChecks[signoffIdx].ok = false; structureChecks[signoffIdx].score = 0;
-          structureChecks[signoffIdx].detail = `Missing proper sign-off. Example:\n"Best regards,"\n\n[Your Name]`;
-        } else {
-          const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
-          const nameLine   = (lines[sIdx + 2] || "").trim();
-          const nameOk     = !!nameLine && nameRe.test(nameLine);
-          if (!blankAfter || !nameOk) {
-            const parts = []; if (!blankAfter) parts.push("leave one blank line after the sign-off"); if (!nameOk) parts.push("put your name on its own line");
-            structureChecks[signoffIdx].ok = false; structureChecks[signoffIdx].score = 0;
-            structureChecks[signoffIdx].detail = `Sign-off issue: ${parts.join("; ")}. Example:\n"Best regards,"\n\n[Your Name]`;
-          }
-        }
-      }
+if (signoffIdx >= 0) {
+  const signRe = /^(?:Best regards,|Kind regards,|Warm regards,)$/i;
+  const nameRe = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
+
+  // Require the EXACT first-name value entered on the gate (multi-word allowed)
+  const expectedName = (agentFirstName || "").trim();
+
+  let sIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (signRe.test(lines[i].trim())) { sIdx = i; break; }
+  }
+
+  if (sIdx === -1) {
+    structureChecks[signoffIdx].ok = false;
+    structureChecks[signoffIdx].score = 0;
+    structureChecks[signoffIdx].detail =
+      `Missing proper sign-off. Example:\nBest regards,\n\n${expectedName || "[Your Name]"}`;
+  } else {
+    const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
+    const nameLine   = (lines[sIdx + 2] || "").trim();
+    const nameShapeOk = !!nameLine && nameRe.test(nameLine);
+    const nameMatchOk = expectedName ? equalsIgnoreCase(nameLine, expectedName) : nameShapeOk;
+
+    if (!blankAfter || !nameShapeOk || !nameMatchOk) {
+      const parts = [];
+      if (!blankAfter)  parts.push("leave one blank line after the sign-off");
+      if (!nameShapeOk) parts.push("put your name on its own line");
+      if (!nameMatchOk && expectedName) parts.push(`use the exact name "${expectedName}"`);
+
+      structureChecks[signoffIdx].ok = false;
+      structureChecks[signoffIdx].score = 0;
+      structureChecks[signoffIdx].detail =
+        `Sign-off issue: ${parts.join("; ")}.\nExample:\nBest regards,\n\n${expectedName || "[Your Name]"}`;
+    }
+  }
+}
     })();
 
     const sw = Object.assign({ Greeting:8, Opener:8, Solution:67, Closer:8, "Sign-Off":9 }, w.sectionWeights || {});
