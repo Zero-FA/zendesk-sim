@@ -760,6 +760,17 @@ function openDetail(id){
 
   /* Customer message(s) + standard attachments */
   const hasAtt = Array.isArray(t.attachments) && t.attachments.length > 0;
+  // Header for user's message section
+  if (t.body && t.body.trim()) {
+    const um = document.createElement("div");
+    um.className = "scenario-block"; // reuse same styling as scenario
+    um.innerHTML = `
+      <div class="scenario-title">
+        <span class="badge">User's Message</span>
+      </div>
+    `;
+    thread.appendChild(um);
+  }
   t.messages.forEach((m, idx) => {
     const d = document.createElement("div");
     d.className = "bubble";
