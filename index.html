@@ -420,7 +420,13 @@ body.dark .badge-id:hover{background:rgba(148,163,184,0.18);border-color:#3b475b
     gate && gate.remove();
   };
 
-  if (sessionStorage.getItem(GATE_KEY) === "1") { unlock(); return; }
+const hasPrior = sessionStorage.getItem(GATE_KEY) === "1";
+const hasCode  = !!sessionStorage.getItem("sim_access_code");
+if (hasPrior && hasCode) {
+  document.body.classList.remove("gated");
+  gate && gate.remove();
+  return;
+}
   document.body.classList.add("gated");
 
   async function submit(){
@@ -849,18 +855,16 @@ async function runGrammar(){
   grammarList.innerHTML = "";
 
   try{
-const resp = await fetch("/api/grade", {
+const resp = await fetch("/api/grammar", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    mode: "structure",
-    reply,
-    rubric,
-    accessCode,
-    agentFirstName,
-    agentLastName
-  })
+  body: JSON.stringify({ text })
 });
+if (resp.ok) {
+  ai = await resp.json();
+} else {
+  console.error("Grade API error:", resp.status, await resp.text());
+}
     if(!resp.ok) throw new Error("Grammar API failed");
     const data = await resp.json(); lastGrammar = data;
 
@@ -1063,10 +1067,18 @@ const agentLastName  = sessionStorage.getItem("sim_agent_last")  || "";
         const rubric = typeof ticket?.expected?.requirements === "string"
           ? ticket.expected.requirements
           : (ticket?.expected?.requirements?.guidance || "");
-        const resp = await fetch("/api/grade", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: "requirements", reply, rubric })
-        });
+const resp = await fetch("/api/grade", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    mode: "requirements",
+    reply,
+    rubric,
+    accessCode,
+    agentFirstName,
+    agentLastName
+  })
+});
         if (resp.ok) req = await resp.json();
       } catch {}
 
@@ -1093,11 +1105,23 @@ const agentLastName  = sessionStorage.getItem("sim_agent_last")  || "";
       const rubric = typeof ticket?.expected?.requirements === "string"
         ? ticket.expected.requirements
         : (ticket?.expected?.requirements?.guidance || "");
-      const resp = await fetch("/api/grade", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "structure", reply, rubric })
-      });
-      if (resp.ok) ai = await resp.json();
+const resp = await fetch("/api/grade", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    mode: "structure",
+    reply,
+    rubric,
+    accessCode,
+    agentFirstName,
+    agentLastName
+  })
+});
+if (resp.ok) {
+  ai = await resp.json();
+} else {
+  console.error("Grade API error:", resp.status, await resp.text());
+}
     } catch {}
 
     const labels = ["Greeting","Opener","Solution","Closer","Sign-Off"];
