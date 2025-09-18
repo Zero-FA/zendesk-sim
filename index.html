@@ -860,13 +860,12 @@ const resp = await fetch("/api/grammar", {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ text })
 });
-if (resp.ok) {
-  ai = await resp.json();
-} else {
-  console.error("Grade API error:", resp.status, await resp.text());
+if (!resp.ok) {
+  console.error("Grammar API error:", resp.status, await resp.text());
+  throw new Error("Grammar API failed");
 }
-    if(!resp.ok) throw new Error("Grammar API failed");
-    const data = await resp.json(); lastGrammar = data;
+const data = await resp.json();
+lastGrammar = data;
 
     grammarFix.textContent = data.corrected || text;
 
@@ -1102,9 +1101,10 @@ const resp = await fetch("/api/grade", {
     /* ---- Normal public reply (structure) ---- */
     let ai = null;
     try {
-      const rubric = typeof ticket?.expected?.requirements === "string"
-        ? ticket.expected.requirements
-        : (ticket?.expected?.requirements?.guidance || "");
+ const rubric = typeof ticket?.expected?.requirements === "string"
+  ? ticket.expected.requirements
+  : (ticket?.expected?.requirements?.guidance || "");
+
 const resp = await fetch("/api/grade", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -1139,20 +1139,22 @@ if (resp.ok) {
         const firstIdx = lines.findIndex(l => l.trim() !== "");
         if (firstIdx !== -1) {
           const line = lines[firstIdx].trim();
-          const looks = /^(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))\b/i.test(line);
-          if (looks) {
-            const blankAfter = lines[firstIdx + 1] !== undefined && lines[firstIdx + 1].trim() === "";
-            const commaOk = /,\s*$/.test(line);
-            if (!commaOk || !blankAfter) {
-              structureChecks[greetingIdx].ok = false; structureChecks[greetingIdx].score = 0;
-              structureChecks[greetingIdx].detail = `Greeting format issue: ${(!commaOk?'line must end with a comma':'')}${(!commaOk && !blankAfter ? '; ' : '')}${(!blankAfter ? 'leave one blank line after the greeting' : '')}.`;
-            }
-          }
+// Greeting must be "Hello/Hi/Hey/Good <time> <Name>,"
+// then exactly one blank line and then more text
+// Build a string that starts at the first non-empty line so leading blanks don't break the check
+const fromFirstLine = lines.slice(firstIdx).join("\n");
+const greetOK = /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/.test(fromFirstLine);
+if (!greetOK) {
+  structureChecks[greetingIdx].ok = false;
+  structureChecks[greetingIdx].score = 0;
+  structureChecks[greetingIdx].detail =
+    'Greeting must be "Hello <Name>," followed by exactly one blank line before your opener.';
+}
         }
       }
 
       if (signoffIdx >= 0) {
-        const signRe = /^(?:(?:best|kind)\s+regards|regards|best|sincerely|thank you|thanks|many thanks|cheers|respectfully),\s*$/i;
+        const signRe = /^(?:Best regards,|Kind regards,|Warm regards,)$/i;
         const nameRe = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
         let sIdx = -1;
         for (let i = lines.length - 1; i >= 0; i--) if (signRe.test(lines[i].trim())) { sIdx = i; break; }
@@ -1184,7 +1186,7 @@ if (resp.ok) {
 
     const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
     const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
-    const visibilityCheck = { label: `Visibility check (not required)`, ok: true, detail: `Selected: ${chosenVis}` };
+   const visibilityCheck = { label: `Visibility check (not required)`, ok: true, detail: `Selected: ${chosenVis}` };
 
     const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
     const sStructure = structurePctWeighted * (w.sections||0) / sum;
