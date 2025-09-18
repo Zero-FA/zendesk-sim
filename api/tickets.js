@@ -309,39 +309,45 @@ module.exports = function handler(req, res) {
       ]
     },
     {
-      ticketNumber: "4001",
-      subject: "Error Rejected at RMS",
-      requester: "fixitplease@gmail.com",
-      requesterName: "John",
-      channel: "Email",
-      hoursAgo: 2,
-      requiredStatus: "Open",
-      requiredAssignee: "Myself",
-      macroOnly: false,
-      macroCommand: "",
-      internalRequired: false,
-      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
-      requirements:
-        "Personalized response should include this information (could be paraphrased): You will need to uncheck Liquidating Only option in your RTrader dashboard. Right click on the account in trader dashboard and turn OFF Enable Liquidating Only (Trader). The response could mention a screenshot describing where to turn it off and mention risk parameters. The following FAQ link should be added:\nhttps://support.apextraderfunding.com/hc/en-us/articles/10973928895259-Error-Messages-and-How-To-Fi…",
-      category: "Support",
-      intent: "",
-      accountId: "APEX - 123411",
-      tags: [],
-      body:
-        "Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",
-      attachments: [
-        { type: "image", url: "https://i.imgur.com/cLRp8ku.png", title: "Attachment" }
-      ],
-      scenario: "You suspect the user has 'Liquidating Only' enabled in RTrader, blocking new orders.",
-      scenarioAttachments: [
-        { type: "", url: "", title: "" },
-        {
-          type: "link",
-          url: "https://support.apextraderfunding.com/hc/en-us/articles/10973928895259",
-          title: "FAQ: Error Messages & How To Fix"
-        }
-      ]
-    },
+// Ticket
+makeTicket({
+  subject: "Error Rejected at RMS",
+  ticketNumber: "4001",
+  requester: "fixitplease@gmail.com",
+  requesterName: "John",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Open",
+  requiredAssignee: "Myself",
+  macroOnly: false,
+  macroCommand: "",
+  internalRequired: false,
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
+  requirements:
+    "Personalized response should include this information (could be paraphrased): You will need to uncheck Liquidating Only option in your RTrader dashboard. Right click on the account in trader dashboard and turn OFF Enable Liquidating Only (Trader). The response could mention a screenshot describing where to turn it off and mention risk parameters. The following FAQ link should be added:\\nhttps://support.apextraderfunding.com/hc/en-us/articles/10973928895259-Error-Messages-and-How-To-Fi…",
+  category: "Support",
+  intent: "",
+  accountId: "APEX - 123411",
+  tags: [],
+  scenario:
+    "You suspect the user has 'Liquidating Only' enabled in RTrader, blocking new orders.",
+  scenarioAttachments: [
+    {
+      type: "link",
+      url: "https://support.apextraderfunding.com/hc/en-us/articles/10973928895259",
+      title: "FAQ: Error Messages & How To Fix"
+    }
+  ],
+  body:
+    "Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",
+  attachments: [
+    {
+      type: "image",
+      url: "https://i.imgur.com/cLRp8ku.png",
+      title: "Attachment"
+    }
+  ]
+}),
     {
       ticketNumber: "4002",
       subject: "Can't use Ninja Trader",
