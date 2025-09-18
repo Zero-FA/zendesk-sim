@@ -257,7 +257,7 @@ module.exports = function handler(req, res) {
       scenario: "You go to aMember and check the Rithmic tab, verifying which evals are passed, signed, and paid for. The image attached shows what you find.",
       body: "Hi Apex help desk! \n\nI passed my Rithmic eval 2 days ago, and I'm trying to get my PA. I've already paid for and signed for it, but it's not showing up. The account I passed is -05. Can you help me activate it or tell me what I'm missing? Thank you. \n\nBest,\n\nSara",
       attachments: [
-        { type: "image", url: "https://imgur.com/a/3T9MFNB", title: "Attachment" }
+        { type: "image", url: "https://i.imgur.com/lRpnmbP.png", title: "Attachment" }
       ]
     },
     {
@@ -280,7 +280,7 @@ module.exports = function handler(req, res) {
       tags: [],
       body: "Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",
       attachments: [
-        { type: "image", url: "https://imgur.com/a/oaCaxLd", title: "Attachment" }
+        { type: "image", url: "https://i.imgur.com/cLRp8ku.png", title: "Attachment" }
       ]
     },
     {
