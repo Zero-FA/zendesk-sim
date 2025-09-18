@@ -761,25 +761,24 @@ function openDetail(id){
 /* Customer message(s) + standard attachments */
 const hasAtt = Array.isArray(t.attachments) && t.attachments.length > 0;
 
-// Header for user's message section — show if there is at least one message
-if (Array.isArray(t.messages) && t.messages.length > 0) {
-  const um = document.createElement("div");
-  um.className = "scenario-block"; // reuse same styling as Scenario
-  um.innerHTML = `
-    <div class="scenario-title" style="margin-bottom:6px">
-      <span class="badge">User's Message</span>
-    </div>
-  `;
-  thread.appendChild(um);
-}
-
 t.messages.forEach((m, idx) => {
   const d = document.createElement("div");
   d.className = "bubble";
+
+  // For the very first customer message, add a mini header INSIDE the bubble
+  const headerHTML = idx === 0 ? `
+    <div class="scenario-title" style="margin:-2px 0 6px 0; display:flex; align-items:center; gap:6px">
+      <span class="badge">User's Message</span>
+    </div>
+  ` : "";
+
   let bodyHtml = `
+    ${headerHTML}
     <div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
     <div class="small" style="white-space:pre-wrap">${esc(m.body || "")}</div>
   `;
+
+  // Show ticket attachments after the FIRST customer message
   if (idx === 0 && hasAtt) {
     bodyHtml += t.attachments.map(a =>
       a.type === "image"
@@ -787,6 +786,7 @@ t.messages.forEach((m, idx) => {
         : `<div class="small" style="margin-top:8px"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`
     ).join("");
   }
+
   d.innerHTML = bodyHtml;
   thread.appendChild(d);
 });
