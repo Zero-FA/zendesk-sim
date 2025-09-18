@@ -150,14 +150,14 @@ export default async function handler(req, res) {
     const signoffBlank = hasSignoffBlankLine(text);
     const agentNameLine = lastLine(text); // the name after the blank line
 
-    // If we know expected first/last, enforce "first name only" (multi-word first ok)
-    let agentFirstOnlyOK = true;
-    if (EXPECTED_FIRST) {
-      agentFirstOnlyOK = equalsIgnoreCase(agentNameLine, EXPECTED_FIRST);
-    } else {
-      // fallback heuristic: disallow obvious last-name patterns (two+ words)
-      agentFirstOnlyOK = !/^\s*\S+\s+\S+/.test(agentNameLine); // e.g., "Jane Doe" => false
-    }
+// Enforce that the sign-off name matches EXACTLY whatever first name they entered
+let agentFirstOnlyOK = true;
+if (EXPECTED_FIRST) {
+  agentFirstOnlyOK = equalsIgnoreCase(agentNameLine, EXPECTED_FIRST);
+} else {
+  // fallback: just check that it's a single "word-ish" name
+  agentFirstOnlyOK = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/.test(agentNameLine);
+}
 
     // Explicit “COMPUTED FACTS” booleans we’ll feed to the model
     const computedFacts = {
