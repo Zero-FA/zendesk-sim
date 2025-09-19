@@ -1,11 +1,12 @@
 // /api/tickets.js
 // Returns JSON: { weights, seed } for the front-end to build runtime tickets.
 
-module.exports = function handler(req, res) {
+export default function handler(req, res) {
   if (req && req.method && req.method !== "GET") {
     res.statusCode = 405;
     res.setHeader("Allow", "GET");
-    return res.end(JSON.stringify({ error: "Method Not Allowed" }));
+    res.end(JSON.stringify({ error: "Method Not Allowed" }));
+    return;
   }
 
   res.statusCode = 200;
@@ -319,32 +320,6 @@ module.exports = function handler(req, res) {
         }
       ]
     },
-{
-  subject: "Error Rejected at RMS",
-  ticketNumber: "4001",
-  requester: "fixitplease@gmail.com",
-  requesterName: "John",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Open",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  internalRequired: false,
-  sections: [
-    "Greeting",
-    "Opener",
-    "Solution",
-    "Closer",
-    "Sign-Off"
-  ],
-  requirements: "Personalized response should include this (paraphrase is fine): You will need to uncheck Liquidating Only in your RTrader dashboard. Right-click the account in Trader Dashboard and turn OFF “Enable Liquidating Only (Trader)”. Mention risk parameters if helpful. Include this FAQ link:\\nhttps://support.apextraderfunding.com/hc/en-us/articles/10973928895259",
-  category: "Support",
-  intent: "",
-  accountId: "APEX - 123411",
-  tags: [],
-  scenario: "You suspect the user has 'Liquidating Only' enabled in RTrader, blocking new orders.",
-  scenarioAttachments: [
     {
       ticketNumber: "4001",
       subject: "Error Rejected at RMS",
@@ -364,12 +339,12 @@ module.exports = function handler(req, res) {
       intent: "",
       accountId: "APEX - 123411",
       tags: [],
+      scenario: "You suspect the user has 'Liquidating Only' enabled in RTrader, blocking new orders.",
       body:
         "Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",
       attachments: [
         { type: "image", url: "https://i.imgur.com/cLRp8ku.png", title: "Attachment" }
       ],
-      scenario: "You suspect the user has 'Liquidating Only' enabled in RTrader, blocking new orders.",
       scenarioAttachments: [
         {
           type: "link",
@@ -378,20 +353,6 @@ module.exports = function handler(req, res) {
         }
       ]
     },
-      type: "link",
-      url: "https://support.apextraderfunding.com/hc/en-us/articles/10973928895259",
-      title: "FAQ: Error Messages & How To Fix"
-    }
-  ],
-  body: "Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",
-  attachments: [
-    {
-      type: "image",
-      url: "https://i.imgur.com/cLRp8ku.png",
-      title: "Attachment"
-    }
-  ]
-},
     {
       ticketNumber: "4002",
       subject: "Can't use Ninja Trader",
@@ -452,11 +413,4 @@ module.exports = function handler(req, res) {
         {
           type: "link",
           url: "https://support.apextraderfunding.com/hc/en-us/articles/31519470769947",
-          title: "FAQ: Tradovate Setup — TradingView"
-        }
-      ]
-    }
-  ];
-
-  res.end(JSON.stringify({ weights, seed }));
-};
+          title: "
