@@ -440,7 +440,7 @@ export default function handler(req, res) {
   attachments: [
  
   ]
-}),
+},
     {
   subject: "3012 - Money back",
   ticketNumber: "3012",
