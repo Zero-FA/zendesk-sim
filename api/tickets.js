@@ -413,4 +413,11 @@ export default function handler(req, res) {
         {
           type: "link",
           url: "https://support.apextraderfunding.com/hc/en-us/articles/31519470769947",
-          title: "
+          title: "FAQ: Tradovate Setup — TradingView"
+        }
+      ]
+    }
+  ];
+
+  res.end(JSON.stringify({ weights, seed }));
+}
