@@ -11,7 +11,6 @@ module.exports = function handler(req, res) {
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
-  res.setHeader("X-Content-Type-Options", "nosniff");
 
   // You can tune these at any time without changing the client.
   const weights = {
@@ -31,7 +30,7 @@ module.exports = function handler(req, res) {
       subject: "Account not showing",
       requester: "Tester2025@gmail.com",
       requesterName: "Carlos M.",
-      channel: "Email"
+      channel: "Email",
       hoursAgo: 240,
       requiredStatus: "Pending",
       requiredAssignee: "Myself",
@@ -297,7 +296,7 @@ module.exports = function handler(req, res) {
       macroOnly: false,
       macroCommand: "",
       internalRequired: false,
-      sections: ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"],
+      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
       requirements:
         "Write a professional public reply following the structure (Greeting, Opener, Solution, Closer, Sign-Off). It could combine wording from the macros /numerical order and /how to sign macros. The response should guide the user to sign for the lowest account number (-04) to activate their PA and should include one or more of the following FAQ links:\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519770974235\nhttps://support.apextraderfunding.com/hc/en-us/articles/4407696269851",
       category: "Support",
@@ -320,6 +319,32 @@ module.exports = function handler(req, res) {
         }
       ]
     },
+{
+  subject: "Error Rejected at RMS",
+  ticketNumber: "4001",
+  requester: "fixitplease@gmail.com",
+  requesterName: "John",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Open",
+  requiredAssignee: "Myself",
+  macroOnly: false,
+  macroCommand: "",
+  internalRequired: false,
+  sections: [
+    "Greeting",
+    "Opener",
+    "Solution",
+    "Closer",
+    "Sign-Off"
+  ],
+  requirements: "Personalized response should include this (paraphrase is fine): You will need to uncheck Liquidating Only in your RTrader dashboard. Right-click the account in Trader Dashboard and turn OFF “Enable Liquidating Only (Trader)”. Mention risk parameters if helpful. Include this FAQ link:\\nhttps://support.apextraderfunding.com/hc/en-us/articles/10973928895259",
+  category: "Support",
+  intent: "",
+  accountId: "APEX - 123411",
+  tags: [],
+  scenario: "You suspect the user has 'Liquidating Only' enabled in RTrader, blocking new orders.",
+  scenarioAttachments: [
     {
       ticketNumber: "4001",
       subject: "Error Rejected at RMS",
@@ -332,13 +357,18 @@ module.exports = function handler(req, res) {
       macroOnly: false,
       macroCommand: "",
       internalRequired: false,
-      sections: ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"],
+      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
       requirements:
         "Personalized response should include this (paraphrase is fine): You will need to uncheck Liquidating Only in your RTrader dashboard. Right-click the account in Trader Dashboard and turn OFF “Enable Liquidating Only (Trader)”. Mention risk parameters if helpful. Include this FAQ link:\nhttps://support.apextraderfunding.com/hc/en-us/articles/10973928895259",
       category: "Support",
       intent: "",
-      accountId: "APEX-123411",
+      accountId: "APEX - 123411",
       tags: [],
+      body:
+        "Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",
+      attachments: [
+        { type: "image", url: "https://i.imgur.com/cLRp8ku.png", title: "Attachment" }
+      ],
       scenario: "You suspect the user has 'Liquidating Only' enabled in RTrader, blocking new orders.",
       scenarioAttachments: [
         {
@@ -346,17 +376,22 @@ module.exports = function handler(req, res) {
           url: "https://support.apextraderfunding.com/hc/en-us/articles/10973928895259",
           title: "FAQ: Error Messages & How To Fix"
         }
-      ],
-      body:
-        "Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",
-      attachments: [
-        {
-          type: "image",
-          url: "https://i.imgur.com/cLRp8ku.png",
-          title: "Attachment"
-        }
       ]
     },
+      type: "link",
+      url: "https://support.apextraderfunding.com/hc/en-us/articles/10973928895259",
+      title: "FAQ: Error Messages & How To Fix"
+    }
+  ],
+  body: "Hello!\n\nI'm getting this error and can't place trades. I'm sure my account is not blown, but I can't figure out what's wrong. Can you help me fix it?",
+  attachments: [
+    {
+      type: "image",
+      url: "https://i.imgur.com/cLRp8ku.png",
+      title: "Attachment"
+    }
+  ]
+},
     {
       ticketNumber: "4002",
       subject: "Can't use Ninja Trader",
@@ -369,12 +404,12 @@ module.exports = function handler(req, res) {
       macroOnly: false,
       macroCommand: "",
       internalRequired: false,
-      sections: ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"],
+      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
       requirements:
         "Personalized response including info from the Rithmic & Ninja Connection Guide. Include the link:\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519440985499",
       category: "Support",
       intent: "",
-      accountId: "APEX-543210",
+      accountId: "APEX - 543210",
       tags: [],
       scenario:
         "After checking the user's information, you see that everything on R-Manager and R-Trader seems to be ok.",
@@ -401,7 +436,7 @@ module.exports = function handler(req, res) {
       macroOnly: false,
       macroCommand: "",
       internalRequired: false,
-      sections: ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"],
+      sections: ["Greeting","Opener","Solution","Closer","Sign-Off"],
       requirements:
         "Explain that the user must activate the TradingView plugin in Tradovate and include steps (or paraphrase) plus this link:\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519470769947",
       category: "Support",
@@ -420,122 +455,6 @@ module.exports = function handler(req, res) {
           title: "FAQ: Tradovate Setup — TradingView"
         }
       ]
-    },
-    {
-      ticketNumber: "3011",
-      subject: "3011 - Latest update",
-      requester: "HetfieldJ@gmail.com",
-      requesterName: "James Hetfield",
-      channel: "Email",
-      hoursAgo: 2,
-      requiredStatus: "Solved",
-      requiredAssignee: "Myself",
-      macroOnly: true,
-      macroCommand: "/TECH - Apex Investing Copier",
-      internalRequired: false,
-      sections: [],
-      requirements: "Use the specified macro; no additional prose is required.",
-      category: "Account",
-      intent: "",
-      accountId: "APEX-789654",
-      tags: ["account_questions"],
-      body:
-        "I am having trouble opening NT, it was recommended that I open the Apex Investing Toolkit->Install their latest update. can you help me ensure I have the latest update?",
-      attachments: []
-    },
-    {
-      ticketNumber: "3012",
-      subject: "3012 - Money back",
-      requester: "Hetfieldj@gmail.com",
-      requesterName: "James Hetfield",
-      channel: "Email",
-      hoursAgo: 2,
-      requiredStatus: "Solved",
-      requiredAssignee: "Myself",
-      macroOnly: true,
-      macroCommand: "/EVAL - Forgot recurring cancel LESS 3k",
-      internalRequired: false,
-      sections: [],
-      requirements: "Use the specified macro; no additional prose is required.",
-      category: "",
-      intent: "",
-      accountId: "",
-      tags: [],
-      scenario: "Once you check aMember, you notice this user has spent $2999 USD with us",
-      body:
-        "مرحبًا، اليوم اشتريت 22 من تقييم الحسابات وكنت أرغب في شراء 21 فقط، يرجى إعادة مبلغ 1 منها، لم أستخدمها."
-    },
-    {
-      ticketNumber: "3013",
-      subject: "3013 - Quiero ser parte de Apex",
-      requester: "fernando53@gmail.com",
-      requesterName: "Fernando",
-      channel: "Email",
-      hoursAgo: 1e49,
-      requiredStatus: "Solved",
-      requiredAssignee: "Myself",
-      macroOnly: true,
-      macroCommand: "/GEN - Promotion/Discount Code Inquiry",
-      internalRequired: false,
-      sections: [],
-      requirements: "Use the specified macro; no additional prose is required.",
-      category: "",
-      intent: "",
-      accountId: "",
-      tags: [],
-      body:
-        "Hola amigos, soy nuevo en el trading y quisiera unirme a su empresa y quisiera un cupon de descuento, prometo hacer mucho dinero, de hecho puedo hacerlo con cuentas Rithmic, Wealthcharts o Tradovate porque ya las conozco todas, solo esperen y ya verán."
-    },
-    {
-      ticketNumber: "3014",
-      subject: "3014 - Cuenta en vivo",
-      requester: "ramiroperez@gmail.com",
-      requesterName: "Ramiro",
-      channel: "Email",
-      hoursAgo: 2,
-      requiredStatus: "Solved",
-      requiredAssignee: "Myself",
-      macroOnly: true,
-      macroCommand: "/PA - Sign Agreement",
-      internalRequired: false,
-      sections: [],
-      requirements: "Use the specified macro; no additional prose is required.",
-      category: "",
-      intent: "",
-      accountId: "APEX-123555",
-      tags: [],
-      body:
-        "hola, ya pasé mi cuenta, envienme el contrato para firmarlo en de inmediato, quiero operar ya mismo"
-    },
-    {
-      ticketNumber: "3015",
-      subject: "3015 - Llevo media hora esperando",
-      requester: "Benedicto16@gmail.com",
-      requesterName: "Benedicto",
-      channel: "Email",
-      hoursAgo: 1e-9,
-      requiredStatus: "Open",
-      requiredAssignee: "Myself",
-      macroOnly: true,
-      macroCommand: "/PA - Activations (Numerical Order)",
-      internalRequired: false,
-      sections: [],
-      requirements:
-        "The ticket has to be answered by using the macro /PA - Activations (Numerical Order) or by customizing the wording in there, telling the user they signed account APEX-355063-24 and paid for account APEX-355063-17, and they have to sign for account APEX-355063-17 in order to get their new PA account. The account numbers can be paraphrased or shortened to 17, 24, Apex-17, Apex-24.",
-      category: "",
-      intent: "",
-      accountId: "APEX-355063",
-      tags: [],
-      scenario: "Once you check aMember you notice the user signed account 24 but paid for account 17",
-      scenarioAttachments: [
-        {
-          type: "image",
-          url: "https://imgur.com/a/FW7JP7i",
-          title: "Scenario image"
-        }
-      ],
-      body:
-        "Hola, ya firmé y pagué mi cuenta live y no la he recibido. Cuanto tardarán en asignarmela? llevo esperando media hora. Thanks"
     }
   ];
 
