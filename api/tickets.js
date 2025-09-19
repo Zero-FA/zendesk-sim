@@ -416,7 +416,121 @@ export default function handler(req, res) {
           title: "FAQ: Tradovate Setup — TradingView"
         }
       ]
+    },
+    {
+  subject: "3011 - Latest update",
+  requester: "HetfieldJ@gmail.com",
+  requesterName: "James Hetfield",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/TECH - Apex Investing Copier",
+  internalRequired: false,
+  sections: [],
+  requirements:
+    "Use the specified macro; no additional prose is required.",
+  category: "Account",
+  intent: "",
+  accountId: "APEX-789654",
+  tags: ["account_questions"],
+  body:
+    "I am having trouble opening NT, it was recommended that I open the Apex Investing Toolkit->Install their latest update. can you help me ensure I have the latest update?",
+  attachments: [
+ 
+  ]
+}),
+    {
+  subject: "3012 - Money back",
+  ticketNumber: "3012",
+  requester: "Hetfieldj@gmail.com",
+  requesterName: "James Hetfield",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/EVAL - Forgot recurring cancel LESS 3k",
+  internalRequired: false,
+  sections: [],
+  requirements: "Use the specified macro; no additional prose is required.",
+  category: "",
+  intent: "",
+  accountId: "",
+  tags: [],
+  scenario: "Once you check aMember, you notice this user has spent $2999 USD with us",
+  body: "مرحبًا، اليوم اشتريت 22 من تقييم الحسابات وكنت أرغب في شراء 21 فقط، يرجى إعادة مبلغ 1 منها، لم أستخدمها."
+},
+    {
+
+  subject: "3013 - Quiero ser parte de Apex",
+  ticketNumber: "3013",
+  requester: "fernando53@gmail.com",
+  requesterName: "Fernando",
+  channel: "Email",
+  hoursAgo: 1e+49,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/GEN - Promotion/Discount Code Inquiry",
+  internalRequired: false,
+  sections: [],
+  requirements: "Use the specified macro; no additional prose is required.",
+  category: "",
+  intent: "",
+  accountId: "",
+  tags: [],
+  body: "Hola amigos, soy nuevo en el trading y quisiera unirme a su empresa y quisiera un cupon de descuento, prometo hacer mucho dinero, de hecho puedo hacerlo con cuentas Rithmic, Wealthcharts o Tradovate porque ya las conozco todas, solo esperen y ya verán."
+},
+{
+  subject: "3014 - Cuenta en vivo",
+  ticketNumber: "3013",
+  requester: "ramiroperez@gmail.com",
+  requesterName: "Ramiro",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Solved",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/PA - Sign Agreement",
+  internalRequired: false,
+  sections: [],
+  requirements: "Use the specified macro; no additional prose is required.",
+  category: "",
+  intent: "",
+  accountId: "APEX-123555",
+  tags: [],
+  body: "hola, ya pasé mi cuenta, envienme el contrato para firmarlo en de inmediato, quiero operar ya mismo"
+},
+{
+  subject: "3015 - Llevo media hora esperando",
+  ticketNumber: "3015",
+  requester: "Benedicto16@gmail.com",
+  requesterName: "Benedicto",
+  channel: "Email",
+  hoursAgo: 1e-9,
+  requiredStatus: "Open",
+  requiredAssignee: "Myself",
+  macroOnly: true,
+  macroCommand: "/PA - Activations (Numerical Order)",
+  internalRequired: false,
+  sections: [],
+  requirements: "The ticket has to be answered by using the macro /PA - Activations (Numerical Order) or by customizing the wording in there, telling the user they signed account APEX-355063-24 and paid for account APEX-355063-17, and they have to sign for account APEX-355063-17 in order to get their new PA account. The account numbers can be paraphrased or shortened to 17, 24, Apex-17, Apex-24.",
+  category: "",
+  intent: "",
+  accountId: "APEX-355063",
+  tags: [],
+  scenario: "Once you check aMember you notice the user signed account 24 but paid for account 17",
+  scenarioAttachments: [
+    {
+      type: "image",
+      url: "https://imgur.com/a/FW7JP7i",
+      title: "Scenario image"
     }
+  ],
+  body: "Hola, ya firmé y pagué mi cuenta live y no la he recibido. Cuanto tardarán en asignarmela? llevo esperando media hora. Thanks"
+}
   ];
 
   res.end(JSON.stringify({ weights, seed }));
