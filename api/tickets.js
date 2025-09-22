@@ -692,7 +692,6 @@ export default function handler(req, res) {
   ] 
 },
     {
-      makeTicket({ 
   subject: "4007 - Pa Fees", 
   requester: "parkerpet.spider@hotmail.com", 
   requesterName: "Peter Parker", 
@@ -712,8 +711,7 @@ export default function handler(req, res) {
   tags: [], 
   body: 
     "Hello Apex!\n\nI want to start trading with you, but I still have some questions about the process. Is the PA fee the same as the eval, or are there any other fees to pay? I can't seem to find this information on your website. Also, can I pass my eval in 1 day? Thanks in advance", 
-  attachments: [ 
-  ] 
+  attachments: [] 
 }, 
   {
       subject: "4008 - WC Tradeable Instruments", 
