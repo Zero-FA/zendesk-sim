@@ -665,7 +665,7 @@ export default function handler(req, res) {
     "Hi :( I failed my eval 2 days ago and feel absolutely frustrated. It's my eval #2 and I've put so much hard work on it I just feel so sad and frustrated. It's the first time I fail an eval so I'm not sure what's next. I want to continue trading. Can you help me? Is there a way to reset?", 
   attachments: [ 
   ] 
-}),
+},
   ];
 
   res.end(JSON.stringify({ weights, seed }));
