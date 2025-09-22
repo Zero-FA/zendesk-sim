@@ -642,7 +642,30 @@ export default function handler(req, res) {
   accountId: "APEX-8787574",
   tags: [],
   body: "I followed all your guidelines and adjusted my rr to the 5:1 rule and you are still denying my payout, what's wrong with you guys?"
-}
+},
+    {
+  subject: "4005 - Failed my eval :(", 
+  requester: "dianatesterticket@email.com", 
+  requesterName: "Diana", 
+  channel: "Email", 
+  hoursAgo: 10, 
+  requiredStatus: "Solved", 
+  requiredAssignee: "Myself", 
+  macroOnly: false, 
+  macroCommand: "", 
+  internalRequired: false, 
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"], 
+  requirements: 
+    "The personalized response should include the different options a user has to continue trading: they can either purchase a new account or reset their current one either manually or with the automatic reset. The wording should include some of the following information:\n\nNext Steps:\n\n1. Automatic Reset Upon Subscription Renewal: If you choose to maintain your subscription, your account will automatically reset on your next renewal date. This reset will restore your account balance, trailing drawdown, and trading days to their initial states, allowing you to start the evaluation anew without any additional cost. \n2. Manual Reset Option: If you’d like to restart your evaluation before the scheduled renewal, you have the option to purchase a manual reset. This will immediately reset your account balance, trailing drawdown, and trading days, enabling you to begin the evaluation process again right away. Please note that a manual reset does not alter your subscription’s renewal or expiration date.\n3. Canceling Your Subscription: If you prefer not to continue, you can cancel your subscription through your member’s area. Keep in mind that canceling will terminate your current evaluation, and any progress will be lost.\n\nOne or more of the following links should be included:\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519807548699-Reset-Options-and-Invoice-Cancellations#h_01JF05B3PWSD0PSC0D7TC294NW\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519807548699-Reset-Options-and-Invoice-Cancellations\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519779551387-Evaluation-Subscription-Billing#h_01JEZPZ29SAV4377H6Y5F9E0BT\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519779551387-Evaluation-Subscription-Billing\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519807548699-Reset-Options-and-Invoice-Cancellations#h_01JF058RTNTAC6MTT91X6KB81B\nhttps://support.apextraderfunding.com/hc/en-us/articles/4404866626203-How-to-Reset-an-Account", 
+  category: "", 
+  intent: "", 
+  accountId: "APEX-111222", 
+  tags: [], 
+  body: 
+    "Hi :( I failed my eval 2 days ago and feel absolutely frustrated. It's my eval #2 and I've put so much hard work on it I just feel so sad and frustrated. It's the first time I fail an eval so I'm not sure what's next. I want to continue trading. Can you help me? Is there a way to reset?", 
+  attachments: [ 
+  ] 
+}),
   ];
 
   res.end(JSON.stringify({ weights, seed }));
