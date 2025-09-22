@@ -530,6 +530,118 @@ export default function handler(req, res) {
     }
   ],
   body: "Hola, ya firmé y pagué mi cuenta live y no la he recibido. Cuanto tardarán en asignarmela? llevo esperando media hora. Thanks"
+},
+    {
+  subject: "You are wrong",
+  ticketNumber: "2099",
+  requester: "Martinmatias@gmail.com",
+  requesterName: "Martin M.",
+  channel: "Email",
+  hoursAgo: 0,
+  requiredStatus: "Open",
+  requiredAssignee: "Support Tier 3",
+  macroOnly: false,
+  macroCommand: "",
+  internalRequired: true,
+  sections: [
+    "Greeting",
+    "Opener",
+    "Solution",
+    "Closer",
+    "Sign-Off"
+  ],
+  requirements: "Brief Summary of the Issue:\n \nAccount Numbers Affected:\nAPEX-951753-25",
+  category: "",
+  intent: "",
+  accountId: "Apex-951753-25",
+  tags: [],
+  body: "Hey, I understand your message about the supposedly violated drawdown threshold in my account 25, but you are wrong!!!! Look at the attached picture in this message, I made a huge profit! Your math is wrong!",
+  attachments: [
+    {
+      type: "image",
+      url: "https://imgur.com/a/SEqVMGi",
+      title: "Attachment"
+    }
+  ]
+},
+    {
+  subject: "Balance not restored yet",
+  ticketNumber: "2098",
+  requester: "Sergiomendez@gmail.com",
+  requesterName: "Sergio M.",
+  channel: "Email",
+  hoursAgo: 0,
+  requiredStatus: "Open",
+  requiredAssignee: "Support Tier 3",
+  macroOnly: false,
+  macroCommand: "",
+  internalRequired: true,
+  sections: [
+    "Greeting",
+    "Opener",
+    "Solution",
+    "Closer",
+    "Sign-Off"
+  ],
+  requirements: "Brief Summary of the Issue:\n\n \nAccount Numbers Affected:\nApex-123446789-89",
+  category: "",
+  intent: "",
+  accountId: "Apex-123446789",
+  tags: [],
+  body: "Hi Apex, I'm one of the users affected by yesterday's outage in Tradovate, which you mentioned in your Discord channel. I already talked with Duvan and Maria, they were so nice but my strt of the day balance in my account 89 haven't been reset yet. Please help"
+},
+  {
+  subject: "Rittmik not created",
+  ticketNumber: "2097",
+  requester: "KerryKing@gmail.com",
+  requesterName: "Kerry",
+  channel: "Email",
+  hoursAgo: 0.01,
+  requiredStatus: "Open",
+  requiredAssignee: "Support Tier 3",
+  macroOnly: false,
+  macroCommand: "",
+  internalRequired: true,
+  sections: [
+    "Greeting",
+    "Opener",
+    "Solution",
+    "Closer",
+    "Sign-Off"
+  ],
+  requirements: "Brief Summary of the Issue:\n\n \nAccount Numbers Affected:\nApex-7896123-239",
+  category: "",
+  intent: "",
+  accountId: "Apex-7896123",
+  tags: [],
+  scenario: "Once you check aMember, you can see the mentioned account populates in there, but is doesn't appear in Rtrader Pro and R Manager",
+  body: "Hi. Yesterday I purchased a new account 239, but it still doesn't populate in my Quantower and yes, I already followed all the steps mentioned in the connection guide, I have used your accounts for years and now how it works. Please fix asap"
+},
+  {
+  subject: "What's wrong?",
+  ticketNumber: "2096",
+  requester: "Mariana34@hotmail.com",
+  requesterName: "Mariana",
+  channel: "Email",
+  hoursAgo: 2,
+  requiredStatus: "Open",
+  requiredAssignee: "Payout",
+  macroOnly: false,
+  macroCommand: "",
+  internalRequired: false,
+  sections: [
+    "Greeting",
+    "Opener",
+    "Solution",
+    "Closer",
+    "Sign-Off"
+  ],
+  requirements: "Brief Summary of the Issue:",
+  category: "",
+  intent: "",
+  accountId: "APEX-8787574",
+  tags: [],
+  body: "I followed all your guidelines and adjusted my rr to the 5:1 rule and you are still denying my payout, what's wrong with you guys?"
 }
   ];
 
