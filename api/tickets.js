@@ -666,6 +666,129 @@ export default function handler(req, res) {
   attachments: [ 
   ] 
 },
+    {
+      subject: "4006 - Payment failed", 
+  requester: "matthew.testtrader@agmail.com", 
+  requesterName: "Matthew Test", 
+  channel: "Email", 
+  hoursAgo: 0.5, 
+  requiredStatus: "Solved", 
+  requiredAssignee: "Myself", 
+  macroOnly: false, 
+  macroCommand: "", 
+  internalRequired: false, 
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"], 
+  requirements: 
+    "The personalized response should include the explanation of the 72 hour grace period and how to pay from the user's dashboard manually, including wording from one of the following links and the corresponding link attached:\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519779551387-Evaluation-Subscription-Billing#h_01JF7E9HWAEMBXCE9BFRFSVXYX\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519779551387-Evaluation-Subscription-Billing#h_01JEZPZ29SSWQHFKG7SXY28RMS\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519779551387-Evaluation-Subscription-Billing", 
+  category: "Support/Billing", 
+  intent: "Payment failure", 
+  accountId: "APEX-654321-10", 
+  tags: [], 
+  scenario: 
+    "After checking the user's invoices in the invoices/access tab in aMember, you see that indeed account APEX-654321-10 failed its rebill this morning.", 
+  body: 
+    "Hello support. My credit card expired, and my monthly renewal was today, but I think it didn't go through. Is there a way to make the payment directly on the Apex platform? I'm about to pass my eval, and I don't want to lose all the profit I've gained. Please help me!!", 
+  attachments: [ 
+  ] 
+},
+    {
+      makeTicket({ 
+  subject: "4007 - Pa Fees", 
+  requester: "parkerpet.spider@hotmail.com", 
+  requesterName: "Peter Parker", 
+  channel: "Email", 
+  hoursAgo: 0.1, 
+  requiredStatus: "Solved", 
+  requiredAssignee: "Myself", 
+  macroOnly: false, 
+  macroCommand: "", 
+  internalRequired: false, 
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"], 
+  requirements: 
+    "The personalized response should include the response to both questions with the following information (it could be paraphrased). The PA fees are not the same as the evaluation fees. There are monthly and lifetime fees, depending on the size and type of account. Further information can be found in this link (either of the following links can be included in the response):\n\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519770974235-Evaluation-Passed-Converting-to-a-PA-PA-Fees-and-How-to-Activate#h_01JEZQTN6FCD7F4KHPJJ3A0FYC\nhttps://support.apextraderfunding.com/hc/en-us/articles/11316873486491-PA-Account-Fees-Lifetime-and-Monthly\n\nAdditionally, the response should include the explanation of the 1 day to pass, which could be paraphrased this: as long as there is an ongoing promotion with the 1 day to pass, users can pass their evaluation in 1 day.", 
+  category: "", 
+  intent: "", 
+  accountId: "", 
+  tags: [], 
+  body: 
+    "Hello Apex!\n\nI want to start trading with you, but I still have some questions about the process. Is the PA fee the same as the eval, or are there any other fees to pay? I can't seem to find this information on your website. Also, can I pass my eval in 1 day? Thanks in advance", 
+  attachments: [ 
+  ] 
+}, 
+  {
+      subject: "4008 - WC Tradeable Instruments", 
+  requester: "MeghannT@gmail.com", 
+  requesterName: "Meghan T", 
+  channel: "Email", 
+  hoursAgo: 3, 
+  requiredStatus: "Solved", 
+  requiredAssignee: "Myself", 
+  macroOnly: false, 
+  macroCommand: "", 
+  internalRequired: false, 
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"], 
+  requirements: 
+    "The personalized response should include the FAQ link to guide the user on how to find the WealthCharts instruments: https://support.apextraderfunding.com/hc/en-us/articles/40229823264411-WealthCharts-Commissions-Instruments", 
+  category: "", 
+  intent: "Instrument information", 
+  accountId: "APEX-333663-01", 
+  tags: [], 
+  body: 
+    "I just purchased a WealthCharts account, but I can't make it work, and I think the instrument I tried is not allowed. Can you send me the list of the permitted instruments and commissions for this platform?", 
+  attachments: [ 
+  ] 
+},
+        {
+           subject: "4010 - Question", 
+  requester: "dannytesting.o@gmail.com", 
+  requesterName: "Dan O", 
+  channel: "Email", 
+  hoursAgo: 0, 
+  requiredStatus: "Solved", 
+  requiredAssignee: "Myself", 
+  macroOnly: false, 
+  macroCommand: "", 
+  internalRequired: false, 
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"], 
+  requirements: 
+    "The personalized response should include (could be paraphrased) the following information:  \nError Message: Market data failed get_order_book error: 13 - This indicates missing level 2 data. You must add level 2 data for order book. For Rithmic, under Rithmic Addons. For Tradovate, on their web platform, go to Settings, Subscriptions, and add level 2 data. Any of the following links can be included: \nhttps://support.apextraderfunding.com/hc/en-us/articles/10973928895259-Error-Messages-and-How-To-Fix-Them \nhttps://support.apextraderfunding.com/hc/en-us/articles/31519452005019-Rithmic-Trading-Tools-Add-ons-Orderbook-Market-Data-2nd-Login-CME \nhttps://support.apextraderfunding.com/hc/en-us/articles/31519523978779-Tradovate-Trading-Tools-Add-ons-Orderflow-Level-2-Data", 
+  category: "Support", 
+  intent: "", 
+  accountId: "APEX-654321-02", 
+  tags: [], 
+  body: 
+    "Hi! I'm getting the order book error, how do I fix it?", 
+  attachments: [ 
+    { 
+      type: "image", 
+      url: "https://imgur.com/a/AyolLJW", 
+      title: "Attachment" 
+    } 
+  ] 
+},
+        {
+            subject: "4010 - Question", 
+  requester: "mytestershawn@gmail.com", 
+  requesterName: "Shawn M", 
+  channel: "Email", 
+  hoursAgo: 2, 
+  requiredStatus: "Solved", 
+  requiredAssignee: "Myself", 
+  macroOnly: false, 
+  macroCommand: "", 
+  internalRequired: false, 
+  sections: ["Greeting","Opener","Solution","Closer","Sign-Off"], 
+  requirements: 
+    "The personalized response should include (could be paraphrased) the following information: \n• Sundays: Trading on Sundays counts as part of Monday’s trading day. A trading day is defined as 6:00 PM ET one day until 4:59 PM ET the next day.\n• Holidays: You can trade on holidays if the market is open. However, half-day holidays do not count as a trading day.\nIt should also include one or more of the following links:\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519769997083-Evaluation-Rules\nhttps://support.apextraderfunding.com/hc/en-us/articles/31519769997083-Evaluation-Rules#h_01JEZNR8EW5FS94WX5RH5R3P9E", 
+  category: "", 
+  intent: "", 
+  accountId: "APEX-654321-02", 
+  tags: [], 
+  body: 
+    "Do Sundays and holidays count as trading days?", 
+  attachments: [ 
+  ] 
+}
   ];
 
   res.end(JSON.stringify({ weights, seed }));
