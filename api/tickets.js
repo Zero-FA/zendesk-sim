@@ -786,6 +786,94 @@ export default function handler(req, res) {
     "Do Sundays and holidays count as trading days?", 
   attachments: [ 
   ] 
+},
+    { 
+  subject: "Not able to pay", 
+  ticketNumber: "2000", 
+  requester: "Lisacatrader@gmail.com", 
+  requesterName: "Lisa T", 
+  channel: "Email", 
+  hoursAgo: 1, 
+  requiredStatus: "Open", 
+  requiredAssignee: "Support Tier 2", 
+  macroOnly: false, 
+  macroCommand: "", 
+  internalRequired: true, 
+  sections: [ 
+    "Greeting", 
+    "Opener", 
+    "Solution", 
+    "Closer", 
+    "Sign-Off" 
+  ], 
+  requirements: "Internal note must include the Escalation - Internal Note Structure macro structure, it could be paraphrased, but it should include at least items from numbers 1 and 2 of the following:\n1. Brief Summary of the Issue: something in the lines of the user is getting error 609\n2. Account Numbers Affected: APEX-896543-05\n3. Any Additional Information (Screenshots, Related Findings, Troubleshooting steps taken) - this one should be optional and they can describe that they would include that they checked admin logs and saw they have error 609.", 
+  category: "Billing", 
+  intent: "Billing Issues", 
+  accountId: "APEX-896543-05", 
+  tags: [], 
+  scenario: "You go to Admin Logs and see there was a Failed Rebill for APEX-896543-05, it has the remark \"Error 609\".", 
+  body: "Hi. I am so frustrated. I can't pay. it says ERROR 609, how am I supposed to know what that is? I thought Apex was available in India. Heeelp!!!!" 
+},
+   { 
+  subject: "Voglio fare trading", 
+  ticketNumber: "2002", 
+  requester: "fiorellathetrader@gmail.com", 
+  requesterName: "Fiorella", 
+  channel: "Email", 
+  hoursAgo: 2, 
+  requiredStatus: "Open", 
+  requiredAssignee: "Fraud General", 
+  macroOnly: false, 
+  macroCommand: "", 
+  internalRequired: true, 
+  sections: [ 
+    "Greeting", 
+    "Opener", 
+    "Solution", 
+    "Closer", 
+    "Sign-Off" 
+  ], 
+  requirements: "The internal note must include the description of what was found: user is banned due to multiple accounts.", 
+  category: "", 
+  intent: "", 
+  accountId: "APEX-000111", 
+  tags: [], 
+  scenario: "You go to aMember and see the user is banned. In the comment section you see that the reason is multiple accounts.", 
+  body: "Buongiorno, \n\nSono stato bannato. Voglio fare trading con Apex :( per favore. Prometto che questa volta rispetterò le regole. Per favore rimuovimi dal ban.\n\nSaluti,\n\nFiorella" 
+},
+    { 
+  subject: "PA not activated", 
+  ticketNumber: "2001", 
+  requester: "testingjulie.bmember@hotmail.com", 
+  requesterName: "Julie B", 
+  channel: "Email", 
+  hoursAgo: 8, 
+  requiredStatus: "Open", 
+  requiredAssignee: "Support Tier 2", 
+  macroOnly: false, 
+  macroCommand: "", 
+  internalRequired: true, 
+  sections: [ 
+    "Greeting", 
+    "Opener", 
+    "Solution", 
+    "Closer", 
+    "Sign-Off" 
+  ], 
+  requirements: "Internal note must include the Escalation - Internal Note Structure macro structure, it could be paraphrased, but it should include at least items from numbers 1 and 2 of the following: \n1. Brief Summary of the Issue: something in the lines of the user signed for the lowest account number but the payment is assigned to the highest account number or the payment needs to be changed.\n2. Account Numbers Affected: APEX-000000-49 and APEX-000000-50\n3. Any Additional Information (Screenshots, Related Findings, Troubleshooting steps taken) - this one should be optional and could include the description of the procedure with wording similar to: the signatures and payment tab (or the Rithmic tab) in aMembershows that the payment is assigned to the highest passed account number, but the signature is for the lowest passed account number. (or a description of of the image)", 
+  category: "PA/Account", 
+  intent: "", 
+  accountId: "APEX-000000-49", 
+  tags: [], 
+  scenario: "You go to aMember to the Rithmic tab and see that the payment is assigned to the highest passed account number, but the signature is for the lowest passed account number.", 
+  scenarioAttachments: [ 
+    { 
+      type: "image", 
+      url: "https://i.imgur.com/kTrKRFu.png", 
+      title: "Scenario image" 
+    } 
+  ], 
+  body: "Hi APEX\n\nWhy is my PA not active yet? I'm losing trading days in profit, give my account NOW!!!\n\nBest,\n\nJulie" 
 }
   ];
 
