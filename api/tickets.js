@@ -308,9 +308,7 @@ export default function handler(req, res) {
         "You go to aMember and check the Rithmic tab, verifying which evals are passed, signed, and paid for. The image attached shows what you find.",
       body:
         "Hi Apex help desk! \n\nI passed my Rithmic eval 2 days ago, and I'm trying to get my PA. I've already paid for and signed for it, but it's not showing up. The account I passed is -05. Can you help me activate it or tell me what I'm missing? Thank you. \n\nBest,\n\nSara",
-      attachments: [
-        { type: "image", url: "https://i.imgur.com/lRpnmbP.png", title: "Attachment" }
-      ],
+      attachments: [],
       scenarioAttachments: [
         { type: "image", url: "https://i.imgur.com/lRpnmbP.png", title: "aMember — Rithmic tab snapshot" },
         {
