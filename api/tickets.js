@@ -523,7 +523,7 @@ export default function handler(req, res) {
   scenarioAttachments: [
     {
       type: "image",
-      url: "https://imgur.com/a/FW7JP7i",
+      url: "https://i.imgur.com/zvZjSJn.png",
       title: "Scenario image"
     }
   ],
