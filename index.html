@@ -296,17 +296,6 @@ body.dark .badge-id:hover{background:rgba(148,163,184,0.18);border-color:#3b475b
 
             <div style="display:flex;gap:8px;justify-content:space-between;margin-top:6px;align-items:center">
               <button class="btn" id="grammarBtn" title="Ctrl/Cmd+Shift+G">Check grammar</button>
-
-              <label class="small muted" style="display:flex; align-items:center; gap:6px">
-                Visibility
-                <select class="select" id="visibilitySel">
-                  <option>Public</option>
-                  <option>Internal</option>
-                </select>
-              </label>
-              <label class="small muted" style="display:flex; align-items:center; gap:6px">
-  Mode
-  <select class="select" id="modeSel">
     <!-- options will be injected -->
   </select>
 </label>
@@ -623,16 +612,6 @@ function toast(msg){ toastEl.textContent = msg; toastEl.classList.add("show"); c
 let currentId=null, submitAs="Open", lastGrammar=null;
 
 /* ---------- Small UI helpers ---------- */
-  function renderModeOptions(t){
-  if (!modeSel) return;
-  const modes = (t?.grading?.allowedModes || ["structured"]);
-  const labelOf = (m) => m==="macro" ? "Macro"
-                   : m==="freestyle" ? "Freestyle (steps/paragraph)"
-                   : "Structured reply";
-  modeSel.innerHTML = modes.map(m => `<option value="${m}">${labelOf(m)}</option>`).join("");
-  modeSel.value = t?.grading?.defaultMode || modes[0];
-}
-
 function updateReplyPlaceholderByMode(t){
   if (!replyBox || !modeSel) return;
   const m = modeSel.value;
@@ -790,10 +769,6 @@ function openDetail(id){
 
   dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
   setSubmitUI(dStatus.value);
-  renderModeOptions(t);
-if (modeSel) {
-  modeSel.onchange = () => updateReplyPlaceholderByMode(t);
-}
 updateReplyPlaceholderByMode(t);
 
   renderAssigneeOptions(t);
@@ -996,7 +971,7 @@ submitMainBtn.onclick = async () => {
     t.status = chosenStatus;
     t.assignee = chosenAssignee;
 
-   const chosenMode = modeSel ? modeSel.value : (t?.grading?.defaultMode || "structured");
+const chosenMode = (t?.grading?.defaultMode || "structured");
 const attempt = {
   ts: msg.ts,
   reply: text,
