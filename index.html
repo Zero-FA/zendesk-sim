@@ -304,6 +304,12 @@ body.dark .badge-id:hover{background:rgba(148,163,184,0.18);border-color:#3b475b
                   <option>Internal</option>
                 </select>
               </label>
+              <label class="small muted" style="display:flex; align-items:center; gap:6px">
+  Mode
+  <select class="select" id="modeSel">
+    <!-- options will be injected -->
+  </select>
+</label>
 
               <div class="split">
                 <button class="btn primary" id="submitMainBtn">
@@ -544,6 +550,30 @@ window.__stateReady = (async function loadFromApi(){
 /* wait for API seed / local load */
 await window.__stateReady;
 let state = window.state;
+  // ---- Grading mode adapter (back-compat with legacy flags) ----
+(function adaptTicketGrading(){
+  if (!state || !Array.isArray(state.tickets)) return;
+  for (const t of state.tickets) {
+    t.grading = t.grading || {};
+    if (!Array.isArray(t.grading.allowedModes)) {
+      if (t.macroOnly) {
+        t.grading.allowedModes = ["macro"];
+        t.grading.defaultMode  = "macro";
+      } else if (t?.expected?.internalRequired) {
+        // Internal notes usually freeform (steps/paragraph)
+        t.grading.allowedModes = ["freestyle"];
+        t.grading.defaultMode  = "freestyle";
+      } else {
+        t.grading.allowedModes = ["structured","freestyle","macro"];
+        t.grading.defaultMode  = "structured";
+      }
+    }
+    if (!t.grading.defaultMode) {
+      t.grading.defaultMode = (t.grading.allowedModes && t.grading.allowedModes[0]) || "structured";
+    }
+  }
+})();
+
 
 /* ---------- Helpers ---------- */
 const $  = (id)=>document.getElementById(id);
@@ -575,6 +605,8 @@ const dCategory = $("dCategory"), dIntent = $("dIntent"), dAccount = $("dAccount
 const thread = $("thread"), snapshots = $("snapshots"), replyBox = $("replyBox"), visibilitySel = $("visibilitySel");
 
 const rName=$("rName"), rEmail=$("rEmail"), rLocal=$("rLocal"), rLang=$("rLang"), rNotes=$("rNotes"), histList=$("histList");
+const modeSel = $("modeSel");
+
 
 const submitMainBtn=$("submitMainBtn"), submitToggleBtn=$("submitToggleBtn"), submitMenu=$("submitMenu");
 const submitStatusLbl=$("submitStatusLbl"), submitDot=$("submitDot");
@@ -591,6 +623,28 @@ function toast(msg){ toastEl.textContent = msg; toastEl.classList.add("show"); c
 let currentId=null, submitAs="Open", lastGrammar=null;
 
 /* ---------- Small UI helpers ---------- */
+  function renderModeOptions(t){
+  if (!modeSel) return;
+  const modes = (t?.grading?.allowedModes || ["structured"]);
+  const labelOf = (m) => m==="macro" ? "Macro"
+                   : m==="freestyle" ? "Freestyle (steps/paragraph)"
+                   : "Structured reply";
+  modeSel.innerHTML = modes.map(m => `<option value="${m}">${labelOf(m)}</option>`).join("");
+  modeSel.value = t?.grading?.defaultMode || modes[0];
+}
+
+function updateReplyPlaceholderByMode(t){
+  if (!replyBox || !modeSel) return;
+  const m = modeSel.value;
+  if (m === "macro") {
+    const macro = t?.expected?.macroCommand || "/your-macro-here";
+    replyBox.placeholder = `Type the macro exactly: ${macro}`;
+  } else if (m === "freestyle") {
+    replyBox.placeholder = "Write steps/paragraph (no strict greeting/sign-off)";
+  } else {
+    replyBox.placeholder = "Write your reply… (Greeting, Opener, Solution, Closer, Sign-Off)";
+  }
+}
 function setSubmitting(on){
   submitMainBtn.classList.toggle("loading", on);
   submitMainBtn.disabled = on; submitToggleBtn.disabled = on;
@@ -736,6 +790,11 @@ function openDetail(id){
 
   dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
   setSubmitUI(dStatus.value);
+  renderModeOptions(t);
+if (modeSel) {
+  modeSel.onchange = () => updateReplyPlaceholderByMode(t);
+}
+updateReplyPlaceholderByMode(t);
 
   renderAssigneeOptions(t);
   dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
@@ -937,7 +996,15 @@ submitMainBtn.onclick = async () => {
     t.status = chosenStatus;
     t.assignee = chosenAssignee;
 
-    const attempt = { ts: msg.ts, reply: text, status: chosenStatus, assignee: chosenAssignee, visibility: chosenVisibility };
+   const chosenMode = modeSel ? modeSel.value : (t?.grading?.defaultMode || "structured");
+const attempt = {
+  ts: msg.ts,
+  reply: text,
+  status: chosenStatus,
+  assignee: chosenAssignee,
+  visibility: chosenVisibility,
+  mode: chosenMode
+};
 
     const report = await window.gradeAttempt(t, attempt, state.weights);
     if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
@@ -1015,206 +1082,207 @@ detail.classList.add("hidden"); $("list").classList.remove("hidden");
 <!-- ===== 4) GRADER ===== -->
 <script>
 (() => {
-  window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-const accessCode     = sessionStorage.getItem("sim_access_code") || "";
-const agentFirstName = sessionStorage.getItem("sim_agent_first") || "";
-const agentLastName  = sessionStorage.getItem("sim_agent_last")  || "";
-const equalsIgnoreCase = (a,b) => String(a||"").trim().toLowerCase() === String(b||"").trim().toLowerCase();
-    const w = Object.assign(
-      { sections:60, status:25, assignee:15, visibility:10, keywords:0, pass:80,
-        sectionWeights:{Greeting:8, Opener:8, Solution:67, Closer:8, "Sign-Off":9} },
-      weights || {}
-    );
+window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
+  const accessCode     = sessionStorage.getItem("sim_access_code") || "";
+  const agentFirstName = sessionStorage.getItem("sim_agent_first") || "";
+  const agentLastName  = sessionStorage.getItem("sim_agent_last")  || "";
+  const equalsIgnoreCase = (a,b) => String(a||"").trim().toLowerCase() === String(b||"").trim().toLowerCase();
 
-    const reply = String(attempt.reply || "");
-    const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
-    const eq=(a,b)=>String(a??'').trim().toLowerCase()===String(b??'').trim().toLowerCase();
+  const w = Object.assign(
+    { sections:60, status:25, assignee:15, visibility:10, keywords:0, pass:80,
+      sectionWeights:{Greeting:8, Opener:8, Solution:67, Closer:8, "Sign-Off":9} },
+    weights || {}
+  );
 
-    const expectedStatus   = ticket.expected?.requiredStatus ?? "";
-    const expectedAssignee = ticket.expected?.requiredAssignee ?? "";
-    const statusOk   = eq(attempt.status,   expectedStatus);
-    const assigneeOk = eq(attempt.assignee, expectedAssignee);
+  const reply = String(attempt.reply || "");
+  const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
+  const eq=(a,b)=>String(a??'').trim().toLowerCase()===String(b??'').trim().toLowerCase();
 
-    const internalRequired = !!ticket?.expected?.internalRequired;
-    const chosenVis = String(attempt.visibility || "Public");
-    const visibilityOk = internalRequired ? chosenVis.toLowerCase() === "internal" : true;
+  const expectedStatus   = ticket.expected?.requiredStatus ?? "";
+  const expectedAssignee = ticket.expected?.requiredAssignee ?? "";
+  const statusOk   = eq(attempt.status,   expectedStatus);
+  const assigneeOk = eq(attempt.assignee, expectedAssignee);
 
-    /* ---- Macro-only ---- */
-    if (ticket.expected?.macroOnly) {
-      const target = String(ticket.expected?.macroCommand || "").trim();
-      const macroOk = target ? reply.trim() === target : reply.trim().startsWith("/");
+  const internalRequired = !!ticket?.expected?.internalRequired;
+  const chosenVis = String(attempt.visibility || "Public");
+  const visibilityOk = internalRequired ? chosenVis.toLowerCase() === "internal" : true;
 
-      const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
-      const sStructure = (macroOk ? 100 : 0) * (w.sections||0) / sum;
-      const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
-      const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
-      const sVis       = (visibilityOk?100:0) * (w.visibility||0) / sum;
-      const score = sStructure + sStatus + sAssignee + sVis;
+  // ---- New: mode dispatch (macro | freestyle | structured) ----
+  const chosenMode = (String(attempt.mode || "").toLowerCase())
+                  || (ticket?.grading?.defaultMode || "structured");
 
-      const checks = [
-        { label: "Macro command is correct", ok: macroOk, detail: `Typed: ${reply || "—"}` },
-        { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` },
-        { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` },
-        { label: internalRequired ? `Visibility is "Internal" (required)` : `Visibility check (not required)`, ok: visibilityOk, detail: `Selected: ${chosenVis}` }
-      ];
-      return { checks, score, pass: score >= (w.pass || 0), structurePct: macroOk ? 100 : 0 };
-    }
-
-    /* ---- Internal-only (requirements) ---- */
-    if (internalRequired) {
-      let req = { ok:false, score:0, detail:"" };
-      try {
-        const rubric = typeof ticket?.expected?.requirements === "string"
-          ? ticket.expected.requirements
-          : (ticket?.expected?.requirements?.guidance || "");
-const resp = await fetch("/api/grade", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    mode: "requirements",
-    reply,
-    rubric,
-    accessCode,
-    agentFirstName,
-    agentLastName
-  })
-});
-        if (resp.ok) req = await resp.json();
-      } catch {}
-
-      const reqScore = clamp(Number(req.score || 0), 0, 100);
-      const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
-      const sStructure = reqScore * (w.sections||0) / sum;
-      const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
-      const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
-      const sVis       = (visibilityOk?100:0) * (w.visibility||0) / sum;
-      const score = sStructure + sStatus + sAssignee + sVis;
-
-      const checks = [
-        { label: "Internal requirements met", ok: !!req.ok, detail: req.detail || "—" },
-        { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` },
-        { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` },
-        { label: `Visibility is "Internal" (required)`, ok: visibilityOk, detail: `Selected: ${chosenVis}` }
-      ];
-      return { checks, score, pass: score >= (w.pass || 0), structurePct: reqScore };
-    }
-
-    /* ---- Normal public reply (structure) ---- */
-    let ai = null;
-    try {
- const rubric = typeof ticket?.expected?.requirements === "string"
-  ? ticket.expected.requirements
-  : (ticket?.expected?.requirements?.guidance || "");
-
-const resp = await fetch("/api/grade", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    mode: "structure",
-    reply,
-    rubric,
-    accessCode,
-    agentFirstName,
-    agentLastName
-  })
-});
-if (resp.ok) {
-  ai = await resp.json();
-} else {
-  console.error("Grade API error:", resp.status, await resp.text());
-}
-    } catch {}
-
-    const labels = ["Greeting","Opener","Solution","Closer","Sign-Off"];
-    const structureChecks = labels.map((label, i) => {
-      const c = Array.isArray(ai?.checks) ? ai.checks[i] : null;
-      return { label, ok: !!c?.ok, detail: c?.detail || (ai ? "Not met" : "AI unavailable"), score: typeof c?.score === "number" ? clamp(c.score,0,100) : (c?.ok ? 100 : 0) };
-    });
-
-    (function enforce(){
-      const greetingIdx = labels.indexOf("Greeting");
-      const signoffIdx  = labels.indexOf("Sign-Off");
-      const lines = String(reply).split(/\r?\n/);
-
-      if (greetingIdx >= 0) {
-        const firstIdx = lines.findIndex(l => l.trim() !== "");
-        if (firstIdx !== -1) {
-          const line = lines[firstIdx].trim();
-// Greeting must be "Hello/Hi/Hey/Good <time> <Name>,"
-// then exactly one blank line and then more text
-// Build a string that starts at the first non-empty line so leading blanks don't break the check
-const fromFirstLine = lines.slice(firstIdx).join("\n");
-const greetOK = /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/.test(fromFirstLine);
-if (!greetOK) {
-  structureChecks[greetingIdx].ok = false;
-  structureChecks[greetingIdx].score = 0;
-  structureChecks[greetingIdx].detail =
-    'Greeting must be "Hello <Name>," followed by exactly one blank line before your opener.';
-}
-        }
-      }
-
-if (signoffIdx >= 0) {
-  const signRe = /^(?:Best regards,|Kind regards,|Warm regards,)$/i;
-  const nameRe = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
-
-  // Require the EXACT first-name value entered on the gate (multi-word allowed)
-  const expectedName = (agentFirstName || "").trim();
-
-  let sIdx = -1;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (signRe.test(lines[i].trim())) { sIdx = i; break; }
-  }
-
-  if (sIdx === -1) {
-    structureChecks[signoffIdx].ok = false;
-    structureChecks[signoffIdx].score = 0;
-    structureChecks[signoffIdx].detail =
-      `Missing proper sign-off. Example:\nBest regards,\n\n${expectedName || "[Your Name]"}`;
-  } else {
-    const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
-    const nameLine   = (lines[sIdx + 2] || "").trim();
-    const nameShapeOk = !!nameLine && nameRe.test(nameLine);
-    const nameMatchOk = expectedName ? equalsIgnoreCase(nameLine, expectedName) : nameShapeOk;
-
-    if (!blankAfter || !nameShapeOk || !nameMatchOk) {
-      const parts = [];
-      if (!blankAfter)  parts.push("leave one blank line after the sign-off");
-      if (!nameShapeOk) parts.push("put your name on its own line");
-      if (!nameMatchOk && expectedName) parts.push(`use the exact name "${expectedName}"`);
-
-      structureChecks[signoffIdx].ok = false;
-      structureChecks[signoffIdx].score = 0;
-      structureChecks[signoffIdx].detail =
-        `Sign-off issue: ${parts.join("; ")}.\nExample:\nBest regards,\n\n${expectedName || "[Your Name]"}`;
-    }
-  }
-}
-    })();
-
-    const sw = Object.assign({ Greeting:8, Opener:8, Solution:67, Closer:8, "Sign-Off":9 }, w.sectionWeights || {});
-    const swTotal = ["Greeting","Opener","Solution","Closer","Sign-Off"].reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
-
-    let structurePctWeighted = 0;
-    labels.forEach((lab, i) => {
-      const c = structureChecks[i]; const pct = clamp(Number(c?.score ?? 0), 0, 100);
-      structurePctWeighted += pct * (sw[lab] || 0) / swTotal;
-    });
-    structurePctWeighted = clamp(structurePctWeighted, 0, 100);
-
-    const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
-    const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
-   const visibilityCheck = { label: `Visibility check (not required)`, ok: true, detail: `Selected: ${chosenVis}` };
+  // ===== MODE: MACRO =====
+  if (chosenMode === "macro") {
+    const target = String(ticket.expected?.macroCommand || "").trim();
+    const macroOk = target ? reply.trim() === target : reply.trim().startsWith("/");
 
     const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
-    const sStructure = structurePctWeighted * (w.sections||0) / sum;
+    const sStructure = (macroOk ? 100 : 0) * (w.sections||0) / sum;
     const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
     const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
     const sVis       = (visibilityOk?100:0) * (w.visibility||0) / sum;
     const score = sStructure + sStatus + sAssignee + sVis;
 
-    return { checks: [...structureChecks, statusCheck, assigneeCheck, visibilityCheck], score, pass: score >= (w.pass || 0), structurePct: structurePctWeighted };
-  };
+    const checks = [
+      { label: "Macro command is correct", ok: macroOk, detail: `Typed: ${reply || "—"}` },
+      { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` },
+      { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` },
+      { label: internalRequired ? `Visibility is "Internal" (required)` : `Visibility check (not required)`, ok: visibilityOk, detail: `Selected: ${chosenVis}` }
+    ];
+    return { checks, score, pass: score >= (w.pass || 0), structurePct: macroOk ? 100 : 0 };
+  }
+
+  // ===== MODE: FREESTYLE =====
+  // No strict greeting/sign-off. Grade requirements coverage via /api/grade (mode=requirements).
+  if (chosenMode === "freestyle") {
+    let req = { ok:false, score:0, detail:"" };
+    try {
+      const rubric = typeof ticket?.expected?.requirements === "string"
+        ? ticket.expected.requirements
+        : (ticket?.expected?.requirements?.guidance || "");
+      const resp = await fetch("/api/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "requirements",
+          reply,
+          rubric,
+          accessCode,
+          agentFirstName,
+          agentLastName
+        })
+      });
+      if (resp.ok) req = await resp.json();
+    } catch {}
+
+    const reqScore = clamp(Number(req.score || 0), 0, 100);
+    const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
+    const sStructure = reqScore * (w.sections||0) / sum;   // reuse "sections" weight for requirements coverage
+    const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+    const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+    const sVis       = (visibilityOk?100:0) * (w.visibility||0) / sum;
+    const score = sStructure + sStatus + sAssignee + sVis;
+
+    const checks = [
+      { label: "Requirements coverage", ok: !!req.ok, detail: req.detail || "—" },
+      { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` },
+      { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` },
+      { label: internalRequired ? `Visibility is "Internal" (required)` : `Visibility check (not required)`, ok: visibilityOk, detail: `Selected: ${chosenVis}` }
+    ];
+    return { checks, score, pass: score >= (w.pass || 0), structurePct: reqScore };
+  }
+
+  // ===== MODE: STRUCTURED (default) =====
+  // Your original structure path (unchanged except for local variable names).
+  let ai = null;
+  try {
+    const rubric = typeof ticket?.expected?.requirements === "string"
+      ? ticket.expected.requirements
+      : (ticket?.expected?.requirements?.guidance || "");
+
+    const resp = await fetch("/api/grade", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "structure",
+        reply,
+        rubric,
+        accessCode,
+        agentFirstName,
+        agentLastName
+      })
+    });
+    if (resp.ok) {
+      ai = await resp.json();
+    } else {
+      console.error("Grade API error:", resp.status, await resp.text());
+    }
+  } catch {}
+
+  const labels = ["Greeting","Opener","Solution","Closer","Sign-Off"];
+  const structureChecks = labels.map((label, i) => {
+    const c = Array.isArray(ai?.checks) ? ai.checks[i] : null;
+    return { label, ok: !!c?.ok, detail: c?.detail || (ai ? "Not met" : "AI unavailable"), score: typeof c?.score === "number" ? clamp(c.score,0,100) : (c?.ok ? 100 : 0) };
+  });
+
+  (function enforce(){
+    const greetingIdx = labels.indexOf("Greeting");
+    const signoffIdx  = labels.indexOf("Sign-Off");
+    const lines = String(reply).split(/\r?\n/);
+
+    if (greetingIdx >= 0) {
+      const firstIdx = lines.findIndex(l => l.trim() !== "");
+      if (firstIdx !== -1) {
+        const fromFirstLine = lines.slice(firstIdx).join("\n");
+        const greetOK = /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/.test(fromFirstLine);
+        if (!greetOK) {
+          structureChecks[greetingIdx].ok = false;
+          structureChecks[greetingIdx].score = 0;
+          structureChecks[greetingIdx].detail =
+            'Greeting must be "Hello <Name>," followed by exactly one blank line before your opener.';
+        }
+      }
+    }
+
+    if (signoffIdx >= 0) {
+      const signRe = /^(?:Best regards,|Kind regards,|Warm regards,)$/i;
+      const nameRe = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
+      const expectedName = (agentFirstName || "").trim();
+
+      let sIdx = -1;
+      for (let i = lines.length - 1; i >= 0; i--) {
+        if (signRe.test(lines[i].trim())) { sIdx = i; break; }
+      }
+
+      if (sIdx === -1) {
+        structureChecks[signoffIdx].ok = false;
+        structureChecks[signoffIdx].score = 0;
+        structureChecks[signoffIdx].detail =
+          `Missing proper sign-off. Example:\nBest regards,\n\n${expectedName || "[Your Name]"}`;
+      } else {
+        const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
+        const nameLine   = (lines[sIdx + 2] || "").trim();
+        const nameShapeOk = !!nameLine && nameRe.test(nameLine);
+        const nameMatchOk = expectedName ? equalsIgnoreCase(nameLine, expectedName) : nameShapeOk;
+
+        if (!blankAfter || !nameShapeOk || !nameMatchOk) {
+          const parts = [];
+          if (!blankAfter)  parts.push("leave one blank line after the sign-off");
+          if (!nameShapeOk) parts.push("put your name on its own line");
+          if (!nameMatchOk && expectedName) parts.push(`use the exact name "${expectedName}"`);
+
+          structureChecks[signoffIdx].ok = false;
+          structureChecks[signoffIdx].score = 0;
+          structureChecks[signoffIdx].detail =
+            `Sign-off issue: ${parts.join("; ")}.\nExample:\nBest regards,\n\n${expectedName || "[Your Name]"}`;
+        }
+      }
+    }
+  })();
+
+  const sw = Object.assign({ Greeting:8, Opener:8, Solution:67, Closer:8, "Sign-Off":9 }, w.sectionWeights || {});
+  const swTotal = ["Greeting","Opener","Solution","Closer","Sign-Off"].reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
+
+  let structurePctWeighted = 0;
+  labels.forEach((lab, i) => {
+    const c = structureChecks[i]; const pct = clamp(Number(c?.score ?? 0), 0, 100);
+    structurePctWeighted += pct * (sw[lab] || 0) / swTotal;
+  });
+  structurePctWeighted = clamp(structurePctWeighted, 0, 100);
+
+  const statusCheck   = { label: `Submit As is "${expectedStatus}"`, ok: statusOk,   detail: `Selected: ${attempt.status ?? "—"}` };
+  const assigneeCheck = { label: `Assignee is "${expectedAssignee}"`, ok: assigneeOk, detail: `Selected: ${attempt.assignee ?? "—"}` };
+  const visibilityCheck = { label: internalRequired ? `Visibility is "Internal" (required)` : `Visibility check (not required)`, ok: visibilityOk, detail: `Selected: ${chosenVis}` };
+
+  const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
+  const sStructure = structurePctWeighted * (w.sections||0) / sum;
+  const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
+  const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
+  const sVis       = (visibilityOk?100:0) * (w.visibility||0) / sum;
+  const score = sStructure + sStatus + sAssignee + sVis;
+
+  return { checks: [...structureChecks, statusCheck, assigneeCheck, visibilityCheck], score, pass: score >= (w.pass || 0), structurePct: structurePctWeighted };
+};
 })();
 </script>
 </body>
