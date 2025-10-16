@@ -1058,6 +1058,15 @@ detail.classList.add("hidden"); $("list").classList.remove("hidden");
 <script>
 (() => {
 window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
+    function firstNameFrom(displayNameOrEmail){
+    const raw = String(displayNameOrEmail||"").trim();
+    if (!raw) return "";
+    // prefer display name, else derive from email local-part
+    const base = raw.includes("@") ? raw.split("@")[0] : raw;
+    // split on separators and take the first word-ish token
+    const token = base.split(/[.\-_ +]/).filter(Boolean)[0] || base;
+    return token.replace(/\b\w/g, c => c.toUpperCase());
+  }
   const accessCode     = sessionStorage.getItem("sim_access_code") || "";
   const agentFirstName = sessionStorage.getItem("sim_agent_first") || "";
   const agentLastName  = sessionStorage.getItem("sim_agent_last")  || "";
@@ -1119,13 +1128,14 @@ window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode: "requirements",
-          reply,
-          rubric,
-          accessCode,
-          agentFirstName,
-          agentLastName
-        })
+        mode: "structure",            // or "requirements" in the freestyle block; keep as-is
+        reply,
+        rubric,
+        accessCode,
+        agentFirstName,
+        agentLastName,
+        customerFirstName: firstNameFrom(ticket.requesterName || ticket.requester)   // <- ADD THIS
+      })
       });
       if (resp.ok) req = await resp.json();
     } catch {}
