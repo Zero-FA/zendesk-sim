@@ -88,7 +88,11 @@ function lastLine(s){
   return m ? m[1].trim() : "";
 }
 function hasGreetingBlankLine(s){
-  const T = normalizeEOL(s);
+ function extractGreetingName(s){
+  const T = normalizeEOL(s).trimStart();
+  const m = T.match(/^(Hello|Hi|Hey|Good (morning|afternoon|evening)) ([^,\n]+),\n/);
+  return m ? m[3].trim() : "";
+}
   // Greeting must be "Hello/Hi/Hey/Good <time> <Name>," then exactly one blank line, then more text
   return /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/.test(T);
 }
@@ -122,10 +126,10 @@ export default async function handler(req, res) {
       mode = "structure",      // "structure" | "requirements"
       reply,
       rubric = "",
-      // access gate + identity (allow UI to prompt for these alongside the “apex2025” step)
       accessCode,
       agentFirstName,
-      agentLastName
+      agentLastName,
+      customerFirstName      // <- NEW
     } = req.body || {};
 
     // Access gate
@@ -141,14 +145,21 @@ export default async function handler(req, res) {
     // Agent identity (multi-word first names supported)
     const EXPECTED_FIRST = String(agentFirstName || EXPECTED_FIRST_ENV || "").trim();  // e.g., "Sean Michael"
     const EXPECTED_LAST  = String(agentLastName  || EXPECTED_LAST_ENV  || "").trim();  // e.g., "O'Donoghue"
+    const EXPECTED_CUSTOMER_FIRST = String(customerFirstName || "").trim();
+
 
     const text = normalizeEOL(textRaw);
 
     // ---------- Hard-rule computations (authoritative) ----------
-    const greetingBlank = hasGreetingBlankLine(text);
+    const greetingBlank      = hasGreetingBlankLine(text);
+    const greetingNameFound  = extractGreetingName(text);
+    const greetingNameOK     = EXPECTED_CUSTOMER_FIRST
+      ? equalsIgnoreCase(greetingNameFound, EXPECTED_CUSTOMER_FIRST)
+      : true; // if we don't know the customer's first name, don't fail on it
+
     const signoffPhraseOK = hasAcceptedSignoffPhrase(text);
-    const signoffBlank = hasSignoffBlankLine(text);
-    const agentNameLine = lastLine(text); // the name after the blank line
+    const signoffBlank    = hasSignoffBlankLine(text);
+    const agentNameLine   = lastLine(text); // the name after the blank line
 
 // Enforce that the sign-off name matches EXACTLY whatever first name they entered
 let agentFirstOnlyOK = true;
@@ -162,6 +173,10 @@ if (EXPECTED_FIRST) {
     // Explicit “COMPUTED FACTS” booleans we’ll feed to the model
     const computedFacts = {
       has_greeting_blank_line: greetingBlank,
+      greeting_name: greetingNameFound,
+      expected_customer_first: EXPECTED_CUSTOMER_FIRST,
+      greeting_uses_customer_first: greetingNameOK,
+
       has_signoff_phrase: signoffPhraseOK,
       has_signoff_blank_line: signoffBlank,
       agent_name_line: agentNameLine,
@@ -231,6 +246,7 @@ ${STRUCTURE_LABELS.join(", ")}
 HARD RULES (literal characters only):
 - A “blank line” means exactly two consecutive line breaks in the raw text: "\\n\\n".
 - Greeting: FAIL if the first greeting line is not "Hello/Hi/Hey/Good <time of day> <Name>," exactly ending with a comma (no extra text on that line), or if there is no blank line after it.
+- Greeting name check: If COMPUTED FACTS.expected_customer_first is non-empty, FAIL unless the greeting <Name> matches it case-insensitively.
 - Sign-Off: FAIL if there is not (1) a standard sign-off line ending with a comma (e.g., "Best regards,"), then (2) one blank line, then (3) the agent's name on its own line.
 - Agent name rule: Use COMPUTED FACTS.agent_first_name_only (multi-word first names are allowed).
 
