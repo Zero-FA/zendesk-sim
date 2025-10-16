@@ -87,12 +87,16 @@ function lastLine(s){
   const m = normalizeEOL(s).match(/\n\n([^\n]+)\s*$/); // text after the blank line at end
   return m ? m[1].trim() : "";
 }
-function hasGreetingBlankLine(s){
- function extractGreetingName(s){
+
+// ✅ Fixed: now a standalone helper
+function extractGreetingName(s){
   const T = normalizeEOL(s).trimStart();
   const m = T.match(/^(Hello|Hi|Hey|Good (morning|afternoon|evening)) ([^,\n]+),\n/);
   return m ? m[3].trim() : "";
 }
+
+function hasGreetingBlankLine(s){
+  const T = normalizeEOL(s);
   // Greeting must be "Hello/Hi/Hey/Good <time> <Name>," then exactly one blank line, then more text
   return /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/.test(T);
 }
@@ -129,7 +133,7 @@ export default async function handler(req, res) {
       accessCode,
       agentFirstName,
       agentLastName,
-      customerFirstName      // <- NEW
+      customerFirstName      // optional: to enforce the greeting-name match
     } = req.body || {};
 
     // Access gate
@@ -147,7 +151,6 @@ export default async function handler(req, res) {
     const EXPECTED_LAST  = String(agentLastName  || EXPECTED_LAST_ENV  || "").trim();  // e.g., "O'Donoghue"
     const EXPECTED_CUSTOMER_FIRST = String(customerFirstName || "").trim();
 
-
     const text = normalizeEOL(textRaw);
 
     // ---------- Hard-rule computations (authoritative) ----------
@@ -161,14 +164,14 @@ export default async function handler(req, res) {
     const signoffBlank    = hasSignoffBlankLine(text);
     const agentNameLine   = lastLine(text); // the name after the blank line
 
-// Enforce that the sign-off name matches EXACTLY whatever first name they entered
-let agentFirstOnlyOK = true;
-if (EXPECTED_FIRST) {
-  agentFirstOnlyOK = equalsIgnoreCase(agentNameLine, EXPECTED_FIRST);
-} else {
-  // fallback: just check that it's a single "word-ish" name
-  agentFirstOnlyOK = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/.test(agentNameLine);
-}
+    // Enforce that the sign-off name matches EXACTLY whatever first name they entered
+    let agentFirstOnlyOK = true;
+    if (EXPECTED_FIRST) {
+      agentFirstOnlyOK = equalsIgnoreCase(agentNameLine, EXPECTED_FIRST);
+    } else {
+      // fallback: just check that it's a single "word-ish" name
+      agentFirstOnlyOK = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/.test(agentNameLine);
+    }
 
     // Explicit “COMPUTED FACTS” booleans we’ll feed to the model
     const computedFacts = {
@@ -186,8 +189,7 @@ if (EXPECTED_FIRST) {
     };
 
     // Visible newline rendering for the model
-    const visibleText = text
-      .replace(/\n/g, "\\n\n"); // show literal \n markers on each line break
+    const visibleText = text.replace(/\n/g, "\\n\n"); // show literal \n markers on each line break
 
     // ===== Mode A: Requirements-only (internal tickets)
     if (String(mode).toLowerCase() === "requirements") {
