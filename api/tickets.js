@@ -895,41 +895,7 @@ export default function handler(req, res) {
         }
       ],
       body: "Hi APEX\n\nWhy is my PA not active yet? I'm losing trading days in profit, give my account NOW!!!\n\nBest,\n\nJulie"
-    },
-    {
-  subject: "Cant trade",
-  ticketNumber: "5000",
-  requester: "Tendy",
-  requesterName: "Sean",
-  channel: "Email",
-  hoursAgo: 2,
-  requiredStatus: "Solved",
-  requiredAssignee: "Myself",
-  macroOnly: false,
-  macroCommand: "",
-  internalRequired: false,
-  sections: [
-    "Greeting",
-    "Opener",
-    "Solution",
-    "Closer",
-    "Sign-Off"
-  ],
-  requirements: "They msut include an explanation of how stop market orders work.",
-  category: "",
-  intent: "",
-  accountId: "",
-  tags: [],
-  body: "Hey i tried to take trades but theya re getting rejected! Whats going on??",
-  attachments: [
-    {
-      type: "image",
-      url: "https://i.imgur.com/fm2xDNi.png",
-      title: "Attachment"
     }
-  ]
-}
   ];
-
   res.end(JSON.stringify({ weights, seed }));
 }
