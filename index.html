@@ -16,7 +16,7 @@ a,
 a:visited,
 a:hover,
 a:active {
-  color: #3b82f6;   /* bright blue */
+  color: #3b82f6;
   text-decoration: underline;
 }
 
@@ -137,13 +137,13 @@ body.dark .top{background:var(--card);border-bottom:1px solid var(--line)}
 body.dark .card{background:var(--card);border-color:var(--line)}
 body.dark .nav-item.active{background:rgba(255,255,255,.06)}
 body.dark .nav-item:hover{background:rgba(255,255,255,.04)}
-body.dark .btn{background:#0b1324;color:var(--ink);border-color:var(--line)}
+body.dark .btn{background:#0b1324;color:var(--ink);border-color:#263143}
 body.dark .btn:hover{background:#0f172a}
 body.dark .btn.primary{background:var(--accent);border-color:var(--accent);color:#001010}
 body.dark .btn.primary:hover{background:var(--accent2)}
-body.dark .btn.danger{color:var(--warn);border-color:#7f1d1d}
+body.dark .btn.danger{color:#f87171;border-color:#7f1d1d}
 body.dark .btn.danger:hover{background:#2b0b0b}
-body.dark .select,body.dark .input,body.dark textarea{background:#0b1324;color:var(--ink);border-color:#263143}
+body.dark .select,body.dark .input,body.dark textarea{background:#0b1324;color:#e5e7eb;border-color:#263143}
 body.dark .input::placeholder,body.dark textarea::placeholder{color:#6b7280}
 body.dark .filters,.dark .row,.dark .table th,.dark .table td{border-bottom-color:var(--line)}
 body.dark .row:hover{background:rgba(255,255,255,.03)}
@@ -155,7 +155,7 @@ body.dark .z-snap{color:var(--muted);border-color:var(--line)}
 body.dark .z-card{background:var(--card);border-color:var(--line)}
 body.dark .z-main-head{border-bottom-color:var(--line)}
 body.dark .composer{border-top-color:var(--line)}
-body.dark .menu{background:var(--card);border-color:var(--line);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+body.dark .menu{background:var(--card);border-color:#263143;box-shadow:0 8px 24px rgba(0,0,0,.45)}
 body.dark .menu-item:hover{background:rgba(255,255,255,.06)}
 body.dark .toast{background:#0b1324;color:#e5e7eb}
 body.dark .z-tags{gap:6px}
@@ -191,11 +191,11 @@ body.dark .badge-id:hover{background:rgba(148,163,184,0.18);border-color:#3b475b
 <div id="gate" class="gate">
   <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
     <div id="gateTitle" class="gate-title">Enter Access Code</div>
-<input id="gateInput"  class="gate-input" type="password" placeholder="Access code" autocomplete="off" />
-<input id="gateFirst"  class="gate-input" style="margin-top:8px" placeholder="Your first name (e.g., Sean Michael)" autocomplete="name" />
-<input id="gateLast"   class="gate-input" style="margin-top:8px" placeholder="Your last name (optional)" autocomplete="family-name" />
-<button id="gateBtn"   class="gate-btn">Enter</button>
-<div id="gateErr" class="gate-err" role="alert"></div>
+    <input id="gateInput"  class="gate-input" type="password" placeholder="Access code" autocomplete="off" />
+    <input id="gateFirst"  class="gate-input" style="margin-top:8px" placeholder="Your first name (e.g., Sean Michael)" autocomplete="name" />
+    <input id="gateLast"   class="gate-input" style="margin-top:8px" placeholder="Your last name (optional)" autocomplete="family-name" />
+    <button id="gateBtn"   class="gate-btn">Enter</button>
+    <div id="gateErr" class="gate-err" role="alert"></div>
   </div>
 </div>
 
@@ -296,9 +296,14 @@ body.dark .badge-id:hover{background:rgba(148,163,184,0.18);border-color:#3b475b
 
             <div style="display:flex;gap:8px;justify-content:space-between;margin-top:6px;align-items:center">
               <button class="btn" id="grammarBtn" title="Ctrl/Cmd+Shift+G">Check grammar</button>
-    <!-- options will be injected -->
-  </select>
-</label>
+
+              <!-- RESTORED VISIBILITY SELECTOR -->
+              <label class="small muted">Visibility
+                <select class="select" id="visibilitySel" aria-label="Visibility">
+                  <option>Public</option>
+                  <option>Internal</option>
+                </select>
+              </label>
 
               <div class="split">
                 <button class="btn primary" id="submitMainBtn">
@@ -415,13 +420,13 @@ body.dark .badge-id:hover{background:rgba(148,163,184,0.18);border-color:#3b475b
     gate && gate.remove();
   };
 
-const hasPrior = sessionStorage.getItem(GATE_KEY) === "1";
-const hasCode  = !!sessionStorage.getItem("sim_access_code");
-if (hasPrior && hasCode) {
-  document.body.classList.remove("gated");
-  gate && gate.remove();
-  return;
-}
+  const hasPrior = sessionStorage.getItem(GATE_KEY) === "1";
+  const hasCode  = !!sessionStorage.getItem("sim_access_code");
+  if (hasPrior && hasCode) {
+    document.body.classList.remove("gated");
+    gate && gate.remove();
+    return;
+  }
   document.body.classList.add("gated");
 
   async function submit(){
@@ -443,12 +448,10 @@ if (hasPrior && hasCode) {
 
       if (resp.ok){ unlock(); return; }
 
-      // Show real server error if any
       let msg = "Invalid code";
       try { const data = await resp.json(); msg = data?.error || msg; } catch {}
       err.textContent = `${msg}${resp.status ? ` (HTTP ${resp.status})` : ""}`;
     }catch(e){
-      // Network/CORS/route-not-found will land here
       err.textContent = `Network error: ${e?.message || "Request failed"}.`;
       console.error("Gate auth failed:", e);
     }finally{
@@ -464,7 +467,7 @@ if (hasPrior && hasCode) {
 
 <!-- ===== 2) LOADER: fetch tickets from /api/tickets ===== -->
 <script>
-const STORE = "sop_sim_state_v16_api";     /* bump to reseed for API-based state */
+const STORE = "sop_sim_state_v16_api";
 const ALLOWED_ASSIGNEES = ["Myself","Support Tier 2","Support Tier 3","Fraud General","Payout"];
 const now = Date.now();
 
@@ -475,7 +478,7 @@ function makeTicket({
   requiredStatus, requiredAssignee, macroOnly, macroCommand,
   internalRequired=false, sections, requirements,
   category, intent, accountId, tags, body, attachments,
-  scenario, scenarioAttachments,            // <-- supports scenario attachments
+  scenario, scenarioAttachments,
   seedHistory, ticketNumber
 }){
   return {
@@ -536,10 +539,10 @@ window.__stateReady = (async function loadFromApi(){
 <!-- ===== 3) APP (UI + LOGIC) ===== -->
 <script>
 (async () => {
-/* wait for API seed / local load */
 await window.__stateReady;
 let state = window.state;
-  // ---- Grading mode adapter (back-compat with legacy flags) ----
+
+/* grading mode adapter */
 (function adaptTicketGrading(){
   if (!state || !Array.isArray(state.tickets)) return;
   for (const t of state.tickets) {
@@ -549,7 +552,6 @@ let state = window.state;
         t.grading.allowedModes = ["macro"];
         t.grading.defaultMode  = "macro";
       } else if (t?.expected?.internalRequired) {
-        // Internal notes usually freeform (steps/paragraph)
         t.grading.allowedModes = ["freestyle"];
         t.grading.defaultMode  = "freestyle";
       } else {
@@ -563,7 +565,6 @@ let state = window.state;
   }
 })();
 
-
 /* ---------- Helpers ---------- */
 const $  = (id)=>document.getElementById(id);
 const $$ = (sel,root=document)=>[...root.querySelectorAll(sel)];
@@ -573,7 +574,7 @@ const esc  = (s)=> String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':
 const clamp=(n,lo,hi)=>Math.max(lo,Math.min(hi,n));
 const scoreBadgeHTML=(score)=>{ const n=Number(score)||0,cls=n>=90?"score-good":n>=80?"score-mid":"score-bad"; return `<span class="score-badge ${cls}">${n.toFixed(0)}/100</span>`; };
 
-/* ---------- Exported: per-ticket reset ---------- */
+/* per-ticket reset */
 window.resetTicket = function resetTicket(ticketId){
   const pw = prompt("Enter reset code:");
   if (pw === "apexreset01") {
@@ -594,8 +595,6 @@ const dCategory = $("dCategory"), dIntent = $("dIntent"), dAccount = $("dAccount
 const thread = $("thread"), snapshots = $("snapshots"), replyBox = $("replyBox"), visibilitySel = $("visibilitySel");
 
 const rName=$("rName"), rEmail=$("rEmail"), rLocal=$("rLocal"), rLang=$("rLang"), rNotes=$("rNotes"), histList=$("histList");
-const modeSel = $("modeSel");
-
 
 const submitMainBtn=$("submitMainBtn"), submitToggleBtn=$("submitToggleBtn"), submitMenu=$("submitMenu");
 const submitStatusLbl=$("submitStatusLbl"), submitDot=$("submitDot");
@@ -613,16 +612,24 @@ let currentId=null, submitAs="Open", lastGrammar=null;
 
 /* ---------- Small UI helpers ---------- */
 function updateReplyPlaceholderByMode(t){
-  if (!replyBox || !modeSel) return;
-  const m = modeSel.value;
+  if (!replyBox) return;
+  const m = (t?.grading?.defaultMode) || "structured";
   if (m === "macro") {
     const macro = t?.expected?.macroCommand || "/your-macro-here";
     replyBox.placeholder = `Type the macro exactly: ${macro}`;
   } else if (m === "freestyle") {
-    replyBox.placeholder = "Write steps/paragraph (no strict greeting/sign-off)";
+    replyBox.placeholder = (visibilitySel?.value === "Internal")
+      ? "Write your internal note… (not visible to customer)"
+      : "Write steps/paragraph (no strict greeting/sign-off)";
   } else {
-    replyBox.placeholder = "Write your reply… (Greeting, Opener, Solution, Closer, Sign-Off)";
+    replyBox.placeholder = (visibilitySel?.value === "Internal")
+      ? "Write your internal note… (not visible to customer)"
+      : "Write your reply… (Greeting, Opener, Solution, Closer, Sign-Off)";
   }
+}
+function updateReplyPlaceholder(){
+  const t = state.tickets.find(x=>x.id===currentId);
+  updateReplyPlaceholderByMode(t);
 }
 function setSubmitting(on){
   submitMainBtn.classList.toggle("loading", on);
@@ -738,12 +745,6 @@ function renderInteractionHistory(email, currentTicketId){
 }
 
 /* ---------- Detail ---------- */
-function updateReplyPlaceholder(){
-  if (!replyBox || !visibilitySel) return;
-  replyBox.placeholder = visibilitySel.value === "Internal"
-      ? "Write your internal note… (not visible to customer)"
-      : "Write your reply… (trainee)";
-}
 function openDetail(id){
   currentId = id;
   const t = state.tickets.find(x => x.id === id); if(!t) return;
@@ -769,7 +770,6 @@ function openDetail(id){
 
   dStatus.value = ["Open","Pending","Solved"].includes(t.status) ? t.status : "Open";
   setSubmitUI(dStatus.value);
-updateReplyPlaceholderByMode(t);
 
   renderAssigneeOptions(t);
   dAssignee.value = t.assignee || ALLOWED_ASSIGNEES[0];
@@ -781,10 +781,13 @@ updateReplyPlaceholderByMode(t);
   dAccount.textContent = t.accountId || "—";
 
   replyBox.value = ""; thread.innerHTML = "";
-  if (visibilitySel) { visibilitySel.value = (t?.expected?.internalRequired ? "Internal" : "Public"); }
-  updateReplyPlaceholder();
 
-  /* Scenario + scenarioAttachments (if any) */
+  // Default visibility based on internal requirement
+  if (visibilitySel) {
+    visibilitySel.value = (t?.expected?.internalRequired ? "Internal" : "Public");
+  }
+
+  /* Scenario + attachments */
   if (t.scenario && t.scenario.trim()) {
     const sc = document.createElement("div");
     sc.className = "scenario-block";
@@ -823,40 +826,37 @@ updateReplyPlaceholderByMode(t);
     thread.appendChild(sc);
   }
 
-/* Customer message(s) + standard attachments */
-const hasAtt = Array.isArray(t.attachments) && t.attachments.length > 0;
+  /* Customer message(s) + standard attachments */
+  const hasAtt = Array.isArray(t.attachments) && t.attachments.length > 0;
 
-t.messages.forEach((m, idx) => {
-  const d = document.createElement("div");
-  d.className = "bubble";
+  t.messages.forEach((m, idx) => {
+    const d = document.createElement("div");
+    d.className = "bubble";
 
-  // For the very first customer message, add a mini header INSIDE the bubble
-  const headerHTML = idx === 0 ? `
-    <div class="scenario-title" style="margin:-2px 0 6px 0; display:flex; align-items:center; gap:6px">
-      <span class="badge">User's Message</span>
-    </div>
-  ` : "";
+    const headerHTML = idx === 0 ? `
+      <div class="scenario-title" style="margin:-2px 0 6px 0; display:flex; align-items:center; gap:6px">
+        <span class="badge">User's Message</span>
+      </div>
+    ` : "";
 
-  let bodyHtml = `
-    ${headerHTML}
-    <div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
-    <div class="small" style="white-space:pre-wrap">${esc(m.body || "")}</div>
-  `;
+    let bodyHtml = `
+      ${headerHTML}
+      <div class="small muted" style="margin-bottom:4px">${esc(m.author)} • ${fmt(new Date(m.ts))}</div>
+      <div class="small" style="white-space:pre-wrap">${esc(m.body || "")}</div>
+    `;
 
-  // Show ticket attachments after the FIRST customer message
-  if (idx === 0 && hasAtt) {
-    bodyHtml += t.attachments.map(a =>
-      a.type === "image"
-        ? `<div style="margin-top:8px"><img src="${esc(a.url)}" alt="${esc(a.title||"attachment")}" style="max-width:100%;border-radius:8px;display:block"/></div>`
-        : `<div class="small" style="margin-top:8px"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`
-    ).join("");
-  }
+    if (idx === 0 && hasAtt) {
+      bodyHtml += t.attachments.map(a =>
+        a.type === "image"
+          ? `<div style="margin-top:8px"><img src="${esc(a.url)}" alt="${esc(a.title||"attachment")}" style="max-width:100%;border-radius:8px;display:block"/></div>`
+          : `<div class="small" style="margin-top:8px"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title||a.url)}</a></div>`
+      ).join("");
+    }
 
-  d.innerHTML = bodyHtml;
-  thread.appendChild(d);
-});
+    d.innerHTML = bodyHtml;
+    thread.appendChild(d);
+  });
 
-  /* Snapshots ribbon (kept hidden unless you prefer a separate gallery) */
   snapshots.classList.add("hidden"); snapshots.innerHTML = "";
 
   const email = t.requester || "";
@@ -874,6 +874,7 @@ t.messages.forEach((m, idx) => {
 
   renderInteractionHistory(email, t.id);
   renderGrade(t.grade || null);
+  updateReplyPlaceholderByMode(t);
   renderStats();
 }
 
@@ -889,17 +890,17 @@ async function runGrammar(){
   grammarList.innerHTML = "";
 
   try{
-const resp = await fetch("/api/grammar", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ text })
-});
-if (!resp.ok) {
-  console.error("Grammar API error:", resp.status, await resp.text());
-  throw new Error("Grammar API failed");
-}
-const data = await resp.json();
-lastGrammar = data;
+    const resp = await fetch("/api/grammar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text })
+    });
+    if (!resp.ok) {
+      console.error("Grammar API error:", resp.status, await resp.text());
+      throw new Error("Grammar API failed");
+    }
+    const data = await resp.json();
+    lastGrammar = data;
 
     grammarFix.textContent = data.corrected || text;
 
@@ -929,6 +930,11 @@ $("backBtn").onclick = ()=>{ detail.classList.add("hidden"); $("list").classList
 grammarBtn.onclick = runGrammar;
 applyGrammarBtn.onclick = ()=>{ if(lastGrammar?.corrected){ replyBox.value = lastGrammar.corrected; toast("Applied grammar fixes"); } showGrammarPanel(false); };
 dismissGrammarBtn.onclick = ()=> showGrammarPanel(false);
+
+/* visibility dropdown reacts to changes */
+if (visibilitySel) {
+  visibilitySel.onchange = updateReplyPlaceholder;
+}
 
 submitToggleBtn.onclick = (e) => {
   e.stopPropagation();
@@ -971,17 +977,16 @@ submitMainBtn.onclick = async () => {
     t.status = chosenStatus;
     t.assignee = chosenAssignee;
 
-const chosenMode = (t?.grading?.defaultMode || "structured");
-const attempt = {
-  ts: msg.ts,
-  reply: text,
-  status: chosenStatus,
-  assignee: chosenAssignee,
-  visibility: chosenVisibility,
-  mode: chosenMode
-};
+    const chosenMode = (t?.grading?.defaultMode || "structured");
+    const report = await window.gradeAttempt(t, {
+      ts: msg.ts,
+      reply: text,
+      status: chosenStatus,
+      assignee: chosenAssignee,
+      visibility: chosenVisibility,
+      mode: chosenMode
+    }, state.weights);
 
-    const report = await window.gradeAttempt(t, attempt, state.weights);
     if (!report || typeof report.score !== "number") throw new Error("Invalid grade report");
     t.grade = report;
 
@@ -1058,12 +1063,10 @@ detail.classList.add("hidden"); $("list").classList.remove("hidden");
 <script>
 (() => {
 window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
-    function firstNameFrom(displayNameOrEmail){
+  function firstNameFrom(displayNameOrEmail){
     const raw = String(displayNameOrEmail||"").trim();
     if (!raw) return "";
-    // prefer display name, else derive from email local-part
     const base = raw.includes("@") ? raw.split("@")[0] : raw;
-    // split on separators and take the first word-ish token
     const token = base.split(/[.\-_ +]/).filter(Boolean)[0] || base;
     return token.replace(/\b\w/g, c => c.toUpperCase());
   }
@@ -1091,7 +1094,6 @@ window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
   const chosenVis = String(attempt.visibility || "Public");
   const visibilityOk = internalRequired ? chosenVis.toLowerCase() === "internal" : true;
 
-  // ---- New: mode dispatch (macro | freestyle | structured) ----
   const chosenMode = (String(attempt.mode || "").toLowerCase())
                   || (ticket?.grading?.defaultMode || "structured");
 
@@ -1117,7 +1119,6 @@ window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
   }
 
   // ===== MODE: FREESTYLE =====
-  // No strict greeting/sign-off. Grade requirements coverage via /api/grade (mode=requirements).
   if (chosenMode === "freestyle") {
     let req = { ok:false, score:0, detail:"" };
     try {
@@ -1128,21 +1129,21 @@ window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-        mode: "structure",            // or "requirements" in the freestyle block; keep as-is
-        reply,
-        rubric,
-        accessCode,
-        agentFirstName,
-        agentLastName,
-        customerFirstName: firstNameFrom(ticket.requesterName || ticket.requester)   // <- ADD THIS
-      })
+          mode: "structure",
+          reply,
+          rubric,
+          accessCode,
+          agentFirstName,
+          agentLastName,
+          customerFirstName: firstNameFrom(ticket.requesterName || ticket.requester)
+        })
       });
       if (resp.ok) req = await resp.json();
     } catch {}
 
     const reqScore = clamp(Number(req.score || 0), 0, 100);
     const sum = Math.max(1,(w.sections||0)+(w.status||0)+(w.assignee||0)+(w.visibility||0)+(w.keywords||0));
-    const sStructure = reqScore * (w.sections||0) / sum;   // reuse "sections" weight for requirements coverage
+    const sStructure = reqScore * (w.sections||0) / sum;
     const sStatus    = (statusOk ? 100 : 0) * (w.status||0) / sum;
     const sAssignee  = (assigneeOk ? 100 : 0) * (w.assignee||0) / sum;
     const sVis       = (visibilityOk?100:0) * (w.visibility||0) / sum;
@@ -1158,7 +1159,6 @@ window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
   }
 
   // ===== MODE: STRUCTURED (default) =====
-  // Your original structure path (unchanged except for local variable names).
   let ai = null;
   try {
     const rubric = typeof ticket?.expected?.requirements === "string"
