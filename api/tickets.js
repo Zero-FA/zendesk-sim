@@ -28,7 +28,7 @@ export default function handler(req, res) {
   const seed = [
 {
   subject: "Cant trade",
-  ticketNumber: "5000",
+  ticketNumber: "1000",
   requester: "Tendy",
   requesterName: "Sean",
   channel: "Email",
