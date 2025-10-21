@@ -31,13 +31,18 @@ a:active {
 body.gated{overflow:hidden}
 
 /* Scenario block */
-.scenario-block {
-  border: 1px dashed var(--line);
-  border-left: 4px solid var(--accent);
-  background: #f8fafc;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 12px;
+/* Scenario as a bubble with accent bar, respects dark mode */
+.scenario-block{
+  border:1px solid var(--line);
+  border-left:4px solid var(--accent);
+  background:var(--card);
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:12px;
+}
+body.dark .scenario-block{
+  background:var(--card);
+  border-color:var(--line);
 }
 
 .scenario-title {
