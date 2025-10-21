@@ -5,12 +5,10 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /** ---------------- Config & Helpers ---------------- **/
 
-// Optional env fallbacks
 const ACCESS_CODE_ENV = process.env.ACCESS_CODE || "apex2025";
 const EXPECTED_FIRST_ENV = process.env.EXPECTED_FIRST_NAME || "";
 const EXPECTED_LAST_ENV  = process.env.EXPECTED_LAST_NAME  || "";
 
-// Keep this in sync with client labels
 const STRUCTURE_LABELS = ["Greeting", "Opener", "Solution", "Closer", "Sign-Off"];
 
 const STRUCT_SCHEMA = {
@@ -51,68 +49,48 @@ const STYLE_GUIDE = `
 Support Ticket Style Guide (Apex Trader Funding Training)
 
 1) Greeting
-- Use the customer's first name; brief & warm.
-- Must be a single line ending with a comma, followed by exactly one blank line.
-- Accept (case-insensitive):
-  Hello <Name>,
-  Hi <Name>,
-  Good morning <Name>,
-  Good afternoon <Name>,
-  Good evening <Name>,
-- Common issues to flag: missing comma, extra text on the greeting line, no blank line after, wrong/missing name, wrong casing.
-- Feedback should reference the exact issue(s) detected and suggest a corrected line.
+- One line: Hello/Hi/Good <time> <FirstName>, then one blank line.
+- Use the customer's first name if provided.
+- Keep feedback short; suggest the corrected line.
 
-2) Opener (keep it short; cordial but not fluffy)
-- One short sentence (<= 200 chars) that’s polite/professional.
-- Do NOT fail purely for using “Thanks/Thank you/Happy to help” or an exclamation mark if it reads naturally.
-- Accept these typical openers verbatim:
+2) Opener (short & professional)
+- One short sentence (<= 200 chars). Natural “Thanks/Thank you/Happy to help” is fine, punctuation flexible.
+- Accept these verbatim too:
   Thank you for reaching out to Apex Trader Funding Support.
   Thank you for contacting us.
   Thank you for the information.
   I’m happy to help.
   Happy to help.
   We can help with that.
-- If the opener is present but wordy, pass with a suggestion instead of a fail.
+- If slightly wordy, pass with a brief suggestion (don’t fail for style).
 
 3) Solution
-- Provide a clear cause/explanation AND a specific, actionable step the user can take now.
-- If a direct solution isn’t possible, follow the ticket-specific requirements exactly.
+- Give a clear cause/explanation AND a concrete next step the user can take now.
+- If no direct fix, follow ticket-specific requirements.
 
-4) Closer (one concise professional line)
-- Examples:
-  Thank you and have a great day!
-  If you have any other questions, please let me know!
-  If you have any other questions, feel free to ask!
-- Prefer an invitation/next step. If vague or missing, suggest one sentence.
+4) Closer (one concise line)
+- E.g., Thank you and have a great day!
+- Prefer a next-step invitation.
 
-5) Sign-Off (closing phrase + blank line + first name)
-- Use a standard closing phrase on its own line, ending with a comma.
-- Accept (case-insensitive):
-  Best regards,
-  Kind regards,
-  Warm regards,
-  Kindly,
-  Regards,
-  Thank you,
-  Thanks,
-  Sincerely,
-  Respectfully,
-- Then one blank line, then the agent’s FIRST name only on a new line (multi-word first names OK).
+5) Sign-Off
+- Accepted phrases (case-insensitive), each ending with a comma on its own line:
+  Best regards, | Kind regards, | Warm regards, | Kindly, | Regards,
+  Thank you, | Thanks, | Sincerely, | Respectfully,
+- Then one blank line, then the agent’s FIRST name alone.
 `.trim();
 
-// Expanded acceptable sign-off phrases (case-insensitive)
+// Full accepted sign-off RX (server truth)
 const SIGNOFF_PHRASE_RX = /(Best regards,|Kind regards,|Warm regards,|Kindly,|Regards,|Thank you,|Thanks,|Sincerely,|Respectfully,)/i;
 
-function clamp0to100(n){ n=Number.isFinite(n)?n:0; return n<0?0:n>100?100:n; }
-function normalizeEOL(s){ return String(s || "").replace(/\r\n/g, "\n"); }
-function firstToken(s){ return String(s || "").trim().split(/\s+/)[0] || ""; }
+const clamp0to100 = n => (Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0);
+const normalizeEOL = s => String(s || "").replace(/\r\n/g, "\n");
+const firstToken   = s => String(s || "").trim().split(/\s+/)[0] || "";
 
 function lastLine(s){
-  const m = normalizeEOL(s).match(/\n\n([^\n]+)\s*$/); // text after the blank line at end
+  const m = normalizeEOL(s).match(/\n\n([^\n]+)\s*$/);
   return m ? m[1].trim() : "";
 }
 
-// Extract the <Name> from the greeting line (case-insensitive on greeting keyword)
 function extractGreetingName(s){
   const T = normalizeEOL(s).trimStart();
   const m = T.match(/^(Hello|Hi|Hey|Good (morning|afternoon|evening)) ([^,\n]+),\n/i);
@@ -122,20 +100,18 @@ function extractGreetingName(s){
 function afterGreetingIndex(text){
   const T = normalizeEOL(text);
   const m = T.match(/^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n/i);
-  return m ? m[0].length : -1; // start of content after greeting+blank line
+  return m ? m[0].length : -1;
 }
 
 function firstParagraphAt(T, start){
   if (start < 0) return "";
   const rest = T.slice(start);
-  const m = rest.match(/^([^\n]+)(?:\n|$)/); // first line (paragraph) until newline
+  const m = rest.match(/^([^\n]+)(?:\n|$)/);
   return m ? m[1].trim() : "";
 }
 
 function isLikelyOpener(p){
   if (!p) return false;
-
-  // Whitelist of acceptable openers (exact match, ignoring case + whitespace)
   const allowed = [
     "Thank you for reaching out to Apex Trader Funding Support.",
     "Thank you for contacting us.",
@@ -146,41 +122,31 @@ function isLikelyOpener(p){
     "We can help with that."
   ];
   const norm = p.trim().replace(/\s+/g, " ");
-  if (allowed.some(x => norm.toLowerCase() === x.toLowerCase())) return true;
+  // treat trailing punctuation . ! ? interchangeably
+  const normNoPunc = norm.replace(/[.!?]+$/, "");
+  if (allowed.some(x => x.replace(/[.!?]+$/,"").toLowerCase() === normNoPunc.toLowerCase())) return true;
 
-  // Otherwise: permissive if it’s a clean, single-sentence opener
-  // Up to 200 chars, ends in . ! or ?, and avoids obvious solution keywords.
-  const singleSentence = /^[^\n]{1,200}[.!?]$/.test(norm);
-  if (!singleSentence) return false;
-
-  // Only block hard solution-y starts (keep short to avoid false fails)
+  // permissive: one sentence <=200 chars, not instruction-y
+  const singleSentenceish = norm.length <= 200 && !/\n/.test(norm);
   const tooSpecific = /\b(screenshot|steps?|click|attach(ed)?|refund|transaction|order|account|price|must|should)\b/i;
-  if (tooSpecific.test(norm)) return false;
-
-  return true;
+  return singleSentenceish && !tooSpecific.test(norm);
 }
 
 function hasGreetingBlankLine(s){
   const T = normalizeEOL(s);
-  // Greeting must be "Hello/Hi/Hey/Good <time> <Name>," then exactly one blank line, then more text
   return /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/i.test(T);
 }
 function hasSignoffBlankLine(s){
   const T = normalizeEOL(s);
-  // look for an accepted sign-off followed by exactly one blank line then some name to end
   return new RegExp(`${SIGNOFF_PHRASE_RX.source}\\n\\n[^\\n]+\\s*$`, "mi").test(T);
 }
-function hasAcceptedSignoffPhrase(s){
-  return SIGNOFF_PHRASE_RX.test(s);
-}
-function equalsIgnoreCase(a,b){ return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase(); }
+const hasAcceptedSignoffPhrase = s => SIGNOFF_PHRASE_RX.test(s);
+const equalsIgnoreCase = (a,b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+
 function stripCodeFencesAndLabels(detail){
   let d = String(detail || "");
-  // Strip “Example fix:” prefix if present
   d = d.replace(/^\s*Example\s*fix:\s*/i, "");
-  // Unwrap triple-backtick blocks
-  d = d.replace(/```[\s\S]*?```/g, (blk) => blk.replace(/```/g, "").trim());
-  // Remove stray inline backticks
+  d = d.replace(/```[\s\S]*?```/g, blk => blk.replace(/```/g, "").trim());
   d = d.replace(/`/g, "");
   return d.trim();
 }
@@ -192,13 +158,13 @@ export default async function handler(req, res) {
 
   try {
     const {
-      mode = "structure",      // "structure" | "requirements"
+      mode = "structure",
       reply,
       rubric = "",
       accessCode,
       agentFirstName,
       agentLastName,
-      customerFirstName      // optional: to enforce the greeting-name match
+      customerFirstName
     } = req.body || {};
 
     // Access gate
@@ -211,42 +177,34 @@ export default async function handler(req, res) {
     const textRaw = String(reply || "");
     if (!textRaw.trim()) return res.status(400).json({ error: "empty_reply" });
 
-    // Agent identity (multi-word first names supported)
-    const EXPECTED_FIRST = String(agentFirstName || EXPECTED_FIRST_ENV || "").trim();  // e.g., "Sean Michael"
-    const EXPECTED_LAST  = String(agentLastName  || EXPECTED_LAST_ENV  || "").trim();  // e.g., "O'Donoghue"
+    const EXPECTED_FIRST = String(agentFirstName || EXPECTED_FIRST_ENV || "").trim();
+    const EXPECTED_LAST  = String(agentLastName  || EXPECTED_LAST_ENV  || "").trim();
     const EXPECTED_CUSTOMER_FIRST = String(customerFirstName || "").trim();
-
     const text = normalizeEOL(textRaw);
 
-    // ---------- Hard-rule computations (authoritative) ----------
-    const greetingBlank      = hasGreetingBlankLine(text);
-    const greetingNameFound  = extractGreetingName(text);
-
-    // Compare only first token (handles "Henry Bukslo" vs "Henry") and case-insensitive
+    // Hard facts
+    const greetingBlank     = hasGreetingBlankLine(text);
+    const greetingNameFound = extractGreetingName(text);
     const greetingNameOK = EXPECTED_CUSTOMER_FIRST
       ? equalsIgnoreCase(firstToken(greetingNameFound), firstToken(EXPECTED_CUSTOMER_FIRST))
-      : true; // if we don't know the customer's first name, don't fail on it
+      : true;
 
     const signoffPhraseOK = hasAcceptedSignoffPhrase(text);
     const signoffBlank    = hasSignoffBlankLine(text);
-    const agentNameLine   = lastLine(text); // the name after the blank line
+    const agentNameLine   = lastLine(text);
 
-    // Enforce that the sign-off name matches EXACTLY whatever first name they entered
     let agentFirstOnlyOK = true;
     if (EXPECTED_FIRST) {
       agentFirstOnlyOK = equalsIgnoreCase(agentNameLine, EXPECTED_FIRST);
     } else {
-      // fallback: just check that it's a single "word-ish" name
       agentFirstOnlyOK = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/.test(agentNameLine);
     }
 
-    // Explicit “COMPUTED FACTS” booleans we’ll feed to the model
     const computedFacts = {
       has_greeting_blank_line: greetingBlank,
       greeting_name: greetingNameFound,
       expected_customer_first: EXPECTED_CUSTOMER_FIRST,
       greeting_uses_customer_first: greetingNameOK,
-
       has_signoff_phrase: signoffPhraseOK,
       has_signoff_blank_line: signoffBlank,
       agent_name_line: agentNameLine,
@@ -255,15 +213,13 @@ export default async function handler(req, res) {
       expected_last_name: EXPECTED_LAST
     };
 
-    // Visible newline rendering for the model
-    const visibleText = text.replace(/\n/g, "\\n\n"); // show literal \n markers on each line break
+    const visibleText = text.replace(/\n/g, "\\n\n");
 
-    // ===== Mode A: Requirements-only (internal tickets)
+    // ===== Requirements-only mode =====
     if (String(mode).toLowerCase() === "requirements") {
       const system =
         "You are a strict QA grader for internal support notes. " +
-        "Grade ONLY whether the note satisfies the provided Requirements. " +
-        "Ignore greeting, opener, closer, and sign-off. Be concise and deterministic.";
+        "Grade ONLY against the provided Requirements. Ignore greeting/opener/closer/sign-off. Be concise.";
 
       const user = `
 REQUIREMENTS (must-have points):
@@ -272,10 +228,10 @@ ${rubric || "None."}
 INTERNAL NOTE (trainee):
 """${text}"""
 
-Return JSON with:
-- ok (boolean): true only if all required points are present and correct
-- score (0–100): your numeric judgement for the requirements coverage
-- detail: a short bullet summary of which required points were met/missed (be specific).
+Return JSON:
+- ok (boolean): true only if all required points are present/correct
+- score (0–100)
+- detail: short bullets of met/missed items (be specific)
 `.trim();
 
       const r = await client.chat.completions.create({
@@ -299,33 +255,32 @@ Return JSON with:
       });
     }
 
-    // ===== Mode B: Structure grading (public tickets)
+    // ===== Structure mode =====
     const system =
-      "You are a strict, fair QA grader for support tickets. Judge ONLY by the style guide and the ticket-specific requirements. Be concise and deterministic. " +
-      "Use the provided COMPUTED FACTS as ground truth for newline/layout and agent-name checks.";
+      "You are a fair QA grader for support tickets. Judge ONLY by the style guide and ticket-specific requirements. " +
+      "Prefer passing with a short suggestion over failing for minor style. Use COMPUTED FACTS for newline/name checks.";
 
     const labelsList = STRUCTURE_LABELS.map((l, i) => `${i + 1}. ${l}`).join("\n  ");
 
     const user = `
-You are grading a customer support reply for structure and style.
+You are grading a customer support reply.
 
-Structure labels to check, in order:
+Structure labels:
 ${STRUCTURE_LABELS.join(", ")}
 
-HARD RULES (literal characters only):
-- A “blank line” means exactly two consecutive line breaks in the raw text: "\\n\\n".
-- Greeting: FAIL if the first greeting line is not "Hello/Hi/Hey/Good <time of day> <Name>," exactly ending with a comma (no extra text on that line), or if there is no blank line after it.
-- Greeting name check: If COMPUTED FACTS.expected_customer_first is non-empty, FAIL unless the greeting <Name> matches it case-insensitively (first token match is enough).
-- Sign-Off: FAIL if there is not (1) a standard sign-off line ending with a comma (e.g., "Best regards,"), then (2) one blank line, then (3) the agent's name on its own line.
-- Agent name rule: Use COMPUTED FACTS.agent_first_name_only (multi-word first names are allowed).
+HARD RULES:
+- “Blank line” means exactly "\\n\\n".
+- Greeting: fail if not "Hello/Hi/Hey/Good <time> <Name>," on its own line followed by one blank line; if expected name is provided, first token must match (case-insensitive).
+- Sign-Off: fail if not (1) accepted sign-off phrase ending with comma, (2) one blank line, (3) agent first name alone.
+- Prefer short, professional feedback.
 
 STYLE GUIDE:
 ${STYLE_GUIDE}
 
-TICKET-SPECIFIC REQUIREMENTS (if any):
+TICKET-SPECIFIC REQUIREMENTS:
 ${rubric || "None."}
 
-COMPUTED FACTS (authoritative):
+COMPUTED FACTS:
 ${JSON.stringify(computedFacts, null, 2)}
 
 TRAINEE REPLY (visible newlines):
@@ -333,24 +288,15 @@ TRAINEE REPLY (visible newlines):
 ${visibleText}
 ---END-VISIBLE---
 
-Return JSON matching the schema:
-- "checks": exactly these 5 in order and with these exact labels:
+Return JSON with:
+- "checks": exactly these 5 labels in order:
   ${labelsList}
-Each item must include { label, ok, detail, score } where score is 0–100 (100 = fully met).
+  Each = { label, ok, detail, score(0–100) }.
+- "structurePct": overall structure score (0–100).
 
-Write "detail" as ACTIONABLE feedback:
-- If a label FAILS, identify the specific issue(s) you observed in the trainee text and include ONE example fix.
-- Formatting rules for the example fix:
-  • Plain text only (no backticks, no fenced code, no “Example fix:” prefix).
-  • Put the example on its own line.
-  • Show actual line breaks literally (do not describe them). For example:
-    Kind regards,
-
-    ${EXPECTED_FIRST || "Sean"}
-
-- If a label PASSES but could be improved, include ONE concise suggestion (max one sentence).
-
-Also return "structurePct" (0–100) as your overall structure score.
+Feedback rules:
+- If FAIL: name the issue briefly and include ONE example line (plain text; show literal line breaks if needed).
+- If PASS but improvable: give ONE short suggestion.
 `.trim();
 
     const r = await client.chat.completions.create({
@@ -366,73 +312,58 @@ Also return "structurePct" (0–100) as your overall structure score.
     const content = r.choices?.[0]?.message?.content || "{}";
     let parsed; try { parsed = JSON.parse(content); } catch { parsed = {}; }
 
-    // Post-process details to guarantee plain text (no code fences/backticks/"Example fix:")
     if (Array.isArray(parsed?.checks)) {
-      parsed.checks = parsed.checks.map(it => ({
-        ...it,
-        detail: stripCodeFencesAndLabels(it.detail)
-      }));
+      parsed.checks = parsed.checks.map(it => ({ ...it, detail: stripCodeFencesAndLabels(it.detail) }));
     }
     parsed.structurePct = clamp0to100(parsed.structurePct);
 
-    // ---- Deterministic Greeting enforcement (format + correct name) ----
+    // ---- Deterministic Greeting (short feedback) ----
     try {
       const greetIdx = STRUCTURE_LABELS.indexOf("Greeting");
       if (Array.isArray(parsed?.checks) && greetIdx !== -1) {
-        const hasFormat = hasGreetingBlankLine(text);
-        const nameOK = greetingNameOK;
-
-        if (!hasFormat || !nameOK) {
-          const expectedName = EXPECTED_CUSTOMER_FIRST || "Name";
-          const foundName = extractGreetingName(text) || "(none)";
-          const issues = [];
-          if (!hasFormat) issues.push("format (must end with a comma and include one blank line after)");
-          if (!nameOK) issues.push(`name (expected first token: "${firstToken(expectedName)}", found: "${firstToken(foundName)}")`);
-
+        if (!greetingBlank || !greetingNameOK) {
+          const expected = firstToken(EXPECTED_CUSTOMER_FIRST || "Name");
           parsed.checks[greetIdx] = {
             label: "Greeting",
             ok: false,
             score: 0,
-            detail:
-              `Greeting issue: ${issues.join("; ")}.\n` +
-              `Example:\n` +
-              `Hi ${firstToken(expectedName)},\n\n` +
-              `[Your opener goes here]`
+            detail: `Format or name issue. Use: Hi ${expected},`
           };
         }
       }
     } catch {}
 
-    // ---- Deterministic Opener enforcement ----
+    // ---- Deterministic Opener (lenient) ----
     try {
       const openerIdx = STRUCTURE_LABELS.indexOf("Opener");
       if (Array.isArray(parsed?.checks) && openerIdx !== -1) {
-        const start = afterGreetingIndex(text);                   // first char after greeting+blank line
-        const openerPara = firstParagraphAt(text, start);         // opener paragraph (one line)
-        const afterOpener = start >= 0
-          ? text.slice(start + (openerPara ? openerPara.length : 0))
-          : "";
-        const hasBlankAfterOpener = /^\n\n/.test(afterOpener);    // require a blank line after opener
-        const openerOK = isLikelyOpener(openerPara) && hasBlankAfterOpener;
+        const start = afterGreetingIndex(text);
+        const opener = firstParagraphAt(text, start);
+        const afterOpener = start >= 0 ? text.slice(start + (opener ? opener.length : 0)) : "";
+        const hasBlankAfter = /^\n\n/.test(afterOpener);
+        const likely = isLikelyOpener(opener);
 
-        if (!openerOK) {
+        // If it looks like a normal opener, PASS; suggest a blank line if missing.
+        if (likely) {
+          parsed.checks[openerIdx] = {
+            label: "Opener",
+            ok: true,
+            score: hasBlankAfter ? 100 : 95,
+            detail: hasBlankAfter ? "Looks good." : "Looks good. Consider adding a blank line after the opener."
+          };
+        } else {
           const exampleName = firstToken(EXPECTED_CUSTOMER_FIRST || "John");
           parsed.checks[openerIdx] = {
             label: "Opener",
             ok: false,
             score: 0,
-            detail:
-              "Missing a separate one-sentence opener between the greeting and the solution. Add a short opening line and leave a blank line after it.\n" +
-              "Example:\n" +
-              `Hi ${exampleName},\n\n` +
-              "Thanks for reaching out—happy to help.\n\n" +
-              "[Your solution starts here]"
+            detail: `Add a short one-line opener before the solution.\nHi ${exampleName},\n\nThanks for reaching out—happy to help.`
           };
         }
       }
     } catch {}
 
-    // ---- Deterministic Sign-Off enforcement (phrase + blank + first-name match) ----
+    // ---- Deterministic Sign-Off (accept full set including Kindly,) ----
     try {
       const signIdx = STRUCTURE_LABELS.indexOf("Sign-Off");
       if (Array.isArray(parsed?.checks) && signIdx !== -1) {
@@ -443,19 +374,23 @@ Also return "structurePct" (0–100) as your overall structure score.
         if (!phraseOK || !blankOK || !nameOK) {
           const expectedAgent = EXPECTED_FIRST || "[Your Name]";
           const parts = [];
-          if (!phraseOK) parts.push("use an accepted sign-off phrase ending with a comma");
-          if (!blankOK)  parts.push("leave exactly one blank line after the sign-off phrase");
-          if (!nameOK)   parts.push("put your first name on its own line (must match the entered first name)");
+          if (!phraseOK) parts.push("use an accepted sign-off (e.g., Kindly,)");
+          if (!blankOK)  parts.push("add one blank line after the sign-off");
+          if (!nameOK)   parts.push("put your first name on its own line");
 
           parsed.checks[signIdx] = {
             label: "Sign-Off",
             ok: false,
             score: 0,
-            detail:
-              `Sign-off issue: ${parts.join("; ")}.\n` +
-              "Example:\n" +
-              "Best regards,\n\n" +
-              `${expectedAgent}`
+            detail: `Fix sign-off: ${parts.join("; ")}.\nKind regards,\n\n${expectedAgent}`
+          };
+        } else {
+          // tighten feedback text if model was nitpicky
+          parsed.checks[signIdx] = {
+            label: "Sign-Off",
+            ok: true,
+            score: 100,
+            detail: "Looks good."
           };
         }
       }
