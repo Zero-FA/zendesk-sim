@@ -1177,14 +1177,15 @@ window.gradeAttempt = async function gradeAttempt(ticket, attempt, weights) {
     const resp = await fetch("/api/grade", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: "structure",
-        reply,
-        rubric,
-        accessCode,
-        agentFirstName,
-        agentLastName
-      })
+body: JSON.stringify({
+  mode: "structure",
+  reply,
+  rubric,
+  accessCode,
+  agentFirstName,
+  agentLastName,
+  customerFirstName: firstNameFrom(ticket.requesterName || ticket.requester)
+})
     });
     if (resp.ok) {
       ai = await resp.json();
