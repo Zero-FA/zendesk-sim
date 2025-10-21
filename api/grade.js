@@ -53,33 +53,54 @@ Support Ticket Style Guide (Apex Trader Funding Training)
 1) Greeting
 - Use the customer's first name; brief & warm.
 - Must be a single line ending with a comma, followed by exactly one blank line.
-- Accept: "Hello <Name>,", "Hi <Name>,", "Good morning <Name>,"
-- Common issues to flag: missing comma, extra text on the greeting line, no blank line after, missing/incorrect name, wrong casing.
+- Accept (case-insensitive):
+  Hello <Name>,
+  Hi <Name>,
+  Good morning <Name>,
+  Good afternoon <Name>,
+  Good evening <Name>,
+- Common issues to flag: missing comma, extra text on the greeting line, no blank line after, wrong/missing name, wrong casing.
 - Feedback should reference the exact issue(s) detected and suggest a corrected line.
 
-2) Opener
-- One short opening sentence, polite and professional.
-- Do NOT fail purely for sentence length or for using an exclamation mark if it reads naturally.
+2) Opener (keep it short; cordial but not fluffy)
+- One short sentence (<= 200 chars) that’s polite/professional.
+- Do NOT fail purely for using “Thanks/Thank you/Happy to help” or an exclamation mark if it reads naturally.
+- Accept these typical openers verbatim:
+  Thank you for reaching out to Apex Trader Funding Support.
+  Thank you for contacting us.
+  Thank you for the information.
+  I’m happy to help.
+  Happy to help.
+  We can help with that.
+- If the opener is present but wordy, pass with a suggestion instead of a fail.
 
 3) Solution
 - Provide a clear cause/explanation AND a specific, actionable step the user can take now.
-- If a direct solution is not possible, follow the ticket-specific requirements exactly.
+- If a direct solution isn’t possible, follow the ticket-specific requirements exactly.
 
-4) Closer
-- One concise, professional line (invitation, empathy, thanks, or brief confirmation).
-- Prefer an explicit invitation/next step (e.g., “If anything else comes up, reply to this email and we’ll help.”).
-- If vague or missing, suggest a 1-sentence improvement in feedback.
+4) Closer (one concise professional line)
+- Examples:
+  Thank you and have a great day!
+  If you have any other questions, please let me know!
+  If you have any other questions, feel free to ask!
+- Prefer an invitation/next step. If vague or missing, suggest one sentence.
 
-5) Sign-Off
-- Use a standard closing phrase on its own line.
-- Examples of accepted phrases: "Best regards,", "Kind regards,", "Warm regards,"
-- The phrase must include a comma at the end.
-- Insert one blank line after the closing phrase.
-- Write the agent's first name only on a new line, below the blank line.
-- No last name, title, or additional text.
+5) Sign-Off (closing phrase + blank line + first name)
+- Use a standard closing phrase on its own line, ending with a comma.
+- Accept (case-insensitive):
+  Best regards,
+  Kind regards,
+  Warm regards,
+  Kindly,
+  Regards,
+  Thank you,
+  Thanks,
+  Sincerely,
+  Respectfully,
+- Then one blank line, then the agent’s FIRST name only on a new line (multi-word first names OK).
 `.trim();
 
-const SIGNOFF_PHRASE_RX = /(Best regards,|Kind regards,|Warm regards,)/;
+const SIGNOFF_PHRASE_RX = /(Best regards,|Kind regards,|Warm regards,|Kindly,|Regards,|Thank you,|Thanks,|Sincerely,|Respectfully,)/i;
 
 function clamp0to100(n){ n=Number.isFinite(n)?n:0; return n<0?0:n>100?100:n; }
 function normalizeEOL(s){ return String(s || "").replace(/\r\n/g, "\n"); }
@@ -110,15 +131,30 @@ function firstParagraphAt(T, start){
 
 function isLikelyOpener(p){
   if (!p) return false;
-  // single short sentence (<= 160 chars) ending in . ! or ?
-  const singleSentence = /^[^\n]{1,160}[.!?]$/.test(p);
+
+  // Whitelist of acceptable openers (exact match, ignoring case + trailing punctuation)
+  const allowed = [
+    "Thank you for reaching out to Apex Trader Funding Support.",
+    "Thank you for contacting us.",
+    "Thank you for the information.",
+    "I’m happy to help.",
+    "I'm happy to help.",
+    "Happy to help.",
+    "We can help with that."
+  ];
+  const norm = p.trim().replace(/\s+/g, " ");
+  if (allowed.some(x => norm.toLowerCase() === x.toLowerCase())) return true;
+
+  // Otherwise: be permissive if it’s a clean, single sentence opener
+  // Up to 200 chars, ends in . ! or ?, and avoids obvious solution keywords.
+  const singleSentence = /^[^\n]{1,200}[.!?]$/.test(norm);
   if (!singleSentence) return false;
-  // avoid “solution-y” keywords
-  const bad = /\b(order|account|refund|transaction|stop|market|price|steps?|screenshot|click|must|should)\b/i;
-  if (bad.test(p)) return false;
-  // allow common opener starts
-  const good = /^(Thanks|Thank you|I understand|I’m happy to help|Happy to help|We can help|Good question|Appreciate)/i;
-  return good.test(p) || true; // be permissive if it’s short & neutral
+
+  // Only block hard solution-y starts (keep this short to avoid false fails)
+  const tooSpecific = /\b(screenshot|steps?|click|attach(ed)?|refund|transaction|order|account|price|must|should)\b/i;
+  if (tooSpecific.test(norm)) return false;
+
+  return true;
 }
 
 function hasGreetingBlankLine(s){
