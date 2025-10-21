@@ -95,6 +95,32 @@ function extractGreetingName(s){
   return m ? m[3].trim() : "";
 }
 
+function afterGreetingIndex(text){
+  const T = normalizeEOL(text);
+  const m = T.match(/^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n/);
+  return m ? m[0].length : -1; // start of content after greeting+blank line
+}
+
+function firstParagraphAt(T, start){
+  if (start < 0) return "";
+  const rest = T.slice(start);
+  const m = rest.match(/^([^\n]+)(?:\n|$)/); // first line (paragraph) until newline
+  return m ? m[1].trim() : "";
+}
+
+function isLikelyOpener(p){
+  if (!p) return false;
+  // single short sentence (<= 160 chars) ending in . ! or ?
+  const singleSentence = /^[^\n]{1,160}[.!?]$/.test(p);
+  if (!singleSentence) return false;
+  // avoid “solution-y” keywords
+  const bad = /\b(order|account|refund|transaction|stop|market|price|steps?|screenshot|click|must|should)\b/i;
+  if (bad.test(p)) return false;
+  // allow common opener starts
+  const good = /^(Thanks|Thank you|I understand|I’m happy to help|Happy to help|We can help|Good question|Appreciate)/i;
+  return good.test(p) || true; // be permissive if it’s short & neutral
+}
+
 function hasGreetingBlankLine(s){
   const T = normalizeEOL(s);
   // Greeting must be "Hello/Hi/Hey/Good <time> <Name>," then exactly one blank line, then more text
@@ -163,6 +189,8 @@ export default async function handler(req, res) {
     const signoffPhraseOK = hasAcceptedSignoffPhrase(text);
     const signoffBlank    = hasSignoffBlankLine(text);
     const agentNameLine   = lastLine(text); // the name after the blank line
+
+    
 
     // Enforce that the sign-off name matches EXACTLY whatever first name they entered
     let agentFirstOnlyOK = true;
@@ -308,6 +336,35 @@ Also return "structurePct" (0–100) as your overall structure score.
     }
     parsed.structurePct = clamp0to100(parsed.structurePct);
 
+    // ---- Deterministic Opener enforcement ----
+try {
+  const openerIdx = STRUCTURE_LABELS.indexOf("Opener");
+  if (Array.isArray(parsed?.checks) && openerIdx !== -1) {
+    const start = afterGreetingIndex(text);                   // first char after greeting+blank line
+    const openerPara = firstParagraphAt(text, start);         // opener paragraph (one line)
+    const afterOpener = start >= 0
+      ? text.slice(start + (openerPara ? openerPara.length : 0))
+      : "";
+    const hasBlankAfterOpener = /^\n\n/.test(afterOpener);    // require a blank line after opener
+    const openerOK = isLikelyOpener(openerPara) && hasBlankAfterOpener;
+
+    if (!openerOK) {
+      parsed.checks[openerIdx] = {
+        label: "Opener",
+        ok: false,
+        score: 0,
+        detail:
+          "Missing a separate one-sentence opener between the greeting and the solution. Add a short opening line and leave a blank line after it.\n" +
+          "Example:\n" +
+          "Hi John,\n\n" +
+          "Thanks for reaching out—happy to help.\n\n" +
+          "[Your solution starts here]"
+      };
+    }
+  }
+} catch {}
+// ---- end opener enforcement ----
+    
     return res.status(200).json(parsed);
 
   } catch (err) {
