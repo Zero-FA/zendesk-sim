@@ -31,10 +31,31 @@ a:active {
 body.gated{overflow:hidden}
 
 /* Scenario block */
-.scenario-block{border:1px dashed var(--line);border-left:4px solid var(--accent);background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:12px}
-.scenario-title{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
-.scenario-text{white-space:pre-wrap;font-size:12px;color:var(--ink)}
-body.dark .scenario-block{background:#0b1324;border-color:var(--line)}
+.scenario-block {
+  border: 1px dashed var(--line);
+  border-left: 4px solid var(--accent);
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.scenario-title {
+  font-size: 13px; /* was 12px */
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scenario-text {
+  white-space: pre-wrap;
+  font-size: 14px; /* was 12px */
+  color: var(--ink);
+  line-height: 1.55; /* adds breathing room */
+}
 
 /* Top bar */
 .top{height:52px;display:flex;align-items:center;gap:12px;padding:0 12px;background:#fff;border-bottom:1px solid var(--line)}
@@ -65,7 +86,7 @@ body.dark .scenario-block{background:#0b1324;border-color:var(--line)}
 .avatar{width:36px;height:36px;border-radius:999px;background:#e5e7eb;display:grid;place-items:center;flex-shrink:0}
 .pill{background:#eef2f7;border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:11px}
 .muted{color:var(--muted)}
-.small{font-size:12px}
+.small{font-size:14px}
 .bubble{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
 .badge{font-size:11px;border:1px solid #bbf7d0;background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:999px}
 
