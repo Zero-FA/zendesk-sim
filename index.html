@@ -1200,60 +1200,59 @@ body: JSON.stringify({
     return { label, ok: !!c?.ok, detail: c?.detail || (ai ? "Not met" : "AI unavailable"), score: typeof c?.score === "number" ? clamp(c.score,0,100) : (c?.ok ? 100 : 0) };
   });
 
-  (function enforce(){
-    const greetingIdx = labels.indexOf("Greeting");
-    const signoffIdx  = labels.indexOf("Sign-Off");
-    const lines = String(reply).split(/\r?\n/);
+(function enforce(){
+  const labels = ["Greeting","Opener","Solution","Closer","Sign-Off"];
+  const greetingIdx = labels.indexOf("Greeting");
+  const signoffIdx  = labels.indexOf("Sign-Off");
+  const lines = String(reply).split(/\r?\n/);
 
-    if (greetingIdx >= 0) {
-      const firstIdx = lines.findIndex(l => l.trim() !== "");
-      if (firstIdx !== -1) {
-        const fromFirstLine = lines.slice(firstIdx).join("\n");
-        const greetOK = /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/.test(fromFirstLine);
-        if (!greetOK) {
-          structureChecks[greetingIdx].ok = false;
-          structureChecks[greetingIdx].score = 0;
-          structureChecks[greetingIdx].detail =
-            'Greeting must be "Hello <Name>," followed by exactly one blank line before your opener.';
-        }
+  // Greeting: keep short message; don't over-explain
+  if (greetingIdx >= 0) {
+    const firstIdx = lines.findIndex(l => l.trim() !== "");
+    if (firstIdx !== -1) {
+      const fromFirstLine = lines.slice(firstIdx).join("\n");
+      const greetOK = /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/i.test(fromFirstLine);
+      if (!greetOK) {
+        structureChecks[greetingIdx].ok = false;
+        structureChecks[greetingIdx].score = 0;
+        structureChecks[greetingIdx].detail = 'Greeting format: Hello/Hi <Name>, then one blank line.';
       }
     }
+  }
 
-    if (signoffIdx >= 0) {
-      const signRe = /^(?:Best regards,|Kind regards,|Warm regards,)$/i;
-      const nameRe = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
-      const expectedName = (agentFirstName || "").trim();
+  // Sign-off: accept full set, including "Kindly,"
+  if (signoffIdx >= 0) {
+    const phraseRe = /^(?:Best regards,|Kind regards,|Warm regards,|Kindly,|Regards,|Thank you,|Thanks,|Sincerely,|Respectfully,)$/i;
+    const nameRe   = /^[A-Za-z][A-Za-z .,'-]{0,60}[A-Za-z]$/;
+    const expectedName = (agentFirstName || "").trim();
 
-      let sIdx = -1;
-      for (let i = lines.length - 1; i >= 0; i--) {
-        if (signRe.test(lines[i].trim())) { sIdx = i; break; }
-      }
+    let sIdx = -1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (phraseRe.test(lines[i].trim())) { sIdx = i; break; }
+    }
 
-      if (sIdx === -1) {
+    if (sIdx === -1) {
+      structureChecks[signoffIdx].ok = false;
+      structureChecks[signoffIdx].score = 0;
+      structureChecks[signoffIdx].detail = `Add a sign-off, then your first name.\nKindly,\n\n${expectedName || "[Your Name]"}`;
+    } else {
+      const blankAfter = (lines[sIdx + 1] || "").trim() === "";
+      const nameLine   = (lines[sIdx + 2] || "").trim();
+      const nameShape  = !!nameLine && nameRe.test(nameLine);
+      const nameMatch  = expectedName ? (nameLine.toLowerCase() === expectedName.toLowerCase()) : nameShape;
+
+      if (!blankAfter || !nameShape || !nameMatch) {
+        const tips = [];
+        if (!blankAfter) tips.push("add a blank line after the sign-off");
+        if (!nameShape)  tips.push("put your first name on its own line");
+        if (!nameMatch && expectedName) tips.push(`use your first name: ${expectedName}`);
         structureChecks[signoffIdx].ok = false;
         structureChecks[signoffIdx].score = 0;
-        structureChecks[signoffIdx].detail =
-          `Missing proper sign-off. Example:\nBest regards,\n\n${expectedName || "[Your Name]"}`;
-      } else {
-        const blankAfter = lines[sIdx + 1] !== undefined && lines[sIdx + 1].trim() === "";
-        const nameLine   = (lines[sIdx + 2] || "").trim();
-        const nameShapeOk = !!nameLine && nameRe.test(nameLine);
-        const nameMatchOk = expectedName ? equalsIgnoreCase(nameLine, expectedName) : nameShapeOk;
-
-        if (!blankAfter || !nameShapeOk || !nameMatchOk) {
-          const parts = [];
-          if (!blankAfter)  parts.push("leave one blank line after the sign-off");
-          if (!nameShapeOk) parts.push("put your name on its own line");
-          if (!nameMatchOk && expectedName) parts.push(`use the exact name "${expectedName}"`);
-
-          structureChecks[signoffIdx].ok = false;
-          structureChecks[signoffIdx].score = 0;
-          structureChecks[signoffIdx].detail =
-            `Sign-off issue: ${parts.join("; ")}.\nExample:\nBest regards,\n\n${expectedName || "[Your Name]"}`;
-        }
+        structureChecks[signoffIdx].detail = `Fix sign-off: ${tips.join("; ")}.`;
       }
     }
-  })();
+  }
+})();
 
   const sw = Object.assign({ Greeting:8, Opener:8, Solution:67, Closer:8, "Sign-Off":9 }, w.sectionWeights || {});
   const swTotal = ["Greeting","Opener","Solution","Closer","Sign-Off"].reduce((a, lab) => a + (sw[lab] || 0), 0) || 100;
