@@ -100,25 +100,28 @@ Support Ticket Style Guide (Apex Trader Funding Training)
 - Then one blank line, then the agent’s FIRST name only on a new line (multi-word first names OK).
 `.trim();
 
+// Expanded acceptable sign-off phrases (case-insensitive)
 const SIGNOFF_PHRASE_RX = /(Best regards,|Kind regards,|Warm regards,|Kindly,|Regards,|Thank you,|Thanks,|Sincerely,|Respectfully,)/i;
 
 function clamp0to100(n){ n=Number.isFinite(n)?n:0; return n<0?0:n>100?100:n; }
 function normalizeEOL(s){ return String(s || "").replace(/\r\n/g, "\n"); }
+function firstToken(s){ return String(s || "").trim().split(/\s+/)[0] || ""; }
+
 function lastLine(s){
   const m = normalizeEOL(s).match(/\n\n([^\n]+)\s*$/); // text after the blank line at end
   return m ? m[1].trim() : "";
 }
 
-// ✅ Fixed: now a standalone helper
+// Extract the <Name> from the greeting line (case-insensitive on greeting keyword)
 function extractGreetingName(s){
   const T = normalizeEOL(s).trimStart();
-  const m = T.match(/^(Hello|Hi|Hey|Good (morning|afternoon|evening)) ([^,\n]+),\n/);
+  const m = T.match(/^(Hello|Hi|Hey|Good (morning|afternoon|evening)) ([^,\n]+),\n/i);
   return m ? m[3].trim() : "";
 }
 
 function afterGreetingIndex(text){
   const T = normalizeEOL(text);
-  const m = T.match(/^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n/);
+  const m = T.match(/^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n/i);
   return m ? m[0].length : -1; // start of content after greeting+blank line
 }
 
@@ -132,7 +135,7 @@ function firstParagraphAt(T, start){
 function isLikelyOpener(p){
   if (!p) return false;
 
-  // Whitelist of acceptable openers (exact match, ignoring case + trailing punctuation)
+  // Whitelist of acceptable openers (exact match, ignoring case + whitespace)
   const allowed = [
     "Thank you for reaching out to Apex Trader Funding Support.",
     "Thank you for contacting us.",
@@ -145,12 +148,12 @@ function isLikelyOpener(p){
   const norm = p.trim().replace(/\s+/g, " ");
   if (allowed.some(x => norm.toLowerCase() === x.toLowerCase())) return true;
 
-  // Otherwise: be permissive if it’s a clean, single sentence opener
+  // Otherwise: permissive if it’s a clean, single-sentence opener
   // Up to 200 chars, ends in . ! or ?, and avoids obvious solution keywords.
   const singleSentence = /^[^\n]{1,200}[.!?]$/.test(norm);
   if (!singleSentence) return false;
 
-  // Only block hard solution-y starts (keep this short to avoid false fails)
+  // Only block hard solution-y starts (keep short to avoid false fails)
   const tooSpecific = /\b(screenshot|steps?|click|attach(ed)?|refund|transaction|order|account|price|must|should)\b/i;
   if (tooSpecific.test(norm)) return false;
 
@@ -160,12 +163,12 @@ function isLikelyOpener(p){
 function hasGreetingBlankLine(s){
   const T = normalizeEOL(s);
   // Greeting must be "Hello/Hi/Hey/Good <time> <Name>," then exactly one blank line, then more text
-  return /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/.test(T);
+  return /^(Hello|Hi|Hey|Good (morning|afternoon|evening)) [^,\n]+,\n\n[^\n]/i.test(T);
 }
 function hasSignoffBlankLine(s){
   const T = normalizeEOL(s);
   // look for an accepted sign-off followed by exactly one blank line then some name to end
-  return new RegExp(`${SIGNOFF_PHRASE_RX.source}\\n\\n[^\\n]+\\s*$`, "m").test(T);
+  return new RegExp(`${SIGNOFF_PHRASE_RX.source}\\n\\n[^\\n]+\\s*$`, "mi").test(T);
 }
 function hasAcceptedSignoffPhrase(s){
   return SIGNOFF_PHRASE_RX.test(s);
@@ -218,15 +221,15 @@ export default async function handler(req, res) {
     // ---------- Hard-rule computations (authoritative) ----------
     const greetingBlank      = hasGreetingBlankLine(text);
     const greetingNameFound  = extractGreetingName(text);
-    const greetingNameOK     = EXPECTED_CUSTOMER_FIRST
-      ? equalsIgnoreCase(greetingNameFound, EXPECTED_CUSTOMER_FIRST)
+
+    // Compare only first token (handles "Henry Bukslo" vs "Henry") and case-insensitive
+    const greetingNameOK = EXPECTED_CUSTOMER_FIRST
+      ? equalsIgnoreCase(firstToken(greetingNameFound), firstToken(EXPECTED_CUSTOMER_FIRST))
       : true; // if we don't know the customer's first name, don't fail on it
 
     const signoffPhraseOK = hasAcceptedSignoffPhrase(text);
     const signoffBlank    = hasSignoffBlankLine(text);
     const agentNameLine   = lastLine(text); // the name after the blank line
-
-    
 
     // Enforce that the sign-off name matches EXACTLY whatever first name they entered
     let agentFirstOnlyOK = true;
@@ -312,7 +315,7 @@ ${STRUCTURE_LABELS.join(", ")}
 HARD RULES (literal characters only):
 - A “blank line” means exactly two consecutive line breaks in the raw text: "\\n\\n".
 - Greeting: FAIL if the first greeting line is not "Hello/Hi/Hey/Good <time of day> <Name>," exactly ending with a comma (no extra text on that line), or if there is no blank line after it.
-- Greeting name check: If COMPUTED FACTS.expected_customer_first is non-empty, FAIL unless the greeting <Name> matches it case-insensitively.
+- Greeting name check: If COMPUTED FACTS.expected_customer_first is non-empty, FAIL unless the greeting <Name> matches it case-insensitively (first token match is enough).
 - Sign-Off: FAIL if there is not (1) a standard sign-off line ending with a comma (e.g., "Best regards,"), then (2) one blank line, then (3) the agent's name on its own line.
 - Agent name rule: Use COMPUTED FACTS.agent_first_name_only (multi-word first names are allowed).
 
@@ -372,35 +375,92 @@ Also return "structurePct" (0–100) as your overall structure score.
     }
     parsed.structurePct = clamp0to100(parsed.structurePct);
 
-    // ---- Deterministic Opener enforcement ----
-try {
-  const openerIdx = STRUCTURE_LABELS.indexOf("Opener");
-  if (Array.isArray(parsed?.checks) && openerIdx !== -1) {
-    const start = afterGreetingIndex(text);                   // first char after greeting+blank line
-    const openerPara = firstParagraphAt(text, start);         // opener paragraph (one line)
-    const afterOpener = start >= 0
-      ? text.slice(start + (openerPara ? openerPara.length : 0))
-      : "";
-    const hasBlankAfterOpener = /^\n\n/.test(afterOpener);    // require a blank line after opener
-    const openerOK = isLikelyOpener(openerPara) && hasBlankAfterOpener;
+    // ---- Deterministic Greeting enforcement (format + correct name) ----
+    try {
+      const greetIdx = STRUCTURE_LABELS.indexOf("Greeting");
+      if (Array.isArray(parsed?.checks) && greetIdx !== -1) {
+        const hasFormat = hasGreetingBlankLine(text);
+        const nameOK = greetingNameOK;
 
-    if (!openerOK) {
-      parsed.checks[openerIdx] = {
-        label: "Opener",
-        ok: false,
-        score: 0,
-        detail:
-          "Missing a separate one-sentence opener between the greeting and the solution. Add a short opening line and leave a blank line after it.\n" +
-          "Example:\n" +
-          "Hi John,\n\n" +
-          "Thanks for reaching out—happy to help.\n\n" +
-          "[Your solution starts here]"
-      };
-    }
-  }
-} catch {}
-// ---- end opener enforcement ----
-    
+        if (!hasFormat || !nameOK) {
+          const expectedName = EXPECTED_CUSTOMER_FIRST || "Name";
+          const foundName = extractGreetingName(text) || "(none)";
+          const issues = [];
+          if (!hasFormat) issues.push("format (must end with a comma and include one blank line after)");
+          if (!nameOK) issues.push(`name (expected first token: "${firstToken(expectedName)}", found: "${firstToken(foundName)}")`);
+
+          parsed.checks[greetIdx] = {
+            label: "Greeting",
+            ok: false,
+            score: 0,
+            detail:
+              `Greeting issue: ${issues.join("; ")}.\n` +
+              `Example:\n` +
+              `Hi ${firstToken(expectedName)},\n\n` +
+              `[Your opener goes here]`
+          };
+        }
+      }
+    } catch {}
+
+    // ---- Deterministic Opener enforcement ----
+    try {
+      const openerIdx = STRUCTURE_LABELS.indexOf("Opener");
+      if (Array.isArray(parsed?.checks) && openerIdx !== -1) {
+        const start = afterGreetingIndex(text);                   // first char after greeting+blank line
+        const openerPara = firstParagraphAt(text, start);         // opener paragraph (one line)
+        const afterOpener = start >= 0
+          ? text.slice(start + (openerPara ? openerPara.length : 0))
+          : "";
+        const hasBlankAfterOpener = /^\n\n/.test(afterOpener);    // require a blank line after opener
+        const openerOK = isLikelyOpener(openerPara) && hasBlankAfterOpener;
+
+        if (!openerOK) {
+          const exampleName = firstToken(EXPECTED_CUSTOMER_FIRST || "John");
+          parsed.checks[openerIdx] = {
+            label: "Opener",
+            ok: false,
+            score: 0,
+            detail:
+              "Missing a separate one-sentence opener between the greeting and the solution. Add a short opening line and leave a blank line after it.\n" +
+              "Example:\n" +
+              `Hi ${exampleName},\n\n` +
+              "Thanks for reaching out—happy to help.\n\n" +
+              "[Your solution starts here]"
+          };
+        }
+      }
+    } catch {}
+
+    // ---- Deterministic Sign-Off enforcement (phrase + blank + first-name match) ----
+    try {
+      const signIdx = STRUCTURE_LABELS.indexOf("Sign-Off");
+      if (Array.isArray(parsed?.checks) && signIdx !== -1) {
+        const phraseOK = hasAcceptedSignoffPhrase(text);
+        const blankOK  = hasSignoffBlankLine(text);
+        const nameOK   = !!(EXPECTED_FIRST ? equalsIgnoreCase(lastLine(text), EXPECTED_FIRST) : lastLine(text));
+
+        if (!phraseOK || !blankOK || !nameOK) {
+          const expectedAgent = EXPECTED_FIRST || "[Your Name]";
+          const parts = [];
+          if (!phraseOK) parts.push("use an accepted sign-off phrase ending with a comma");
+          if (!blankOK)  parts.push("leave exactly one blank line after the sign-off phrase");
+          if (!nameOK)   parts.push("put your first name on its own line (must match the entered first name)");
+
+          parsed.checks[signIdx] = {
+            label: "Sign-Off",
+            ok: false,
+            score: 0,
+            detail:
+              `Sign-off issue: ${parts.join("; ")}.\n` +
+              "Example:\n" +
+              "Best regards,\n\n" +
+              `${expectedAgent}`
+          };
+        }
+      }
+    } catch {}
+
     return res.status(200).json(parsed);
 
   } catch (err) {
